@@ -2,27 +2,27 @@
   "name": "GymBros",
   "short_name": "GymBros",
   "description": "Progreso compartido entre compañeros de gimnasio",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/Gymbros/",
+  "scope": "/Gymbros/",
   "display": "standalone",
   "background_color": "#0A1628",
   "theme_color": "#E11D2E",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icons/icon.svg",
+      "src": "/Gymbros/icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "icons/icon-192.png",
+      "src": "/Gymbros/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/Gymbros/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
