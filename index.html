@@ -423,18 +423,21 @@ header {
 }
 .ia-setup-icon { font-size:48px; margin-bottom:12px; }
 .ia-setup-card p { font-size:13px; color:var(--text); }
-.ia-key-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
-.ia-analyze-btn { width:100%; padding:14px; font-size:16px; letter-spacing:0.5px; margin-bottom:16px; }
-.ia-result {
-  background:var(--surface); border:1px solid var(--border); border-radius:14px;
-  padding:20px; font-size:13px; line-height:1.7; white-space:pre-wrap;
-  display:none;
-}
-.ia-result.show { display:block; }
-.ia-result h3 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px; letter-spacing:1px; color:var(--accent); margin:16px 0 6px; }
-.ia-result h3:first-child { margin-top:0; }
-.ia-loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; padding:20px 0; }
-.ia-loading .spinner { width:20px; height:20px; border-width:2px; flex-shrink:0; }
+.ia-key-row { display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 12px; flex-shrink:0; }
+.ia-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:4px 0 8px; min-height:0; }
+.ia-bubble { max-width:88%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.6; }
+.ia-bubble.user { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+.ia-bubble.assistant { background:var(--surface); border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:4px; }
+.ia-bubble.assistant b { color:var(--accent); }
+.ia-bubble-typing { align-self:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:14px; border-bottom-left-radius:4px; padding:12px 16px; }
+.ia-dots span { display:inline-block; width:6px; height:6px; background:var(--muted); border-radius:50%; margin:0 2px; animation:dot-bounce .9s infinite; }
+.ia-dots span:nth-child(2) { animation-delay:.2s; }
+.ia-dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes dot-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+.ia-input-row { display:flex; gap:8px; align-items:flex-end; flex-shrink:0; padding-top:4px; }
+.ia-input { flex:1; resize:none; padding:10px 12px; font-size:13px; border-radius:12px; font-family:'Inter',sans-serif; line-height:1.4; max-height:100px; overflow-y:auto; }
+.ia-send-btn { padding:10px 16px; font-size:16px; border-radius:12px; flex-shrink:0; }
+.ia-welcome { color:var(--muted); font-size:12px; text-align:center; padding:20px 10px; }
 
 /* Routine modal */
 .type-btn-group { display:flex; gap:6px; margin-bottom:10px; }
@@ -593,29 +596,29 @@ header {
     </div>
 
     <!-- IA -->
-    <div class="tab-panel" id="tab-ia">
-      <div class="sec-header">
-        <span class="sec-title">Entrenador IA</span>
-        <button class="btn-icon" onclick="openIaSettings()" title="Configurar API key">⚙️</button>
-      </div>
+    <div class="tab-panel" id="tab-ia" style="display:flex;flex-direction:column;height:calc(100vh - 140px)">
+      <!-- Setup screen -->
       <div id="ia-setup-card" class="ia-setup-card" style="display:none">
         <div class="ia-setup-icon">🤖</div>
         <p>Introduce tu API key de <b>xAI (Grok)</b> para activar el entrenador.</p>
-        <p style="font-size:11px;color:var(--muted);margin-top:4px">La key se guarda solo en tu dispositivo.</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px">Se guarda solo en tu dispositivo.</p>
         <div style="display:flex;gap:8px;margin-top:16px">
           <input type="password" id="ia-key-inp" placeholder="xai-..." style="flex:1;font-size:13px">
           <button class="btn btn-accent" onclick="saveIaKey()">Guardar</button>
         </div>
       </div>
-      <div id="ia-main" style="display:none">
+      <!-- Chat -->
+      <div id="ia-main" style="display:none;flex:1;display:none;flex-direction:column;gap:10px">
         <div class="ia-key-row">
-          <span style="font-size:12px;color:var(--muted)">🔑 API key configurada</span>
-          <button class="btn btn-ghost btn-sm" onclick="openIaSettings()">Cambiar</button>
+          <span style="font-size:12px;color:var(--muted)">🔑 Grok · <span id="ia-model-label"></span></span>
+          <button class="btn btn-ghost btn-sm" onclick="openIaSettings()">⚙️ Key</button>
         </div>
-        <button class="btn btn-accent ia-analyze-btn" id="ia-analyze-btn" onclick="analyzeWithGrok()">
-          🤖 Analizar mis entrenos
-        </button>
-        <div id="ia-result" class="ia-result"></div>
+        <div id="ia-messages" class="ia-messages"></div>
+        <div class="ia-input-row">
+          <textarea id="ia-input" class="ia-input" placeholder="Pregunta lo que quieras sobre tus entrenos…" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendIaMessage()}"></textarea>
+          <button class="btn btn-accent ia-send-btn" onclick="sendIaMessage()">➤</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1685,7 +1688,10 @@ function copyBroRoutine(broId, routineId) {
 }
 
 // ── IA / GROK ─────────────────────────────────────────────────
-const IA_KEY_STORAGE = 'gymbros_xai_key';
+const IA_KEY_STORAGE  = 'gymbros_xai_key';
+const IA_MODELS = ['grok-3-mini-latest', 'grok-2-latest', 'grok-beta'];
+let iaModelIdx  = 0;
+let iaChatHistory = []; // [{role, content}] — session only, not persisted
 
 function getIaKey() { return localStorage.getItem(IA_KEY_STORAGE) || ''; }
 function setIaKey(k) { k ? localStorage.setItem(IA_KEY_STORAGE, k) : localStorage.removeItem(IA_KEY_STORAGE); }
@@ -1693,7 +1699,19 @@ function setIaKey(k) { k ? localStorage.setItem(IA_KEY_STORAGE, k) : localStorag
 function renderIA() {
   const hasKey = !!getIaKey();
   document.getElementById('ia-setup-card').style.display = hasKey ? 'none' : '';
-  document.getElementById('ia-main').style.display       = hasKey ? ''     : 'none';
+  const main = document.getElementById('ia-main');
+  main.style.display = hasKey ? 'flex' : 'none';
+  if (hasKey) {
+    document.getElementById('ia-model-label').textContent = IA_MODELS[iaModelIdx];
+    if (!iaChatHistory.length) renderIaWelcome();
+  }
+}
+
+function renderIaWelcome() {
+  document.getElementById('ia-messages').innerHTML =
+    `<div class="ia-welcome">🤖 Soy tu entrenador personal IA.<br>
+     Pregúntame lo que quieras sobre tus entrenos,<br>progresión, ejercicios o consejos.<br>
+     <br><span style="font-size:11px">Tus datos de entrenamiento se envían como contexto en cada mensaje.</span></div>`;
 }
 
 function openIaSettings() {
@@ -1711,120 +1729,136 @@ function saveIaKey() {
   setIaKey(key);
   document.getElementById('ia-key-inp').value = '';
   document.getElementById('ia-key-inp').type  = 'password';
+  iaChatHistory = [];
   showToast('API key guardada ✓');
   renderIA();
 }
 
-function buildWorkoutSummary() {
+function buildWorkoutContext() {
   const p = profile();
   ensureRoutines(p);
-  let txt = `Deportista: ${p.name}\n\n`;
+  let txt = `Contexto de entrenamiento de ${p.name}:\n\n`;
 
-  // Rutinas sessions (last 15)
-  const recent = [...p.gymSessions].reverse().slice(0, 15);
+  const recent = [...p.gymSessions].reverse().slice(0, 10);
   if (recent.length) {
-    txt += `== SESIONES DE RUTINAS (últimas ${recent.length}) ==\n`;
+    txt += `SESIONES RECIENTES:\n`;
     recent.forEach(s => {
-      txt += `\n[${fmtDate(s.date)}] ${s.routineName}\n`;
-      s.exercises.forEach(ex => {
-        const setsTxt = (ex.sets || []).map(st => fmtDaySet(st, ex.type || 'normal')).join(' | ');
-        txt += `  • ${ex.name} (${ex.type || 'normal'}): ${setsTxt || 'sin series'}\n`;
-      });
-    });
-  } else {
-    txt += `Sin sesiones de rutinas registradas aún.\n`;
-  }
-
-  // Entreno libre (muscle groups)
-  const allEx = p.muscles.flatMap(m => m.exercises);
-  if (allEx.length) {
-    txt += `\n== ENTRENO LIBRE ==\n`;
-    p.muscles.forEach(m => {
-      const days = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
-      txt += `${m.icon} ${m.name}: ${m.exercises.length} ejercicios, ${days} días entrenados\n`;
-      m.exercises.forEach(ex => {
-        const lastSess = ex.sessions[ex.sessions.length - 1];
-        if (lastSess) {
-          const lastSets = lastSess.sets.map(s => fmtDaySet(s, ex.type || 'normal')).join(' | ');
-          txt += `  • ${ex.name}: última sesión [${lastSets}]\n`;
-        }
-      });
+      txt += `[${fmtDate(s.date)}] ${s.routineName}: `;
+      txt += s.exercises.map(ex =>
+        `${ex.name} (${(ex.sets||[]).map(st => fmtDaySet(st, ex.type||'normal')).join(',')})`
+      ).join(' | ') + '\n';
     });
   }
 
-  // Group comparison
-  const myStats = getProfileStats(p);
-  txt += `\n== COMPARATIVA CON EL GRUPO ==\n`;
-  txt += `${p.name} (tú): ${myStats.sessions} días, ${myStats.vol}kg volumen, ${myStats.totalSets} series, mejor marca ${myStats.bestKg}kg\n`;
-  state.profiles.filter(b => b.id !== p.id).forEach(bro => {
-    const s = getProfileStats(bro);
-    txt += `${bro.name}: ${s.sessions} días, ${s.vol}kg volumen, ${s.totalSets} series, mejor marca ${s.bestKg}kg\n`;
+  p.muscles.forEach(m => {
+    const days = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
+    txt += `${m.name}: ${m.exercises.length} ejercicios, ${days} días\n`;
+    m.exercises.forEach(ex => {
+      const last = ex.sessions[ex.sessions.length - 1];
+      if (last) txt += `  ${ex.name}: ${last.sets.map(s => fmtDaySet(s, ex.type||'normal')).join(',')}\n`;
+    });
   });
 
+  const myStats = getProfileStats(p);
+  txt += `\nESTADÍSTICAS GRUPO:\n${p.name}: ${myStats.sessions}d, ${myStats.vol}kg vol, mejor ${myStats.bestKg}kg\n`;
+  state.profiles.filter(b => b.id !== p.id).forEach(bro => {
+    const s = getProfileStats(bro);
+    txt += `${bro.name}: ${s.sessions}d, ${s.vol}kg vol, mejor ${s.bestKg}kg\n`;
+  });
   return txt;
 }
 
-async function analyzeWithGrok() {
+function addIaBubble(role, html) {
+  const msgs = document.getElementById('ia-messages');
+  // Remove welcome message on first real message
+  const welcome = msgs.querySelector('.ia-welcome');
+  if (welcome) welcome.remove();
+  const div = document.createElement('div');
+  div.className = `ia-bubble ${role}`;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addIaTyping() {
+  const msgs = document.getElementById('ia-messages');
+  const div = document.createElement('div');
+  div.className = 'ia-bubble-typing';
+  div.id = 'ia-typing';
+  div.innerHTML = `<div class="ia-dots"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeIaTyping() {
+  document.getElementById('ia-typing')?.remove();
+}
+
+function renderIaText(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+    .replace(/\*(.*?)\*/g, '<i>$1</i>')
+    .replace(/\n/g, '<br>');
+}
+
+async function sendIaMessage() {
   const key = getIaKey();
   if (!key) { openIaSettings(); return; }
 
-  const btn    = document.getElementById('ia-analyze-btn');
-  const result = document.getElementById('ia-result');
-  btn.disabled = true;
-  btn.textContent = '⏳ Analizando…';
-  result.classList.remove('show');
-  result.innerHTML = `<div class="ia-loading"><div class="spinner"></div>Grok está analizando tus entrenos…</div>`;
-  result.classList.add('show');
+  const inp  = document.getElementById('ia-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = '';
 
-  const summary = buildWorkoutSummary();
-  const systemPrompt = `Eres un entrenador personal experto y motivador. Analiza los datos de entrenamiento del usuario y responde SIEMPRE en español con estas secciones usando exactamente estos encabezados:
+  addIaBubble('user', text.replace(/\n/g,'<br>'));
+  iaChatHistory.push({ role: 'user', content: text });
 
-### 📈 Progresión y tendencias
-### 💡 Consejos y ajustes
-### 👥 Comparativa con el grupo
-### ⚖️ Desequilibrios detectados
+  const sendBtn = document.querySelector('.ia-send-btn');
+  sendBtn.disabled = true;
+  addIaTyping();
 
-Sé específico con los datos, motivador y práctico. Máximo 400 palabras en total.`;
+  const systemPrompt = `Eres un entrenador personal experto, motivador y directo. Responde SIEMPRE en español. Sé concreto y práctico. Máximo 200 palabras por respuesta.\n\n${buildWorkoutContext()}`;
 
-  try {
-    const res = await fetch('https://api.x.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`
-      },
-      body: JSON.stringify({
-        model: 'grok-3-latest',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: summary }
-        ],
-        max_tokens: 800,
-        temperature: 0.7
-      })
-    });
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...iaChatHistory
+  ];
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Error ${res.status}`);
+  // Try models in order until one works
+  let lastError = '';
+  for (let i = iaModelIdx; i < IA_MODELS.length; i++) {
+    try {
+      const res = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({ model: IA_MODELS[i], messages, max_tokens: 500, temperature: 0.7 })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        lastError = err.error?.message || `Error ${res.status}`;
+        if (res.status === 400 || res.status === 404) continue; // try next model
+        throw new Error(lastError);
+      }
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content || '…';
+      iaModelIdx = i; // remember which model worked
+      document.getElementById('ia-model-label').textContent = IA_MODELS[i];
+      removeIaTyping();
+      addIaBubble('assistant', renderIaText(reply));
+      iaChatHistory.push({ role: 'assistant', content: reply });
+      sendBtn.disabled = false;
+      return;
+    } catch (err) {
+      lastError = err.message;
     }
-
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content || 'Sin respuesta.';
-
-    // Render with section headers styled
-    result.innerHTML = text
-      .replace(/### (.*)/g, '<h3>$1</h3>')
-      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-      .replace(/\n/g, '<br>');
-
-  } catch (err) {
-    result.innerHTML = `<span style="color:var(--accent)">⚠️ Error: ${err.message}</span><br><br>
-      <span style="color:var(--muted);font-size:12px">Comprueba que la API key es válida y que tienes crédito en tu cuenta xAI.</span>`;
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = '🤖 Analizar mis entrenos';
   }
+
+  // All models failed
+  removeIaTyping();
+  addIaBubble('assistant', `<span style="color:var(--accent)">⚠️ ${lastError}</span><br><span style="font-size:11px;color:var(--muted)">Comprueba la API key o el saldo en console.x.ai</span>`);
+  sendBtn.disabled = false;
 }
 
 // ── STATS ──────────────────────────────────────────────────────
