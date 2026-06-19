@@ -1669,6 +1669,26 @@ function renderBrosRecent() {
   }).join('');
 }
 
+function saveIaRoutine(routine, btn) {
+  const p = profile();
+  ensureRoutines(p);
+  p.routines.push({
+    id: Date.now().toString(),
+    name: routine.name,
+    exercises: (routine.exercises || []).map((e, i) => ({
+      id: (Date.now() + i).toString(),
+      name: e.name,
+      type: ['normal','bodyweight','cardio'].includes(e.type) ? e.type : 'normal'
+    }))
+  });
+  saveCurrentProfile();
+  btn.textContent = '✓ Guardada en Rutinas';
+  btn.disabled = true;
+  btn.style.borderColor = 'var(--muted)';
+  btn.style.color = 'var(--muted)';
+  showToast(`Rutina "${routine.name}" guardada ✓`);
+}
+
 function copyBroRoutine(broId, routineId) {
   const bro = state.profiles.find(p => p.id === broId);
   if (!bro) return;
@@ -1796,11 +1816,19 @@ function removeIaTyping() {
 }
 
 function renderIaText(text) {
+  // Extract ROUTINE_JSON if present
+  let routine = null;
+  const routineMatch = text.match(/ROUTINE_JSON:(\{.*\})/);
+  if (routineMatch) {
+    try { routine = JSON.parse(routineMatch[1]); } catch {}
+    text = text.replace(/ROUTINE_JSON:\{.*\}/, '').trimEnd();
+  }
+
   // Split into blocks separated by blank lines
   const blocks = text.split(/\n{2,}/);
-  return blocks.map(block => {
+  const html = blocks.map(block => {
     const lines = block.split('\n');
-    // Detect markdown table: at least 2 lines, most contain |
+    // Detect markdown table: lines with |, skip separator lines
     const tableLines = lines.filter(l => l.includes('|'));
     if (tableLines.length >= 2 && tableLines.length === lines.length) {
       const rows = lines.filter(l => !/^\s*\|?\s*[-:]+[-|\s:]*\s*\|?\s*$/.test(l));
@@ -1811,19 +1839,19 @@ function renderIaText(text) {
           return `<tr>${cells}</tr>`;
         };
         const [head, ...body] = rows;
-        const tableHtml = `<table style="width:100%;border-collapse:collapse;font-size:12px;margin:4px 0">
+        return `<table style="width:100%;border-collapse:collapse;font-size:12px;margin:4px 0">
           <thead style="background:var(--surface2)">${toTd(head,'th')}</thead>
           <tbody>${body.map(r => toTd(r,'td')).join('')}</tbody>
         </table>`;
-        return tableHtml;
       }
     }
-    // Normal block: inline markdown
     return block
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\*(.*?)\*/g, '<i>$1</i>')
       .replace(/\n/g, '<br>');
   }).join('<br>');
+
+  return { html, routine };
 }
 
 async function sendIaMessage() {
@@ -1843,7 +1871,13 @@ async function sendIaMessage() {
   sendBtn.disabled = true;
   addIaTyping();
 
-  const systemPrompt = `Eres un entrenador personal experto, motivador y directo. Responde SIEMPRE en español. Sé concreto y práctico. Máximo 200 palabras por respuesta.\n\n${buildWorkoutContext()}`;
+  const systemPrompt = `Eres un entrenador personal experto, motivador y directo. Responde SIEMPRE en español. Sé concreto y práctico. Máximo 200 palabras por respuesta.
+
+Cuando sugieras una rutina de ejercicios que el usuario pueda guardar, añade AL FINAL del mensaje (en línea nueva) exactamente esto:
+ROUTINE_JSON:{"name":"Nombre rutina","exercises":[{"name":"Ejercicio","type":"normal"},{"name":"Ejercicio2","type":"bodyweight"},{"name":"Ejercicio3","type":"cardio"}]}
+Los tipos válidos son: normal (con peso), bodyweight (peso propio), cardio. No expliques ni menciones el JSON.
+
+${buildWorkoutContext()}`;
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -1867,10 +1901,19 @@ async function sendIaMessage() {
       }
       const data = await res.json();
       const reply = data.choices?.[0]?.message?.content || '…';
-      iaModelIdx = i; // remember which model worked
+      iaModelIdx = i;
       document.getElementById('ia-model-label').textContent = IA_MODELS[i];
       removeIaTyping();
-      addIaBubble('assistant', renderIaText(reply));
+      const { html, routine } = renderIaText(reply);
+      const bubble = addIaBubble('assistant', html);
+      if (routine) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-ghost btn-sm';
+        btn.style.cssText = 'margin-top:8px;width:100%;border-color:#16a34a;color:#16a34a';
+        btn.textContent = `📥 Guardar rutina: "${routine.name}"`;
+        btn.onclick = () => saveIaRoutine(routine, btn);
+        bubble.appendChild(btn);
+      }
       iaChatHistory.push({ role: 'assistant', content: reply });
       sendBtn.disabled = false;
       return;
