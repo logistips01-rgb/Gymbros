@@ -346,44 +346,24 @@ header {
 .rank-val small { font-size:11px; font-weight:400; color:var(--muted); display:block; }
 
 /* ── RUTINAS ── */
-.week-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
-.day-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-.day-card.today { border-color:var(--accent); }
-.day-header {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 14px; cursor:pointer; transition:background .15s;
-}
-.day-header:hover { background:rgba(255,255,255,0.03); }
-.day-name {
-  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px;
-  letter-spacing:1px; text-transform:uppercase;
-  display:flex; align-items:center; gap:8px;
-}
-.day-today-badge { background:var(--accent); color:#fff; font-size:10px; padding:2px 7px; border-radius:4px; }
-.day-summary { font-size:11px; color:var(--muted); }
-.day-chevron { color:var(--muted); font-size:11px; transition:transform .2s; }
-.day-card.open .day-chevron { transform:rotate(180deg); }
-.day-body { display:none; padding:0 14px 14px; border-top:1px solid var(--border); }
-.day-card.open .day-body { display:block; }
-.day-exercises { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-.day-ex {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:10px; overflow:hidden;
-}
-.day-ex-header {
-  display:flex; align-items:center; gap:8px; padding:9px 12px;
-  cursor:pointer;
-}
-.day-ex-header:hover .day-ex-name { color:var(--accent); }
-.day-ex-type { font-size:14px; flex-shrink:0; }
-.day-ex-name { font-weight:600; font-size:13px; flex:1; transition:color .2s; }
-.day-ex-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; padding:0; line-height:1; }
-.day-ex-del:hover { color:var(--accent); }
-.day-ex-badge { font-size:10px; background:#E11D2E22; color:#E11D2E; border:1px solid #E11D2E44; border-radius:8px; padding:1px 6px; white-space:nowrap; }
-.day-ex-chevron { color:var(--muted); font-size:10px; transition:transform .2s; }
-.day-ex.open .day-ex-chevron { transform:rotate(180deg); }
-.day-ex-body { display:none; padding:0 12px 10px; }
-.day-ex.open .day-ex-body { display:block; }
+.routines-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.routines-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:6px; }
+.routine-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+.routine-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.routine-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:18px; letter-spacing:1px; flex:1; }
+.routine-ex-list { display:flex; flex-wrap:wrap; gap:6px; min-height:20px; }
+.ex-tag { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:3px 8px; font-size:11px; color:var(--muted); }
+.routine-card-footer { display:flex; align-items:center; justify-content:space-between; padding-top:4px; border-top:1px solid var(--border); }
+.routine-last { font-size:11px; color:var(--muted); }
+
+/* Active session */
+.active-session-view { background:var(--surface); border:2px solid var(--accent); border-radius:14px; padding:16px; margin-bottom:20px; }
+.active-session-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.active-session-title { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:22px; letter-spacing:1px; color:var(--accent); }
+.active-session-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+.sess-ex-block { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; }
+.sess-ex-title { font-weight:600; font-size:13px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.sess-ex-foot { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
 .day-set-row { display:grid; gap:6px; align-items:center; margin-bottom:6px; }
 .day-set-row.type-normal  { grid-template-columns:22px 1fr 1fr 26px; }
 .day-set-row.type-bodyweight { grid-template-columns:22px 1fr 26px; }
@@ -393,29 +373,41 @@ header {
 .unit-label { font-size:11px; color:var(--muted); white-space:nowrap; }
 .day-set-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:14px; padding:0; }
 .day-set-del:hover { color:var(--accent); }
-.day-ex-foot { display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
-.day-sets-summary { font-size:11px; color:var(--muted); margin-top:6px; }
+
+/* Session history */
+.session-hist-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:10px; }
+.session-hist-header { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer; transition:background .15s; }
+.session-hist-header:hover { background:rgba(255,255,255,0.03); }
+.session-hist-name { font-weight:700; font-size:13px; }
+.session-hist-date { font-size:11px; color:var(--muted); margin-top:2px; }
+.session-hist-chev { color:var(--muted); font-size:10px; transition:transform .2s; flex-shrink:0; }
+.session-hist-card.open .session-hist-chev { transform:rotate(180deg); }
+.session-hist-body { display:none; padding:0 14px 14px; border-top:1px solid var(--border); }
+.session-hist-card.open .session-hist-body { display:block; }
+.session-ex-entry { padding:8px 0; border-bottom:1px solid var(--border); }
+.session-ex-entry:last-child { border-bottom:none; padding-bottom:0; }
+.session-ex-name { font-size:12px; font-weight:600; margin-bottom:5px; }
+.session-prev-comp { font-size:11px; margin-top:4px; font-weight:600; }
+.session-prev-comp.up { color:#16a34a; }
+.session-prev-comp.down { color:#E11D2E; }
+.session-prev-comp.neutral { color:var(--muted); }
+
+/* Bros recent */
+.bro-recent { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+.bro-recent-header { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; transition:background .15s; }
+.bro-recent-header:hover { background:rgba(255,255,255,0.03); }
+.bro-recent.open .bro-recent-body { display:block; }
+.bro-recent-body { display:none; padding:0 14px 12px; border-top:1px solid var(--border); }
+.bro-session-row { padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.bro-session-row:last-child { border-bottom:none; }
+
+/* Routine modal */
 .type-btn-group { display:flex; gap:6px; margin-bottom:10px; }
-.type-btn {
-  flex:1; padding:8px 4px; border-radius:8px; border:1px solid var(--border);
-  background:var(--surface2); color:var(--muted); cursor:pointer;
-  font-size:11px; font-weight:600; text-align:center; transition:all .2s;
-}
+.type-btn { flex:1; padding:8px 4px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); cursor:pointer; font-size:11px; font-weight:600; text-align:center; transition:all .2s; }
 .type-btn.active { border-color:var(--accent); background:var(--accent-dim); color:#fff; }
-.bro-week { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; overflow:hidden; }
-.bro-week-header {
-  display:flex; align-items:center; gap:10px; padding:14px 16px;
-  cursor:pointer; transition:background .2s;
-}
-.bro-week-header:hover { background:rgba(255,255,255,0.03); }
-.bro-week-body { padding:0 14px 14px; display:none; }
-.bro-week.open .bro-week-body { display:block; }
-.bro-week-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; margin-top:10px; }
-.bro-day { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px; }
-.bro-day-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-.bro-day-item { font-size:11px; color:var(--text); padding:2px 0; border-bottom:1px solid var(--border); }
-.bro-day-item:last-child { border-bottom:none; }
-.bro-day-empty { font-size:11px; color:var(--muted); font-style:italic; }
+.modal-ex-list { margin:8px 0 12px; display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; }
+.modal-ex-item { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
+.modal-ex-item span { flex:1; font-size:13px; }
 .modal-overlay {
   display:none; position:fixed; inset:0;
   background:rgba(7,15,30,0.75); backdrop-filter:blur(6px);
@@ -528,10 +520,23 @@ header {
 
     <!-- RUTINAS -->
     <div class="tab-panel" id="tab-rutinas">
-      <div class="sec-header"><span class="sec-title">Mi semana</span></div>
-      <div class="week-grid" id="week-grid"></div>
-      <div class="sec-title" style="font-size:14px;margin-bottom:12px">Rutinas de los bros</div>
-      <div id="bros-weeks"></div>
+      <!-- Active session (shown when workout in progress) -->
+      <div id="active-session-view" class="active-session-view" style="display:none"></div>
+
+      <!-- Normal view -->
+      <div id="routines-normal-view">
+        <div class="routines-header">
+          <span class="sec-title">Mis rutinas</span>
+          <button class="btn btn-ghost btn-sm" onclick="openCreateRoutine()">+ Nueva rutina</button>
+        </div>
+        <div class="routines-grid" id="routines-list"></div>
+
+        <div class="sec-title" style="font-size:14px;margin:20px 0 12px">Historial de sesiones</div>
+        <div id="session-history"></div>
+
+        <div class="sec-title" style="font-size:14px;margin:20px 0 12px">Sesiones de los bros</div>
+        <div id="bros-recent"></div>
+      </div>
     </div>
 
     <!-- STATS -->
@@ -606,26 +611,31 @@ header {
   </div>
 </div>
 
-<!-- MODAL: Añadir ejercicio al día -->
-<div class="modal-overlay" id="modal-day-ex">
-  <div class="modal">
-    <h3>Ejercicio del día</h3>
+<!-- MODAL: Crear / editar rutina -->
+<div class="modal-overlay" id="modal-routine">
+  <div class="modal" style="max-width:440px">
+    <h3 id="modal-routine-title">Nueva rutina</h3>
     <div class="field">
-      <label>Nombre</label>
-      <input type="text" id="day-ex-name-inp" placeholder="Ej: Natación" style="width:100%" maxlength="40"
-        onkeydown="if(event.key==='Enter')addDayExercise()">
+      <label>Nombre de la rutina</label>
+      <input type="text" id="routine-name-inp" placeholder="Ej: Pecho y Tríceps" style="width:100%" maxlength="40">
     </div>
-    <div class="field">
-      <label>Tipo</label>
-      <div class="type-btn-group">
-        <button class="type-btn active" data-type="normal"     onclick="selectDayExType('normal')">🏋️ Con peso</button>
-        <button class="type-btn"        data-type="bodyweight" onclick="selectDayExType('bodyweight')">💪 Peso propio</button>
-        <button class="type-btn"        data-type="cardio"     onclick="selectDayExType('cardio')">🏊 Cardio</button>
+    <div class="field" style="margin-top:14px">
+      <label>Ejercicios</label>
+      <div class="modal-ex-list" id="modal-ex-list"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input type="text" id="new-ex-name-inp" placeholder="Nombre del ejercicio" style="flex:1" maxlength="40"
+          onkeydown="if(event.key==='Enter')addExToRoutineModal()">
+        <select id="new-ex-type-sel" style="width:auto;padding:8px">
+          <option value="normal">🏋️ Peso</option>
+          <option value="bodyweight">💪 Propio</option>
+          <option value="cardio">🏊 Cardio</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="addExToRoutineModal()">+ Añadir</button>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-day-ex')">Cancelar</button>
-      <button class="btn btn-accent" onclick="addDayExercise()">Añadir</button>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-routine')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveRoutineModal()">Guardar rutina</button>
     </div>
   </div>
 </div>
@@ -1150,78 +1160,234 @@ function renderLog(ex) {
 }
 
 // ── RUTINAS ───────────────────────────────────────────────────
-const DAYS = [
-  { key: 'lun', label: 'Lunes' },
-  { key: 'mar', label: 'Martes' },
-  { key: 'mie', label: 'Miércoles' },
-  { key: 'jue', label: 'Jueves' },
-  { key: 'vie', label: 'Viernes' },
-  { key: 'sab', label: 'Sábado' },
-  { key: 'dom', label: 'Domingo' }
-];
-
-function todayKey() {
-  return ['dom','lun','mar','mie','jue','vie','sab'][new Date().getDay()];
+function fmtDaySet(set, type) {
+  if (type === 'bodyweight') return `${set.reps}r`;
+  if (type === 'cardio') return `${set.value}${set.unit || 'm'}`;
+  return `${set.reps}r × ${set.kg}kg`;
 }
 
-function ensureWeekPlan(p) {
-  if (!p.weekPlan) p.weekPlan = {};
-  DAYS.forEach(d => { if (!Array.isArray(p.weekPlan[d.key])) p.weekPlan[d.key] = []; });
+function ensureRoutines(p) {
+  if (!Array.isArray(p.routines)) p.routines = [];
+  if (!Array.isArray(p.gymSessions)) p.gymSessions = [];
 }
 
-let activeDayKey = null;
-let currentDayExType = 'normal';
+// ── Active session state ───────────────────────────────────────
+let activeSession = null; // { routineId, routineName, startTime, exercises:[{id,name,type,sets:[]}] }
 
-function selectDayExType(type) {
-  currentDayExType = type;
-  document.querySelectorAll('#modal-day-ex .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+function renderRutinas() {
+  const p = profile();
+  ensureRoutines(p);
+
+  const sessionView = document.getElementById('active-session-view');
+  const normalView  = document.getElementById('routines-normal-view');
+
+  if (activeSession) {
+    sessionView.style.display = '';
+    normalView.style.display  = 'none';
+    renderActiveSession();
+  } else {
+    sessionView.style.display = 'none';
+    normalView.style.display  = '';
+    renderRoutinesList(p);
+    renderSessionHistory(p);
+    renderBrosRecent();
+  }
 }
 
-function openAddDayExercise(dayKey) {
-  activeDayKey = dayKey;
-  currentDayExType = 'normal';
-  document.getElementById('day-ex-name-inp').value = '';
-  document.querySelectorAll('#modal-day-ex .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'normal'));
-  openModal('modal-day-ex');
-  setTimeout(() => document.getElementById('day-ex-name-inp').focus(), 100);
+// ── Routine templates ──────────────────────────────────────────
+function renderRoutinesList(p) {
+  const el = document.getElementById('routines-list');
+  if (!p.routines.length) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">
+      Crea tu primera rutina con <b>+ Nueva rutina</b>.</div>`;
+    return;
+  }
+  el.innerHTML = p.routines.map(r => {
+    const lastSess = [...p.gymSessions].reverse().find(s => s.routineId === r.id);
+    const lastLabel = lastSess ? fmtDate(lastSess.date) : 'Nunca';
+    const exTags = r.exercises.length
+      ? r.exercises.map(e => `<span class="ex-tag">${typeIcon(e.type||'normal')} ${e.name}</span>`).join('')
+      : `<span style="color:var(--muted);font-size:12px">Sin ejercicios</span>`;
+    return `
+      <div class="routine-card">
+        <div class="routine-card-top">
+          <span class="routine-name">${r.name}</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn-icon" onclick="openEditRoutine('${r.id}')" title="Editar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button class="btn-icon" onclick="deleteRoutine('${r.id}')" title="Eliminar">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="routine-ex-list">${exTags}</div>
+        <div class="routine-card-footer">
+          <span class="routine-last">Último: ${lastLabel}</span>
+          <button class="btn btn-accent btn-sm" onclick="startSession('${r.id}')">▶ Entrenar</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-function addDayExercise() {
-  const name = document.getElementById('day-ex-name-inp').value.trim();
+// ── Routine modal (create/edit) ────────────────────────────────
+let editingRoutineId = null;
+let modalExercises   = []; // [{id,name,type}] while editing in modal
+
+function openCreateRoutine() {
+  editingRoutineId = null;
+  modalExercises   = [];
+  document.getElementById('modal-routine-title').textContent = 'Nueva rutina';
+  document.getElementById('routine-name-inp').value = '';
+  document.getElementById('new-ex-name-inp').value  = '';
+  document.getElementById('new-ex-type-sel').value  = 'normal';
+  renderModalExList();
+  openModal('modal-routine');
+  setTimeout(() => document.getElementById('routine-name-inp').focus(), 100);
+}
+
+function openEditRoutine(routineId) {
+  const p = profile();
+  ensureRoutines(p);
+  const r = p.routines.find(r => r.id === routineId);
+  if (!r) return;
+  editingRoutineId = routineId;
+  modalExercises   = r.exercises.map(e => ({ ...e }));
+  document.getElementById('modal-routine-title').textContent = 'Editar rutina';
+  document.getElementById('routine-name-inp').value = r.name;
+  document.getElementById('new-ex-name-inp').value  = '';
+  document.getElementById('new-ex-type-sel').value  = 'normal';
+  renderModalExList();
+  openModal('modal-routine');
+}
+
+function renderModalExList() {
+  const el = document.getElementById('modal-ex-list');
+  if (!modalExercises.length) {
+    el.innerHTML = `<span style="color:var(--muted);font-size:12px">Sin ejercicios todavía</span>`;
+    return;
+  }
+  el.innerHTML = modalExercises.map((e, i) => `
+    <div class="modal-ex-item">
+      <span>${typeIcon(e.type||'normal')} ${e.name}</span>
+      <button class="btn-icon" onclick="removeModalEx(${i})">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>`).join('');
+}
+
+function addExToRoutineModal() {
+  const name = document.getElementById('new-ex-name-inp').value.trim();
   if (!name) { showToast('Escribe el nombre'); return; }
+  const type = document.getElementById('new-ex-type-sel').value;
+  modalExercises.push({ id: Date.now().toString(), name, type });
+  document.getElementById('new-ex-name-inp').value = '';
+  renderModalExList();
+}
+
+function removeModalEx(idx) {
+  modalExercises.splice(idx, 1);
+  renderModalExList();
+}
+
+function saveRoutineModal() {
+  const name = document.getElementById('routine-name-inp').value.trim();
+  if (!name) { showToast('Escribe el nombre de la rutina'); return; }
   const p = profile();
-  ensureWeekPlan(p);
-  p.weekPlan[activeDayKey].push({ id: Date.now().toString(), name, type: currentDayExType, sets: [] });
+  ensureRoutines(p);
+  if (editingRoutineId) {
+    const r = p.routines.find(r => r.id === editingRoutineId);
+    if (r) { r.name = name; r.exercises = modalExercises; }
+  } else {
+    p.routines.push({ id: Date.now().toString(), name, exercises: modalExercises });
+  }
   saveCurrentProfile();
-  closeModal('modal-day-ex');
+  closeModal('modal-routine');
   renderRutinas();
 }
 
-function removeDayExercise(dayKey, exId) {
+function deleteRoutine(routineId) {
   const p = profile();
-  ensureWeekPlan(p);
-  p.weekPlan[dayKey] = p.weekPlan[dayKey].filter(e => e.id !== exId);
+  ensureRoutines(p);
+  p.routines = p.routines.filter(r => r.id !== routineId);
   saveCurrentProfile();
   renderRutinas();
 }
 
-function addDaySet(dayKey, exId) {
+// ── Active session logger ──────────────────────────────────────
+function startSession(routineId) {
   const p = profile();
-  ensureWeekPlan(p);
-  const ex = p.weekPlan[dayKey].find(e => e.id === exId);
+  ensureRoutines(p);
+  const r = p.routines.find(r => r.id === routineId);
+  if (!r) return;
+  activeSession = {
+    routineId,
+    routineName: r.name,
+    startTime: new Date().toISOString(),
+    exercises: r.exercises.map(e => ({ id: e.id, name: e.name, type: e.type || 'normal', sets: [] }))
+  };
+  renderRutinas();
+}
+
+function renderActiveSession() {
+  const view = document.getElementById('active-session-view');
+  const dateStr = new Date(activeSession.startTime).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+  const exBlocks = activeSession.exercises.map(ex => `
+    <div class="sess-ex-block">
+      <div class="sess-ex-title">${typeIcon(ex.type)} ${ex.name}</div>
+      <div id="sess-sets-${ex.id}"></div>
+      <div class="sess-ex-foot">
+        <button class="add-set-link" onclick="addSessionSet('${ex.id}')">+ Serie</button>
+      </div>
+    </div>`).join('');
+
+  view.innerHTML = `
+    <div class="active-session-head">
+      <div>
+        <div class="active-session-title">${activeSession.routineName}</div>
+        <div class="active-session-sub">Empezado: ${dateStr}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="cancelSession()">✕ Descartar</button>
+    </div>
+    ${exBlocks}
+    <button class="btn btn-accent" style="width:100%;margin-top:6px;font-size:15px" onclick="finishSession()">
+      💾 Finalizar sesión
+    </button>`;
+
+  // Restore set rows for any sets already added
+  activeSession.exercises.forEach(ex => {
+    ex.sets.forEach((_, i) => _addSessionSetRow(ex.id, i + 1, ex.type));
+  });
+}
+
+function addSessionSet(exId) {
+  const ex = activeSession.exercises.find(e => e.id === exId);
   if (!ex) return;
-  const type = ex.type || 'normal';
-  const area = document.getElementById(`dsets-${exId}`);
-  const n = area.children.length + 1;
+  ex.sets.push({});
+  const n = ex.sets.length;
+  _addSessionSetRow(exId, n, ex.type);
+}
+
+function _addSessionSetRow(exId, n, type) {
+  const area = document.getElementById(`sess-sets-${exId}`);
+  if (!area) return;
   const row = document.createElement('div');
   row.className = `day-set-row type-${type}`;
-  const delBtn = `<button class="day-set-del" onclick="removeDaySet('${dayKey}','${exId}',this)">×</button>`;
+  row.dataset.idx = n - 1;
+  const delBtn = `<button class="day-set-del" onclick="removeSessionSet('${exId}',this)">×</button>`;
   if (type === 'bodyweight') {
     row.innerHTML = `<span class="day-set-num">${n}</span>
       <input type="number" placeholder="Reps" min="1" step="1"> ${delBtn}`;
   } else if (type === 'cardio') {
     row.innerHTML = `<span class="day-set-num">${n}</span>
-      <input type="number" placeholder="Dist." min="0" step="1">
+      <input type="number" placeholder="Dist." min="0" step="0.5">
       <select style="padding:5px 4px;font-size:11px"><option>m</option><option>km</option><option>min</option></select>
       ${delBtn}`;
   } else {
@@ -1231,182 +1397,194 @@ function addDaySet(dayKey, exId) {
       ${delBtn}`;
   }
   area.appendChild(row);
-  renumDaySets(exId);
 }
 
-function removeDaySet(dayKey, exId, btn) {
-  btn.closest('.day-set-row').remove();
-  renumDaySets(exId);
-}
-
-function renumDaySets(exId) {
-  const area = document.getElementById(`dsets-${exId}`);
-  if (!area) return;
-  [...area.children].forEach((r, i) => { const n = r.querySelector('.day-set-num'); if(n) n.textContent = i+1; });
-}
-
-function saveDaySets(dayKey, exId) {
-  const p = profile();
-  ensureWeekPlan(p);
-  const ex = p.weekPlan[dayKey].find(e => e.id === exId);
-  if (!ex) return;
-  const type = ex.type || 'normal';
-  const area = document.getElementById(`dsets-${exId}`);
-  const sets = [];
-  [...area.children].forEach(row => {
-    const inputs = row.querySelectorAll('input');
-    if (type === 'bodyweight') {
-      const reps = parseInt(inputs[0]?.value);
-      if (!isNaN(reps) && reps > 0) sets.push({ reps });
-    } else if (type === 'cardio') {
-      const val = parseFloat(inputs[0]?.value);
-      const unit = row.querySelector('select')?.value || 'm';
-      if (!isNaN(val) && val > 0) sets.push({ value: val, unit });
-    } else {
-      const reps = parseInt(inputs[0]?.value), kg = parseFloat(inputs[1]?.value);
-      if (!isNaN(reps) && reps > 0) sets.push({ reps, kg: isNaN(kg) ? 0 : kg });
-    }
+function removeSessionSet(exId, btn) {
+  const row = btn.closest('.day-set-row');
+  const area = row.parentElement;
+  const idx  = parseInt(row.dataset.idx);
+  const ex = activeSession.exercises.find(e => e.id === exId);
+  if (ex) ex.sets.splice(idx, 1);
+  row.remove();
+  // Re-number remaining rows
+  [...area.children].forEach((r, i) => {
+    r.dataset.idx = i;
+    const num = r.querySelector('.day-set-num');
+    if (num) num.textContent = i + 1;
   });
-  ex.sets = sets;
-  // Keep this exercise and day card open after re-render
-  document.getElementById(`day-ex-${exId}`)?.classList.add('open');
-  document.getElementById(`day-card-${dayKey}`)?.classList.add('open');
-  saveCurrentProfile();
-  showToast('Guardado ✓');
-  renderRutinas();
 }
 
-function fmtDaySet(set, type) {
-  if (type === 'bodyweight') return `${set.reps}r`;
-  if (type === 'cardio') return `${set.value}${set.unit || 'm'}`;
-  return `${set.reps}r × ${set.kg}kg`;
-}
-
-function renderRutinas() {
-  const p = profile();
-  ensureWeekPlan(p);
-  const today = todayKey();
-  const grid = document.getElementById('week-grid');
-
-  // Remember which cards/exercises are open before re-render
-  const openCards = new Set([...grid.querySelectorAll('.day-card.open')].map(el => el.id));
-  const openExs = new Set([...grid.querySelectorAll('.day-ex.open')].map(el => el.id));
-
-  grid.innerHTML = '';
-
-  DAYS.forEach(d => {
-    const exercises = p.weekPlan[d.key] || [];
-    const isToday = d.key === today;
-    const totalSets = exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
-    const summary = exercises.length
-      ? `${exercises.length} ej.${totalSets ? ' · ' + totalSets + ' series' : ''}`
-      : 'Descanso';
-
-    const card = document.createElement('div');
-    card.className = 'day-card' + (isToday ? ' today' : '');
-    card.id = `day-card-${d.key}`;
-
-    const exHtml = exercises.map(ex => {
-      const type = ex.type || 'normal';
-      const setsHtml = (ex.sets || []).map((s, i) =>
-        `<span class="set-chip" style="font-size:11px">${i+1}. ${fmtDaySet(s, type)}</span>`
-      ).join('');
-      const setsBadge = ex.sets?.length
-        ? `<span class="day-ex-badge">${ex.sets.length} serie${ex.sets.length !== 1 ? 's' : ''}</span>`
-        : '';
-      return `
-        <div class="day-ex" id="day-ex-${ex.id}">
-          <div class="day-ex-header" onclick="toggleDayEx('${ex.id}')">
-            <span class="day-ex-type">${typeIcon(type)}</span>
-            <span class="day-ex-name">${ex.name}</span>
-            ${setsBadge}
-            <button class="day-ex-del" onclick="event.stopPropagation();removeDayExercise('${d.key}','${ex.id}')">×</button>
-            <span class="day-ex-chevron">▼</span>
-          </div>
-          <div class="day-ex-body">
-            ${setsHtml ? `<div class="sets-chips" style="margin-bottom:8px">${setsHtml}</div>` : ''}
-            <div id="dsets-${ex.id}"></div>
-            <div class="day-ex-foot">
-              <button class="add-set-link" onclick="addDaySet('${d.key}','${ex.id}')">+ Serie</button>
-              <button class="btn btn-accent btn-sm" onclick="saveDaySets('${d.key}','${ex.id}')">Guardar</button>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-
-    card.innerHTML = `
-      <div class="day-header" onclick="toggleDayCard('${d.key}')">
-        <div class="day-name">
-          ${d.label}${isToday ? '<span class="day-today-badge">HOY</span>' : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="day-summary">${summary}</span>
-          <span class="day-chevron">▼</span>
-        </div>
-      </div>
-      <div class="day-body">
-        <div class="day-exercises">${exHtml}</div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%"
-          onclick="openAddDayExercise('${d.key}')">+ Ejercicio</button>
-      </div>`;
-
-    if (isToday || openCards.has(`day-card-${d.key}`)) card.classList.add('open');
-    grid.appendChild(card);
-    // Restore previously-open exercises
-    exercises.forEach(ex => {
-      if (openExs.has(`day-ex-${ex.id}`)) {
-        card.querySelector(`#day-ex-${ex.id}`)?.classList.add('open');
+function collectSessionSets() {
+  activeSession.exercises.forEach(ex => {
+    const area = document.getElementById(`sess-sets-${ex.id}`);
+    if (!area) return;
+    ex.sets = [];
+    [...area.children].forEach(row => {
+      const inputs = row.querySelectorAll('input');
+      if (ex.type === 'bodyweight') {
+        const reps = parseInt(inputs[0]?.value);
+        if (!isNaN(reps) && reps > 0) ex.sets.push({ reps });
+      } else if (ex.type === 'cardio') {
+        const val = parseFloat(inputs[0]?.value);
+        const unit = row.querySelector('select')?.value || 'm';
+        if (!isNaN(val) && val > 0) ex.sets.push({ value: val, unit });
+      } else {
+        const reps = parseInt(inputs[0]?.value), kg = parseFloat(inputs[1]?.value);
+        if (!isNaN(reps) && reps > 0) ex.sets.push({ reps, kg: isNaN(kg) ? 0 : kg });
       }
     });
   });
-
-  renderBrosWeeks();
 }
 
-function toggleDayCard(dayKey) {
-  document.getElementById(`day-card-${dayKey}`).classList.toggle('open');
+function finishSession() {
+  collectSessionSets();
+  const totalSets = activeSession.exercises.reduce((a, e) => a + e.sets.length, 0);
+  if (totalSets === 0) { showToast('Añade al menos una serie'); return; }
+  const p = profile();
+  ensureRoutines(p);
+  p.gymSessions.push({
+    id: Date.now().toString(),
+    date: new Date().toISOString(),
+    routineId:   activeSession.routineId,
+    routineName: activeSession.routineName,
+    exercises:   activeSession.exercises
+  });
+  activeSession = null;
+  saveCurrentProfile();
+  showToast('¡Sesión guardada! 💪');
+  renderRutinas();
 }
 
-function toggleDayEx(exId) {
-  document.getElementById(`day-ex-${exId}`).classList.toggle('open');
+function cancelSession() {
+  if (!confirm('¿Descartar la sesión?')) return;
+  activeSession = null;
+  renderRutinas();
 }
 
-function renderBrosWeeks() {
-  const container = document.getElementById('bros-weeks');
-  const others = state.profiles.filter(p => p.id !== state.currentUser);
-  if (!others.length) {
-    container.innerHTML = `<p style="color:var(--muted);font-size:12px">Aquí verás la semana de tus compañeros.</p>`;
+// ── Session history ────────────────────────────────────────────
+function renderSessionHistory(p) {
+  const el = document.getElementById('session-history');
+  const sessions = [...p.gymSessions].reverse();
+  if (!sessions.length) {
+    el.innerHTML = `<p style="color:var(--muted);font-size:12px">Todavía no hay sesiones registradas.</p>`;
     return;
   }
-  container.innerHTML = others.map(p => {
-    const idx = getUserIdx(p.id);
-    const color = colorFor(idx);
-    ensureWeekPlan(p);
-    const days = DAYS.map(d => {
-      const exs = p.weekPlan[d.key] || [];
-      return `<div class="bro-day">
-        <div class="bro-day-name">${d.label.slice(0,3)}</div>
-        ${exs.length
-          ? exs.map(e => `<div class="bro-day-item">${typeIcon(e.type||'normal')} ${e.name}${e.sets?.length ? ' ('+e.sets.length+'s)' : ''}</div>`).join('')
-          : `<div class="bro-day-empty">Descanso</div>`}
-      </div>`;
+  el.innerHTML = sessions.map(s => {
+    const exEntries = s.exercises.map(ex => {
+      const sets = ex.sets || [];
+      const chips = sets.map((st, i) =>
+        `<span class="set-chip" style="font-size:11px">${i+1}. ${fmtDaySet(st, ex.type||'normal')}</span>`
+      ).join('');
+      const comp = getPrevExComparison(p, s, ex);
+      const compHtml = comp
+        ? `<div class="session-prev-comp ${comp.dir}">${comp.icon} vs anterior: ${comp.text}</div>` : '';
+      return `
+        <div class="session-ex-entry">
+          <div class="session-ex-name">${typeIcon(ex.type||'normal')} ${ex.name}</div>
+          ${chips ? `<div class="sets-chips" style="gap:4px;margin-top:4px">${chips}</div>` : '<span style="color:var(--muted);font-size:11px">Sin series</span>'}
+          ${compHtml}
+        </div>`;
     }).join('');
+    const dateLabel = fmtDate(s.date);
+    const totalSets = s.exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
     return `
-      <div class="bro-week" id="bro-week-${p.id}">
-        <div class="bro-week-header" onclick="toggleBroWeek('${p.id}')">
-          <div class="rank-av" style="background:${color};width:32px;height:32px;font-size:13px">${p.name[0].toUpperCase()}</div>
-          <div style="flex:1;font-weight:700;font-size:14px">${p.name}</div>
-          <span style="color:var(--muted);font-size:12px">▼</span>
+      <div class="session-hist-card" id="sh-${s.id}">
+        <div class="session-hist-header" onclick="toggleSessCard('${s.id}')">
+          <div>
+            <div class="session-hist-name">${s.routineName}</div>
+            <div class="session-hist-date">${dateLabel} · ${s.exercises.length} ejercicios · ${totalSets} series</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn-icon" onclick="event.stopPropagation();deleteGymSession('${s.id}')" title="Eliminar">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            <span class="session-hist-chev">▼</span>
+          </div>
         </div>
-        <div class="bro-week-body">
-          <div class="bro-week-grid">${days}</div>
-        </div>
+        <div class="session-hist-body">${exEntries}</div>
       </div>`;
   }).join('');
 }
 
-function toggleBroWeek(id) {
-  document.getElementById(`bro-week-${id}`).classList.toggle('open');
+function toggleSessCard(id) {
+  document.getElementById(`sh-${id}`).classList.toggle('open');
+}
+
+function deleteGymSession(id) {
+  const p = profile();
+  ensureRoutines(p);
+  p.gymSessions = p.gymSessions.filter(s => s.id !== id);
+  saveCurrentProfile();
+  renderRutinas();
+}
+
+function getPrevExComparison(p, session, ex) {
+  const prevSessions = p.gymSessions
+    .filter(s => s.id !== session.id && s.date <= session.date)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  for (const prev of prevSessions) {
+    const prevEx = prev.exercises?.find(e => e.name === ex.name);
+    if (!prevEx?.sets?.length || !ex.sets?.length) continue;
+    const type = ex.type || 'normal';
+    if (type === 'normal') {
+      const curMax  = Math.max(...ex.sets.map(s => s.kg || 0));
+      const prevMax = Math.max(...prevEx.sets.map(s => s.kg || 0));
+      const diff = Math.round((curMax - prevMax) * 10) / 10;
+      if (diff === 0) return { dir:'neutral', icon:'→', text:'mismo peso máx' };
+      return diff > 0 ? { dir:'up', icon:'↑', text:`+${diff}kg` } : { dir:'down', icon:'↓', text:`${diff}kg` };
+    } else if (type === 'bodyweight') {
+      const curR  = ex.sets.reduce((a, s) => a + (s.reps || 0), 0);
+      const prevR = prevEx.sets.reduce((a, s) => a + (s.reps || 0), 0);
+      const diff = curR - prevR;
+      if (diff === 0) return { dir:'neutral', icon:'→', text:'mismo total' };
+      return diff > 0 ? { dir:'up', icon:'↑', text:`+${diff}r` } : { dir:'down', icon:'↓', text:`${diff}r` };
+    } else {
+      const curD  = ex.sets.reduce((a, s) => a + (s.value || 0), 0);
+      const prevD = prevEx.sets.reduce((a, s) => a + (s.value || 0), 0);
+      const diff = Math.round((curD - prevD) * 10) / 10;
+      const unit = ex.sets[0]?.unit || 'm';
+      if (diff === 0) return { dir:'neutral', icon:'→', text:'misma distancia' };
+      return diff > 0 ? { dir:'up', icon:'↑', text:`+${diff}${unit}` } : { dir:'down', icon:'↓', text:`${diff}${unit}` };
+    }
+  }
+  return null;
+}
+
+// ── Bros recent sessions ───────────────────────────────────────
+function renderBrosRecent() {
+  const container = document.getElementById('bros-recent');
+  const others = state.profiles.filter(p => p.id !== state.currentUser);
+  if (!others.length) {
+    container.innerHTML = `<p style="color:var(--muted);font-size:12px">Aquí verás las sesiones de tus compañeros.</p>`;
+    return;
+  }
+  container.innerHTML = others.map(bro => {
+    const idx   = getUserIdx(bro.id);
+    const color = colorFor(idx);
+    ensureRoutines(bro);
+    const recent = [...bro.gymSessions].reverse().slice(0, 5);
+    const sessHtml = recent.length
+      ? recent.map(s => {
+          const totalSets = s.exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
+          return `<div class="bro-session-row">
+            <b>${s.routineName}</b> · ${fmtDate(s.date)}
+            <span style="color:var(--muted)"> · ${s.exercises.length} ej · ${totalSets}s</span>
+          </div>`;
+        }).join('')
+      : `<p style="color:var(--muted);font-size:12px;padding-top:8px">Sin sesiones todavía.</p>`;
+    return `
+      <div class="bro-recent" id="bro-r-${bro.id}">
+        <div class="bro-recent-header" onclick="document.getElementById('bro-r-${bro.id}').classList.toggle('open')">
+          <div class="rank-av" style="background:${color};width:32px;height:32px;font-size:13px">${bro.name[0].toUpperCase()}</div>
+          <div style="flex:1;font-weight:700;font-size:14px">${bro.name}</div>
+          <span style="color:var(--muted);font-size:11px">${recent.length ? recent.length+' ses.' : '—'}</span>
+          <span style="color:var(--muted);font-size:12px;margin-left:8px">▼</span>
+        </div>
+        <div class="bro-recent-body">${sessHtml}</div>
+      </div>`;
+  }).join('');
 }
 
 // ── STATS ──────────────────────────────────────────────────────
