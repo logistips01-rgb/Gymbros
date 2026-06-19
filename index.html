@@ -1796,10 +1796,34 @@ function removeIaTyping() {
 }
 
 function renderIaText(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-    .replace(/\*(.*?)\*/g, '<i>$1</i>')
-    .replace(/\n/g, '<br>');
+  // Split into blocks separated by blank lines
+  const blocks = text.split(/\n{2,}/);
+  return blocks.map(block => {
+    const lines = block.split('\n');
+    // Detect markdown table: at least 2 lines, most contain |
+    const tableLines = lines.filter(l => l.includes('|'));
+    if (tableLines.length >= 2 && tableLines.length === lines.length) {
+      const rows = lines.filter(l => !/^\s*\|?\s*[-:]+[-|\s:]*\s*\|?\s*$/.test(l));
+      if (rows.length >= 1) {
+        const toTd = (line, tag) => {
+          const cells = line.replace(/^\||\|$/g, '').split('|')
+            .map(c => `<${tag} style="padding:6px 10px;border:1px solid var(--border);text-align:left">${c.trim()}</${tag}>`).join('');
+          return `<tr>${cells}</tr>`;
+        };
+        const [head, ...body] = rows;
+        const tableHtml = `<table style="width:100%;border-collapse:collapse;font-size:12px;margin:4px 0">
+          <thead style="background:var(--surface2)">${toTd(head,'th')}</thead>
+          <tbody>${body.map(r => toTd(r,'td')).join('')}</tbody>
+        </table>`;
+        return tableHtml;
+      }
+    }
+    // Normal block: inline markdown
+    return block
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/\*(.*?)\*/g, '<i>$1</i>')
+      .replace(/\n/g, '<br>');
+  }).join('<br>');
 }
 
 async function sendIaMessage() {
