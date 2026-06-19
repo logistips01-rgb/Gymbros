@@ -416,6 +416,26 @@ header {
 .ex-rank-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:16px; color:#fff; flex-shrink:0; }
 .ex-rankings-grid { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
 
+/* ── IA TAB ── */
+.ia-setup-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:28px 24px; text-align:center; margin-top:8px;
+}
+.ia-setup-icon { font-size:48px; margin-bottom:12px; }
+.ia-setup-card p { font-size:13px; color:var(--text); }
+.ia-key-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
+.ia-analyze-btn { width:100%; padding:14px; font-size:16px; letter-spacing:0.5px; margin-bottom:16px; }
+.ia-result {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:20px; font-size:13px; line-height:1.7; white-space:pre-wrap;
+  display:none;
+}
+.ia-result.show { display:block; }
+.ia-result h3 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px; letter-spacing:1px; color:var(--accent); margin:16px 0 6px; }
+.ia-result h3:first-child { margin-top:0; }
+.ia-loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; padding:20px 0; }
+.ia-loading .spinner { width:20px; height:20px; border-width:2px; flex-shrink:0; }
+
 /* Routine modal */
 .type-btn-group { display:flex; gap:6px; margin-bottom:10px; }
 .type-btn { flex:1; padding:8px 4px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); cursor:pointer; font-size:11px; font-weight:600; text-align:center; transition:all .2s; }
@@ -508,6 +528,7 @@ header {
       <button class="tab-btn" onclick="switchTab('rutinas')">📅 Rutinas</button>
       <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
       <button class="tab-btn" onclick="switchTab('rankings')">🏆 Rankings</button>
+      <button class="tab-btn" onclick="switchTab('ia')">🤖 IA</button>
     </div>
 
     <!-- ENTRENOS -->
@@ -569,6 +590,33 @@ header {
         <div class="live-badge" style="font-size:10px"><div class="live-dot"></div>Tiempo real</div>
       </div>
       <div class="ranking-grid" id="ranking-grid"></div>
+    </div>
+
+    <!-- IA -->
+    <div class="tab-panel" id="tab-ia">
+      <div class="sec-header">
+        <span class="sec-title">Entrenador IA</span>
+        <button class="btn-icon" onclick="openIaSettings()" title="Configurar API key">⚙️</button>
+      </div>
+      <div id="ia-setup-card" class="ia-setup-card" style="display:none">
+        <div class="ia-setup-icon">🤖</div>
+        <p>Introduce tu API key de <b>xAI (Grok)</b> para activar el entrenador.</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px">La key se guarda solo en tu dispositivo.</p>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <input type="password" id="ia-key-inp" placeholder="xai-..." style="flex:1;font-size:13px">
+          <button class="btn btn-accent" onclick="saveIaKey()">Guardar</button>
+        </div>
+      </div>
+      <div id="ia-main" style="display:none">
+        <div class="ia-key-row">
+          <span style="font-size:12px;color:var(--muted)">🔑 API key configurada</span>
+          <button class="btn btn-ghost btn-sm" onclick="openIaSettings()">Cambiar</button>
+        </div>
+        <button class="btn btn-accent ia-analyze-btn" id="ia-analyze-btn" onclick="analyzeWithGrok()">
+          🤖 Analizar mis entrenos
+        </button>
+        <div id="ia-result" class="ia-result"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -741,6 +789,8 @@ function subscribeToProfiles() {
     if (rankPanel.classList.contains('active')) renderRankings();
     const rutinaPanel = document.getElementById('tab-rutinas');
     if (rutinaPanel.classList.contains('active')) renderRutinas();
+    const iaPanel = document.getElementById('tab-ia');
+    if (iaPanel.classList.contains('active')) renderIA();
 
   }, err => {
     console.error('Firestore error:', err);
@@ -868,13 +918,14 @@ function showMain() {
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabs = ['entrenos', 'rutinas', 'stats', 'rankings'];
+  const tabs = ['entrenos', 'rutinas', 'stats', 'rankings', 'ia'];
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
-  if (tab === 'stats') renderStats();
+  if (tab === 'stats')    renderStats();
   if (tab === 'rankings') renderRankings();
-  if (tab === 'rutinas') renderRutinas();
+  if (tab === 'rutinas')  renderRutinas();
+  if (tab === 'ia')       renderIA();
 }
 
 // ── MUSCLE GROUPS ─────────────────────────────────────────────
@@ -1631,6 +1682,149 @@ function copyBroRoutine(broId, routineId) {
   saveCurrentProfile();
   showToast('Rutina copiada ✓');
   renderRutinas();
+}
+
+// ── IA / GROK ─────────────────────────────────────────────────
+const IA_KEY_STORAGE = 'gymbros_xai_key';
+
+function getIaKey() { return localStorage.getItem(IA_KEY_STORAGE) || ''; }
+function setIaKey(k) { k ? localStorage.setItem(IA_KEY_STORAGE, k) : localStorage.removeItem(IA_KEY_STORAGE); }
+
+function renderIA() {
+  const hasKey = !!getIaKey();
+  document.getElementById('ia-setup-card').style.display = hasKey ? 'none' : '';
+  document.getElementById('ia-main').style.display       = hasKey ? ''     : 'none';
+}
+
+function openIaSettings() {
+  document.getElementById('ia-setup-card').style.display = '';
+  document.getElementById('ia-main').style.display       = 'none';
+  const inp = document.getElementById('ia-key-inp');
+  inp.value = getIaKey();
+  inp.type  = 'text';
+  setTimeout(() => inp.focus(), 80);
+}
+
+function saveIaKey() {
+  const key = document.getElementById('ia-key-inp').value.trim();
+  if (!key) { showToast('Introduce la API key'); return; }
+  setIaKey(key);
+  document.getElementById('ia-key-inp').value = '';
+  document.getElementById('ia-key-inp').type  = 'password';
+  showToast('API key guardada ✓');
+  renderIA();
+}
+
+function buildWorkoutSummary() {
+  const p = profile();
+  ensureRoutines(p);
+  let txt = `Deportista: ${p.name}\n\n`;
+
+  // Rutinas sessions (last 15)
+  const recent = [...p.gymSessions].reverse().slice(0, 15);
+  if (recent.length) {
+    txt += `== SESIONES DE RUTINAS (últimas ${recent.length}) ==\n`;
+    recent.forEach(s => {
+      txt += `\n[${fmtDate(s.date)}] ${s.routineName}\n`;
+      s.exercises.forEach(ex => {
+        const setsTxt = (ex.sets || []).map(st => fmtDaySet(st, ex.type || 'normal')).join(' | ');
+        txt += `  • ${ex.name} (${ex.type || 'normal'}): ${setsTxt || 'sin series'}\n`;
+      });
+    });
+  } else {
+    txt += `Sin sesiones de rutinas registradas aún.\n`;
+  }
+
+  // Entreno libre (muscle groups)
+  const allEx = p.muscles.flatMap(m => m.exercises);
+  if (allEx.length) {
+    txt += `\n== ENTRENO LIBRE ==\n`;
+    p.muscles.forEach(m => {
+      const days = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
+      txt += `${m.icon} ${m.name}: ${m.exercises.length} ejercicios, ${days} días entrenados\n`;
+      m.exercises.forEach(ex => {
+        const lastSess = ex.sessions[ex.sessions.length - 1];
+        if (lastSess) {
+          const lastSets = lastSess.sets.map(s => fmtDaySet(s, ex.type || 'normal')).join(' | ');
+          txt += `  • ${ex.name}: última sesión [${lastSets}]\n`;
+        }
+      });
+    });
+  }
+
+  // Group comparison
+  const myStats = getProfileStats(p);
+  txt += `\n== COMPARATIVA CON EL GRUPO ==\n`;
+  txt += `${p.name} (tú): ${myStats.sessions} días, ${myStats.vol}kg volumen, ${myStats.totalSets} series, mejor marca ${myStats.bestKg}kg\n`;
+  state.profiles.filter(b => b.id !== p.id).forEach(bro => {
+    const s = getProfileStats(bro);
+    txt += `${bro.name}: ${s.sessions} días, ${s.vol}kg volumen, ${s.totalSets} series, mejor marca ${s.bestKg}kg\n`;
+  });
+
+  return txt;
+}
+
+async function analyzeWithGrok() {
+  const key = getIaKey();
+  if (!key) { openIaSettings(); return; }
+
+  const btn    = document.getElementById('ia-analyze-btn');
+  const result = document.getElementById('ia-result');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analizando…';
+  result.classList.remove('show');
+  result.innerHTML = `<div class="ia-loading"><div class="spinner"></div>Grok está analizando tus entrenos…</div>`;
+  result.classList.add('show');
+
+  const summary = buildWorkoutSummary();
+  const systemPrompt = `Eres un entrenador personal experto y motivador. Analiza los datos de entrenamiento del usuario y responde SIEMPRE en español con estas secciones usando exactamente estos encabezados:
+
+### 📈 Progresión y tendencias
+### 💡 Consejos y ajustes
+### 👥 Comparativa con el grupo
+### ⚖️ Desequilibrios detectados
+
+Sé específico con los datos, motivador y práctico. Máximo 400 palabras en total.`;
+
+  try {
+    const res = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: 'grok-3-latest',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: summary }
+        ],
+        max_tokens: 800,
+        temperature: 0.7
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || 'Sin respuesta.';
+
+    // Render with section headers styled
+    result.innerHTML = text
+      .replace(/### (.*)/g, '<h3>$1</h3>')
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/\n/g, '<br>');
+
+  } catch (err) {
+    result.innerHTML = `<span style="color:var(--accent)">⚠️ Error: ${err.message}</span><br><br>
+      <span style="color:var(--muted);font-size:12px">Comprueba que la API key es válida y que tienes crédito en tu cuenta xAI.</span>`;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '🤖 Analizar mis entrenos';
+  }
 }
 
 // ── STATS ──────────────────────────────────────────────────────
