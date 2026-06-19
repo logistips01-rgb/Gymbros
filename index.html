@@ -345,7 +345,42 @@ header {
 .rank-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:20px; color:#fff; text-align:right; flex-shrink:0; }
 .rank-val small { font-size:11px; font-weight:400; color:var(--muted); display:block; }
 
-/* ── MODAL ── */
+/* ── RUTINAS ── */
+.week-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:24px; }
+.day-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; }
+.day-card.today { border-color:var(--accent); }
+.day-name {
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px;
+  letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.day-name span { color:var(--accent); font-size:10px; }
+.day-items { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; min-height:28px; }
+.day-item {
+  display:flex; align-items:center; gap:6px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:6px; padding:5px 8px; font-size:12px;
+}
+.day-item span { flex:1; }
+.day-item button { background:none; border:none; cursor:pointer; color:var(--muted); font-size:14px; line-height:1; padding:0; }
+.day-item button:hover { color:var(--accent); }
+.day-add { display:flex; gap:5px; }
+.day-add input { flex:1; padding:5px 8px; font-size:12px; min-width:0; }
+.day-add button { padding:5px 8px; font-size:18px; line-height:1; }
+.bro-week { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; overflow:hidden; }
+.bro-week-header {
+  display:flex; align-items:center; gap:10px; padding:14px 16px;
+  cursor:pointer; transition:background .2s;
+}
+.bro-week-header:hover { background:rgba(255,255,255,0.03); }
+.bro-week-body { padding:0 14px 14px; display:none; }
+.bro-week.open .bro-week-body { display:block; }
+.bro-week-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; margin-top:10px; }
+.bro-day { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px; }
+.bro-day-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.bro-day-item { font-size:11px; color:var(--text); padding:2px 0; border-bottom:1px solid var(--border); }
+.bro-day-item:last-child { border-bottom:none; }
+.bro-day-empty { font-size:11px; color:var(--muted); font-style:italic; }
 .modal-overlay {
   display:none; position:fixed; inset:0;
   background:rgba(7,15,30,0.75); backdrop-filter:blur(6px);
@@ -428,7 +463,8 @@ header {
   <div id="screen-main-body">
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('entrenos')">🏋️ Entrenos</button>
-      <button class="tab-btn" onclick="switchTab('stats')">📊 Mis stats</button>
+      <button class="tab-btn" onclick="switchTab('rutinas')">📅 Rutinas</button>
+      <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
       <button class="tab-btn" onclick="switchTab('rankings')">🏆 Rankings</button>
     </div>
 
@@ -453,6 +489,14 @@ header {
         </div>
         <div class="exercise-list" id="exercise-list"></div>
       </div>
+    </div>
+
+    <!-- RUTINAS -->
+    <div class="tab-panel" id="tab-rutinas">
+      <div class="sec-header"><span class="sec-title">Mi semana</span></div>
+      <div class="week-grid" id="week-grid"></div>
+      <div class="sec-title" style="font-size:14px;margin-bottom:12px">Rutinas de los bros</div>
+      <div id="bros-weeks"></div>
     </div>
 
     <!-- STATS -->
@@ -729,12 +773,13 @@ function showMain() {
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabs = ['entrenos', 'stats', 'rankings'];
+  const tabs = ['entrenos', 'rutinas', 'stats', 'rankings'];
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
   if (tab === 'stats') renderStats();
   if (tab === 'rankings') renderRankings();
+  if (tab === 'rutinas') renderRutinas();
 }
 
 // ── MUSCLE GROUPS ─────────────────────────────────────────────
@@ -981,6 +1026,116 @@ function renderLog(ex) {
       </button>
     </div>`;
   }).join('');
+}
+
+// ── RUTINAS ───────────────────────────────────────────────────
+const DAYS = [
+  { key: 'lun', label: 'Lunes' },
+  { key: 'mar', label: 'Martes' },
+  { key: 'mie', label: 'Miércoles' },
+  { key: 'jue', label: 'Jueves' },
+  { key: 'vie', label: 'Viernes' },
+  { key: 'sab', label: 'Sábado' },
+  { key: 'dom', label: 'Domingo' }
+];
+
+function todayKey() {
+  return ['dom','lun','mar','mie','jue','vie','sab'][new Date().getDay()];
+}
+
+function ensureWeekPlan(p) {
+  if (!p.weekPlan) p.weekPlan = {};
+  DAYS.forEach(d => { if (!p.weekPlan[d.key]) p.weekPlan[d.key] = []; });
+}
+
+function renderRutinas() {
+  const p = profile();
+  ensureWeekPlan(p);
+  const today = todayKey();
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = '';
+
+  DAYS.forEach(d => {
+    const items = p.weekPlan[d.key];
+    const card = document.createElement('div');
+    card.className = 'day-card' + (d.key === today ? ' today' : '');
+    card.id = `day-card-${d.key}`;
+    card.innerHTML = `
+      <div class="day-name">${d.label}${d.key === today ? '<span>HOY</span>' : ''}</div>
+      <div class="day-items" id="day-items-${d.key}">
+        ${items.map(it => `
+          <div class="day-item">
+            <span>${it.text}</span>
+            <button onclick="removeRoutineItem('${d.key}','${it.id}')">×</button>
+          </div>`).join('') || `<span style="font-size:11px;color:var(--muted)">Descanso</span>`}
+      </div>
+      <div class="day-add">
+        <input type="text" id="day-inp-${d.key}" placeholder="Añadir…" maxlength="30"
+          onkeydown="if(event.key==='Enter')addRoutineItem('${d.key}')">
+        <button class="btn btn-accent" onclick="addRoutineItem('${d.key}')">+</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  renderBrosWeeks();
+}
+
+function addRoutineItem(dayKey) {
+  const inp = document.getElementById(`day-inp-${dayKey}`);
+  const text = inp.value.trim();
+  if (!text) return;
+  const p = profile();
+  ensureWeekPlan(p);
+  p.weekPlan[dayKey].push({ id: Date.now().toString(), text });
+  saveCurrentProfile();
+  inp.value = '';
+  renderRutinas();
+}
+
+function removeRoutineItem(dayKey, itemId) {
+  const p = profile();
+  ensureWeekPlan(p);
+  p.weekPlan[dayKey] = p.weekPlan[dayKey].filter(it => it.id !== itemId);
+  saveCurrentProfile();
+  renderRutinas();
+}
+
+function renderBrosWeeks() {
+  const container = document.getElementById('bros-weeks');
+  const others = state.profiles.filter(p => p.id !== state.currentUser);
+  if (!others.length) {
+    container.innerHTML = `<p style="color:var(--muted);font-size:12px">Aquí verás la semana de tus compañeros.</p>`;
+    return;
+  }
+  container.innerHTML = others.map((p, i) => {
+    const idx = getUserIdx(p.id);
+    const color = colorFor(idx);
+    ensureWeekPlan(p);
+    const days = DAYS.map(d => {
+      const items = p.weekPlan[d.key] || [];
+      return `<div class="bro-day">
+        <div class="bro-day-name">${d.label.slice(0,3)}</div>
+        ${items.length
+          ? items.map(it => `<div class="bro-day-item">${it.text}</div>`).join('')
+          : `<div class="bro-day-empty">Descanso</div>`}
+      </div>`;
+    }).join('');
+    return `
+      <div class="bro-week" id="bro-week-${p.id}">
+        <div class="bro-week-header" onclick="toggleBroWeek('${p.id}')">
+          <div class="rank-av" style="background:${color};width:32px;height:32px;font-size:13px">${p.name[0].toUpperCase()}</div>
+          <div style="flex:1;font-weight:700;font-size:14px">${p.name}</div>
+          <span style="color:var(--muted);font-size:12px">▼</span>
+        </div>
+        <div class="bro-week-body">
+          <div class="bro-week-grid">${days}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleBroWeek(id) {
+  document.getElementById(`bro-week-${id}`).classList.toggle('open');
 }
 
 // ── STATS ──────────────────────────────────────────────────────
