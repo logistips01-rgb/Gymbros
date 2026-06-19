@@ -1355,12 +1355,18 @@ function ensureRoutines(p) {
   if (!Array.isArray(p.gymSessions)) p.gymSessions = [];
 }
 
-function ensureNutrition(p) {
-  if (!p.nutrition) p.nutrition = {};
-  if (!p.nutrition.goals) p.nutrition.goals = { kcal: 2200, protein: 160, carbs: 250, fat: 65 };
-  if (!Array.isArray(p.nutrition.meals)) p.nutrition.meals = [];
-  if (!Array.isArray(p.nutrition.savedRecipes)) p.nutrition.savedRecipes = [];
-  if (!Array.isArray(p.nutrition.savedPlans)) p.nutrition.savedPlans = [];
+// Nutrición: privada por usuario, almacenada solo en localStorage del dispositivo
+function _nutriKey() { return `gymbros_nutri_${profile().id}`; }
+function loadNutri() {
+  try { return JSON.parse(localStorage.getItem(_nutriKey())) || {}; } catch { return {}; }
+}
+function saveNutri(n) { localStorage.setItem(_nutriKey(), JSON.stringify(n)); }
+function ensureNutrition(n) {
+  if (!n.goals) n.goals = { kcal: 2200, protein: 160, carbs: 250, fat: 65 };
+  if (!Array.isArray(n.meals)) n.meals = [];
+  if (!Array.isArray(n.savedRecipes)) n.savedRecipes = [];
+  if (!Array.isArray(n.savedPlans)) n.savedPlans = [];
+  return n;
 }
 
 // ── Active session state ───────────────────────────────────────
@@ -1942,9 +1948,8 @@ function selectFoodPreset(name, kcal, protein, carbs, fat) {
 // ── NUTRICIÓN ─────────────────────────────────────────────────
 function renderNutricion() {
   const p = profile();
-  ensureNutrition(p);
   ensureRoutines(p);
-  const n = p.nutrition;
+  const n = ensureNutrition(loadNutri());
   const g = n.goals;
   const today = new Date().toISOString().slice(0, 10);
 
@@ -2084,24 +2089,23 @@ function renderNutricion() {
 }
 
 function openNutritionGoals() {
-  const g = profile().nutrition?.goals || {};
-  document.getElementById('goal-kcal-inp').value    = g.kcal    || 2200;
-  document.getElementById('goal-protein-inp').value = g.protein || 160;
-  document.getElementById('goal-carbs-inp').value   = g.carbs   || 250;
-  document.getElementById('goal-fat-inp').value     = g.fat     || 65;
+  const g = ensureNutrition(loadNutri()).goals;
+  document.getElementById('goal-kcal-inp').value    = g.kcal;
+  document.getElementById('goal-protein-inp').value = g.protein;
+  document.getElementById('goal-carbs-inp').value   = g.carbs;
+  document.getElementById('goal-fat-inp').value     = g.fat;
   openModal('modal-nutri-goals');
 }
 
 function saveNutriGoals() {
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.goals = {
+  const n = ensureNutrition(loadNutri());
+  n.goals = {
     kcal:    parseInt(document.getElementById('goal-kcal-inp').value)    || 2200,
     protein: parseInt(document.getElementById('goal-protein-inp').value) || 160,
     carbs:   parseInt(document.getElementById('goal-carbs-inp').value)   || 250,
     fat:     parseInt(document.getElementById('goal-fat-inp').value)     || 65
   };
-  saveCurrentProfile();
+  saveNutri(n);
   closeModal('modal-nutri-goals');
   showToast('Objetivos guardados ✓');
   renderNutricion();
@@ -2114,9 +2118,8 @@ function quickMeal(name, kcal, protein, carbs, fat) {
 function saveMeal() {
   const name = document.getElementById('meal-name-inp').value.trim();
   if (!name) { showToast('Escribe el nombre de la comida'); return; }
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.meals.push({
+  const n = ensureNutrition(loadNutri());
+  n.meals.push({
     id:      Date.now().toString(),
     date:    new Date().toISOString().slice(0,10),
     name,
@@ -2125,7 +2128,7 @@ function saveMeal() {
     carbs:   parseInt(document.getElementById('meal-carbs-inp').value)   || 0,
     fat:     parseInt(document.getElementById('meal-fat-inp').value)     || 0
   });
-  saveCurrentProfile();
+  saveNutri(n);
   closeModal('modal-meal');
   ['meal-name-inp','meal-kcal-inp','meal-protein-inp','meal-carbs-inp','meal-fat-inp'].forEach(id => document.getElementById(id).value = '');
   showToast('Comida añadida ✓');
@@ -2133,53 +2136,48 @@ function saveMeal() {
 }
 
 function deleteMeal(id) {
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.meals = p.nutrition.meals.filter(m => m.id !== id);
-  saveCurrentProfile();
+  const n = ensureNutrition(loadNutri());
+  n.meals = n.meals.filter(m => m.id !== id);
+  saveNutri(n);
   renderNutricion();
 }
 
 function addRecipeAsMeal(idx) {
-  const p = profile();
-  ensureNutrition(p);
-  const r = p.nutrition.savedRecipes[idx];
+  const n = ensureNutrition(loadNutri());
+  const r = n.savedRecipes[idx];
   if (!r) return;
-  p.nutrition.meals.push({ id: Date.now().toString(), date: new Date().toISOString().slice(0,10), name: r.name, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat });
-  saveCurrentProfile();
+  n.meals.push({ id: Date.now().toString(), date: new Date().toISOString().slice(0,10), name: r.name, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat });
+  saveNutri(n);
   showToast(`"${r.name}" añadida a hoy ✓`);
   renderNutricion();
 }
 
 function deleteRecipe(idx) {
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.savedRecipes.splice(idx, 1);
-  saveCurrentProfile();
+  const n = ensureNutrition(loadNutri());
+  n.savedRecipes.splice(idx, 1);
+  saveNutri(n);
   showToast('Receta eliminada');
   renderNutricion();
 }
 
 function deletePlan(idx) {
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.savedPlans.splice(idx, 1);
-  saveCurrentProfile();
+  const n = ensureNutrition(loadNutri());
+  n.savedPlans.splice(idx, 1);
+  saveNutri(n);
   showToast('Plan eliminado');
   renderNutricion();
 }
 
 function applyPlanToday(idx) {
-  const p = profile();
-  ensureNutrition(p);
-  const plan = p.nutrition.savedPlans[idx];
+  const n = ensureNutrition(loadNutri());
+  const plan = n.savedPlans[idx];
   if (!plan) return;
   const today = new Date().toISOString().slice(0,10);
-  (plan.meals || []).forEach(m => {
-    p.nutrition.meals.push({ id: Date.now().toString() + Math.random(), date: today, name: `${m.timing}: ${m.name}`, kcal: m.kcal || 0, protein: m.protein || 0, carbs: m.carbs || 0, fat: m.fat || 0 });
+  (plan.meals || []).forEach((m, i) => {
+    n.meals.push({ id: Date.now().toString()+i, date: today, name: `${m.timing}: ${m.name}`, kcal: m.kcal||0, protein: m.protein||0, carbs: m.carbs||0, fat: m.fat||0 });
   });
-  saveCurrentProfile();
-  showToast(`Plan "${plan.name}" aplicado a hoy ✓`);
+  saveNutri(n);
+  showToast(`Plan "${plan.name}" aplicado ✓`);
   renderNutricion();
 }
 
@@ -2190,39 +2188,25 @@ function toggleRecipeBody(idx) {
 }
 
 function saveIaRecipe(recipe, btn) {
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.savedRecipes.push({
-    id:           Date.now().toString(),
-    name:         recipe.name,
-    kcal:         recipe.kcal    || 0,
-    protein:      recipe.protein || 0,
-    carbs:        recipe.carbs   || 0,
-    fat:          recipe.fat     || 0,
-    ingredients:  Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+  const n = ensureNutrition(loadNutri());
+  n.savedRecipes.push({
+    id: Date.now().toString(), name: recipe.name,
+    kcal: recipe.kcal||0, protein: recipe.protein||0, carbs: recipe.carbs||0, fat: recipe.fat||0,
+    ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
     instructions: recipe.instructions || ''
   });
-  saveCurrentProfile();
+  saveNutri(n);
   btn.textContent = '✓ Guardada en Recetas';
-  btn.disabled = true;
-  btn.style.borderColor = 'var(--muted)';
-  btn.style.color = 'var(--muted)';
+  btn.disabled = true; btn.style.borderColor = 'var(--muted)'; btn.style.color = 'var(--muted)';
   showToast(`Receta "${recipe.name}" guardada ✓`);
 }
 
 function saveIaMealPlan(plan, btn) {
-  const p = profile();
-  ensureNutrition(p);
-  p.nutrition.savedPlans.push({
-    id:    Date.now().toString(),
-    name:  plan.name,
-    meals: Array.isArray(plan.meals) ? plan.meals : []
-  });
-  saveCurrentProfile();
+  const n = ensureNutrition(loadNutri());
+  n.savedPlans.push({ id: Date.now().toString(), name: plan.name, meals: Array.isArray(plan.meals) ? plan.meals : [] });
+  saveNutri(n);
   btn.textContent = '✓ Guardado en Planes';
-  btn.disabled = true;
-  btn.style.borderColor = 'var(--muted)';
-  btn.style.color = 'var(--muted)';
+  btn.disabled = true; btn.style.borderColor = 'var(--muted)'; btn.style.color = 'var(--muted)';
   showToast(`Plan "${plan.name}" guardado ✓`);
 }
 
@@ -2238,9 +2222,7 @@ function askKirkNutrition() {
 }
 
 function buildNutritionContext() {
-  const p = profile();
-  ensureNutrition(p);
-  const n = p.nutrition, g = n.goals;
+  const n = ensureNutrition(loadNutri()), g = n.goals;
   const today = new Date().toISOString().slice(0,10);
   // Ultra-compact: one line per concept
   let txt = `Nutri(obj:${g.kcal}kcal/${g.protein}P/${g.carbs}C/${g.fat}G) `;
