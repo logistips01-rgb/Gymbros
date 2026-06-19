@@ -1673,12 +1673,28 @@ function renderStats() {
 
 // ── RANKINGS ──────────────────────────────────────────────────
 function getProfileStats(p) {
+  ensureRoutines(p);
+
+  // Entrenos tab data
   const allEx = p.muscles.flatMap(m => m.exercises);
-  const sessions = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
-  const vol = Math.round(allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + set.reps * set.kg, 0), 0), 0));
-  const bestKg = Math.max(0, ...allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg))));
-  const days = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0, 10)))).size;
-  const totalSets = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
+  const entrenoDates  = allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
+  const entrenoVol    = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + set.reps * set.kg, 0), 0), 0);
+  const entrenoKgs    = allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg)));
+  const entrenoSets   = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
+
+  // Rutinas gymSessions data
+  const rutinaDates   = p.gymSessions.map(s => s.date.slice(0,10));
+  const rutinaAllSets = p.gymSessions.flatMap(s => s.exercises.flatMap(e => (e.sets || []).map(st => ({ ...st, type: e.type || 'normal' }))));
+  const rutinaVol     = rutinaAllSets.filter(s => s.type === 'normal').reduce((a, s) => a + (s.reps || 0) * (s.kg || 0), 0);
+  const rutinaKgs     = rutinaAllSets.filter(s => s.type === 'normal').map(s => s.kg || 0);
+
+  const allDates  = new Set([...entrenoDates, ...rutinaDates]);
+  const sessions  = allDates.size;
+  const days      = allDates.size;
+  const vol       = Math.round(entrenoVol + rutinaVol);
+  const bestKg    = Math.max(0, ...[...entrenoKgs, ...rutinaKgs]);
+  const totalSets = entrenoSets + rutinaAllSets.length;
+
   return { sessions, vol, bestKg, days, totalSets };
 }
 
