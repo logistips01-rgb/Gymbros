@@ -379,6 +379,7 @@ header {
 .day-ex-name { font-weight:600; font-size:13px; flex:1; transition:color .2s; }
 .day-ex-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; padding:0; line-height:1; }
 .day-ex-del:hover { color:var(--accent); }
+.day-ex-badge { font-size:10px; background:#E11D2E22; color:#E11D2E; border:1px solid #E11D2E44; border-radius:8px; padding:1px 6px; white-space:nowrap; }
 .day-ex-chevron { color:var(--muted); font-size:10px; transition:transform .2s; }
 .day-ex.open .day-ex-chevron { transform:rotate(180deg); }
 .day-ex-body { display:none; padding:0 12px 10px; }
@@ -710,9 +711,11 @@ function subscribeToProfiles() {
       renderLogin();
       return;
     }
-    // Refresh rankings if visible
+    // Refresh active tab
     const rankPanel = document.getElementById('tab-rankings');
     if (rankPanel.classList.contains('active')) renderRankings();
+    const rutinaPanel = document.getElementById('tab-rutinas');
+    if (rutinaPanel.classList.contains('active')) renderRutinas();
 
   }, err => {
     console.error('Firestore error:', err);
@@ -1265,6 +1268,9 @@ function saveDaySets(dayKey, exId) {
     }
   });
   ex.sets = sets;
+  // Keep this exercise and day card open after re-render
+  document.getElementById(`day-ex-${exId}`)?.classList.add('open');
+  document.getElementById(`day-card-${dayKey}`)?.classList.add('open');
   saveCurrentProfile();
   showToast('Guardado ✓');
   renderRutinas();
@@ -1281,6 +1287,11 @@ function renderRutinas() {
   ensureWeekPlan(p);
   const today = todayKey();
   const grid = document.getElementById('week-grid');
+
+  // Remember which cards/exercises are open before re-render
+  const openCards = new Set([...grid.querySelectorAll('.day-card.open')].map(el => el.id));
+  const openExs = new Set([...grid.querySelectorAll('.day-ex.open')].map(el => el.id));
+
   grid.innerHTML = '';
 
   DAYS.forEach(d => {
@@ -1300,11 +1311,15 @@ function renderRutinas() {
       const setsHtml = (ex.sets || []).map((s, i) =>
         `<span class="set-chip" style="font-size:11px">${i+1}. ${fmtDaySet(s, type)}</span>`
       ).join('');
+      const setsBadge = ex.sets?.length
+        ? `<span class="day-ex-badge">${ex.sets.length} serie${ex.sets.length !== 1 ? 's' : ''}</span>`
+        : '';
       return `
         <div class="day-ex" id="day-ex-${ex.id}">
           <div class="day-ex-header" onclick="toggleDayEx('${ex.id}')">
             <span class="day-ex-type">${typeIcon(type)}</span>
             <span class="day-ex-name">${ex.name}</span>
+            ${setsBadge}
             <button class="day-ex-del" onclick="event.stopPropagation();removeDayExercise('${d.key}','${ex.id}')">×</button>
             <span class="day-ex-chevron">▼</span>
           </div>
@@ -1335,8 +1350,14 @@ function renderRutinas() {
           onclick="openAddDayExercise('${d.key}')">+ Ejercicio</button>
       </div>`;
 
-    if (isToday) card.classList.add('open');
+    if (isToday || openCards.has(`day-card-${d.key}`)) card.classList.add('open');
     grid.appendChild(card);
+    // Restore previously-open exercises
+    exercises.forEach(ex => {
+      if (openExs.has(`day-ex-${ex.id}`)) {
+        card.querySelector(`#day-ex-${ex.id}`)?.classList.add('open');
+      }
+    });
   });
 
   renderBrosWeeks();
