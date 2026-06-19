@@ -346,27 +346,61 @@ header {
 .rank-val small { font-size:11px; font-weight:400; color:var(--muted); display:block; }
 
 /* ── RUTINAS ── */
-.week-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:24px; }
-.day-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; }
+.week-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+.day-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
 .day-card.today { border-color:var(--accent); }
-.day-name {
-  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px;
-  letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;
+.day-header {
   display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; cursor:pointer; transition:background .15s;
 }
-.day-name span { color:var(--accent); font-size:10px; }
-.day-items { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; min-height:28px; }
-.day-item {
-  display:flex; align-items:center; gap:6px;
+.day-header:hover { background:rgba(255,255,255,0.03); }
+.day-name {
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px;
+  letter-spacing:1px; text-transform:uppercase;
+  display:flex; align-items:center; gap:8px;
+}
+.day-today-badge { background:var(--accent); color:#fff; font-size:10px; padding:2px 7px; border-radius:4px; }
+.day-summary { font-size:11px; color:var(--muted); }
+.day-chevron { color:var(--muted); font-size:11px; transition:transform .2s; }
+.day-card.open .day-chevron { transform:rotate(180deg); }
+.day-body { display:none; padding:0 14px 14px; border-top:1px solid var(--border); }
+.day-card.open .day-body { display:block; }
+.day-exercises { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.day-ex {
   background:var(--surface2); border:1px solid var(--border);
-  border-radius:6px; padding:5px 8px; font-size:12px;
+  border-radius:10px; overflow:hidden;
 }
-.day-item span { flex:1; }
-.day-item button { background:none; border:none; cursor:pointer; color:var(--muted); font-size:14px; line-height:1; padding:0; }
-.day-item button:hover { color:var(--accent); }
-.day-add { display:flex; gap:5px; }
-.day-add input { flex:1; padding:5px 8px; font-size:12px; min-width:0; }
-.day-add button { padding:5px 8px; font-size:18px; line-height:1; }
+.day-ex-header {
+  display:flex; align-items:center; gap:8px; padding:9px 12px;
+  cursor:pointer;
+}
+.day-ex-header:hover .day-ex-name { color:var(--accent); }
+.day-ex-type { font-size:14px; flex-shrink:0; }
+.day-ex-name { font-weight:600; font-size:13px; flex:1; transition:color .2s; }
+.day-ex-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; padding:0; line-height:1; }
+.day-ex-del:hover { color:var(--accent); }
+.day-ex-chevron { color:var(--muted); font-size:10px; transition:transform .2s; }
+.day-ex.open .day-ex-chevron { transform:rotate(180deg); }
+.day-ex-body { display:none; padding:0 12px 10px; }
+.day-ex.open .day-ex-body { display:block; }
+.day-set-row { display:grid; gap:6px; align-items:center; margin-bottom:6px; }
+.day-set-row.type-normal  { grid-template-columns:22px 1fr 1fr 26px; }
+.day-set-row.type-bodyweight { grid-template-columns:22px 1fr 26px; }
+.day-set-row.type-cardio  { grid-template-columns:22px 1fr 80px 26px; }
+.day-set-num { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; color:#fff; text-align:center; }
+.day-set-row input { padding:6px 8px; font-size:12px; }
+.unit-label { font-size:11px; color:var(--muted); white-space:nowrap; }
+.day-set-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:14px; padding:0; }
+.day-set-del:hover { color:var(--accent); }
+.day-ex-foot { display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
+.day-sets-summary { font-size:11px; color:var(--muted); margin-top:6px; }
+.type-btn-group { display:flex; gap:6px; margin-bottom:10px; }
+.type-btn {
+  flex:1; padding:8px 4px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface2); color:var(--muted); cursor:pointer;
+  font-size:11px; font-weight:600; text-align:center; transition:all .2s;
+}
+.type-btn.active { border-color:var(--accent); background:var(--accent-dim); color:#fff; }
 .bro-week { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; overflow:hidden; }
 .bro-week-header {
   display:flex; align-items:center; gap:10px; padding:14px 16px;
@@ -375,7 +409,7 @@ header {
 .bro-week-header:hover { background:rgba(255,255,255,0.03); }
 .bro-week-body { padding:0 14px 14px; display:none; }
 .bro-week.open .bro-week-body { display:block; }
-.bro-week-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; margin-top:10px; }
+.bro-week-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; margin-top:10px; }
 .bro-day { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px; }
 .bro-day-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .bro-day-item { font-size:11px; color:var(--text); padding:2px 0; border-bottom:1px solid var(--border); }
@@ -556,9 +590,41 @@ header {
       <input type="text" id="ex-name-inp" placeholder="Ej: Press banca" style="width:100%" maxlength="40"
         onkeydown="if(event.key==='Enter')addExercise()">
     </div>
+    <div class="field">
+      <label>Tipo</label>
+      <div class="type-btn-group">
+        <button class="type-btn active" data-type="normal"    onclick="selectExType('normal')">🏋️ Con peso</button>
+        <button class="type-btn"        data-type="bodyweight" onclick="selectExType('bodyweight')">💪 Peso propio</button>
+        <button class="type-btn"        data-type="cardio"    onclick="selectExType('cardio')">🏊 Cardio</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-ex')">Cancelar</button>
       <button class="btn btn-accent" onclick="addExercise()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Añadir ejercicio al día -->
+<div class="modal-overlay" id="modal-day-ex">
+  <div class="modal">
+    <h3>Ejercicio del día</h3>
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="day-ex-name-inp" placeholder="Ej: Natación" style="width:100%" maxlength="40"
+        onkeydown="if(event.key==='Enter')addDayExercise()">
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <div class="type-btn-group">
+        <button class="type-btn active" data-type="normal"     onclick="selectDayExType('normal')">🏋️ Con peso</button>
+        <button class="type-btn"        data-type="bodyweight" onclick="selectDayExType('bodyweight')">💪 Peso propio</button>
+        <button class="type-btn"        data-type="cardio"     onclick="selectDayExType('cardio')">🏊 Cardio</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-day-ex')">Cancelar</button>
+      <button class="btn btn-accent" onclick="addDayExercise()">Añadir</button>
     </div>
   </div>
 </div>
@@ -843,8 +909,17 @@ function openMuscleGroup(muscleId) {
 }
 
 // ── EXERCISES ─────────────────────────────────────────────────
+let currentExType = 'normal';
+
+function selectExType(type) {
+  currentExType = type;
+  document.querySelectorAll('#modal-ex .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+}
+
 function openAddExercise() {
   document.getElementById('ex-name-inp').value = '';
+  currentExType = 'normal';
+  document.querySelectorAll('#modal-ex .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'normal'));
   openModal('modal-ex');
   setTimeout(() => document.getElementById('ex-name-inp').focus(), 100);
 }
@@ -855,7 +930,7 @@ function addExercise() {
   const p = profile();
   const m = p.muscles.find(m => m.id === activeMuscle);
   if (m.exercises.find(e => e.name.toLowerCase() === name.toLowerCase())) { showToast('Ya existe'); return; }
-  m.exercises.push({ id: Date.now().toString(), name, sessions: [] });
+  m.exercises.push({ id: Date.now().toString(), name, type: currentExType, sessions: [] });
   saveCurrentProfile();
   closeModal('modal-ex');
   renderExercises(m);
@@ -929,7 +1004,8 @@ function buildExCard(ex) {
       <div class="sessions-log" id="log-${ex.id}">${renderLog(ex)}</div>
     </div>`;
 
-  setTimeout(() => { addSetRow(ex.id); addSetRow(ex.id); addSetRow(ex.id); }, 0);
+  const exType = ex.type || 'normal';
+  setTimeout(() => { addSetRow(ex.id, exType); addSetRow(ex.id, exType); addSetRow(ex.id, exType); }, 0);
   return card;
 }
 
@@ -937,20 +1013,38 @@ function toggleCard(exId) {
   document.getElementById(`card-${exId}`).classList.toggle('open');
 }
 
-function addSetRow(exId) {
+function typeIcon(type) {
+  return type === 'bodyweight' ? '💪' : type === 'cardio' ? '🏊' : '🏋️';
+}
+
+function addSetRow(exId, type) {
   const area = document.getElementById(`sets-${exId}`);
   const n = area.children.length + 1;
   const row = document.createElement('div');
   row.className = 'set-row';
-  row.innerHTML = `
-    <span class="set-num">${n}</span>
-    <input type="number" placeholder="Reps" min="1" max="999" step="1">
-    <input type="number" placeholder="Kg" min="0" max="999" step="0.5">
-    <button class="btn-icon" onclick="removeSetRow(this,'${exId}')">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>`;
+  const delBtn = `<button class="btn-icon" onclick="removeSetRow(this,'${exId}')">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg></button>`;
+  if (type === 'bodyweight') {
+    row.innerHTML = `<span class="set-num">${n}</span>
+      <input type="number" placeholder="Reps" min="1" max="999" step="1">
+      ${delBtn}`;
+  } else if (type === 'cardio') {
+    row.innerHTML = `<span class="set-num">${n}</span>
+      <input type="number" placeholder="Distancia" min="0" step="1">
+      <select style="padding:7px 6px;font-size:12px">
+        <option value="m">m</option>
+        <option value="km">km</option>
+        <option value="min">min</option>
+      </select>
+      ${delBtn}`;
+  } else {
+    row.innerHTML = `<span class="set-num">${n}</span>
+      <input type="number" placeholder="Reps" min="1" max="999" step="1">
+      <input type="number" placeholder="Kg" min="0" max="999" step="0.5">
+      ${delBtn}`;
+  }
   area.appendChild(row);
   renumSets(exId);
 }
@@ -961,17 +1055,27 @@ function renumSets(exId) {
 }
 
 function saveSession(exId) {
-  const rows = [...document.getElementById(`sets-${exId}`).querySelectorAll('.set-row')];
-  const sets = [];
-  for (const row of rows) {
-    const [ri, ki] = row.querySelectorAll('input');
-    const reps = parseInt(ri.value), kg = parseFloat(ki.value);
-    if (!isNaN(reps) && reps > 0) sets.push({ reps, kg: isNaN(kg) ? 0 : kg });
-  }
-  if (!sets.length) { showToast('Añade al menos una serie'); return; }
   const p = profile();
   const m = p.muscles.find(m => m.id === activeMuscle);
   const ex = m.exercises.find(e => e.id === exId);
+  const type = ex.type || 'normal';
+  const rows = [...document.getElementById(`sets-${exId}`).querySelectorAll('.set-row')];
+  const sets = [];
+  for (const row of rows) {
+    const inputs = row.querySelectorAll('input');
+    if (type === 'bodyweight') {
+      const reps = parseInt(inputs[0].value);
+      if (!isNaN(reps) && reps > 0) sets.push({ reps });
+    } else if (type === 'cardio') {
+      const val = parseFloat(inputs[0].value);
+      const unit = row.querySelector('select')?.value || 'm';
+      if (!isNaN(val) && val > 0) sets.push({ value: val, unit });
+    } else {
+      const reps = parseInt(inputs[0].value), kg = parseFloat(inputs[1].value);
+      if (!isNaN(reps) && reps > 0) sets.push({ reps, kg: isNaN(kg) ? 0 : kg });
+    }
+  }
+  if (!sets.length) { showToast('Añade al menos una serie'); return; }
   ex.sessions.push({ id: Date.now().toString(), date: new Date().toISOString(), sets });
   saveCurrentProfile();
   const card = document.getElementById(`card-${exId}`);
@@ -998,24 +1102,37 @@ function delSession(exId, sessionId) {
 
 function renderProgBars(ex) {
   if (ex.sessions.length < 2) return '';
-  const vols = ex.sessions.slice(-6).map(s => s.sets.reduce((a, set) => a + set.reps * set.kg, 0));
-  const maxV = Math.max(...vols);
+  const type = ex.type || 'normal';
+  const vals = ex.sessions.slice(-6).map(s => {
+    if (type === 'cardio') return s.sets.reduce((a, set) => a + (set.value || 0), 0);
+    if (type === 'bodyweight') return s.sets.reduce((a, set) => a + (set.reps || 0), 0);
+    return s.sets.reduce((a, set) => a + (set.reps || 0) * (set.kg || 0), 0);
+  });
+  const maxV = Math.max(...vals);
   if (maxV === 0) return '';
-  return `<div class="prog-section">${vols.map((v, i) => `
+  const unit = type === 'bodyweight' ? ' reps' : type === 'cardio' ? '' : ' vol.';
+  return `<div class="prog-section">${vals.map((v, i) => `
     <div class="muscle-stat-item">
       <div class="prog-label">
-        <span>S${ex.sessions.length - vols.length + i + 1}</span>
-        <span>${Math.round(v)} vol.</span>
+        <span>S${ex.sessions.length - vals.length + i + 1}</span>
+        <span>${Math.round(v)}${unit}</span>
       </div>
       <div class="prog-track"><div class="prog-fill" style="width:${Math.round((v/maxV)*100)}%"></div></div>
     </div>`).join('')}</div>`;
 }
 
+function fmtSet(set, type) {
+  if (type === 'bodyweight') return `${set.reps} reps`;
+  if (type === 'cardio') return `${set.value}${set.unit || 'm'}`;
+  return `${set.reps}×<span class="w">${set.kg}kg</span>`;
+}
+
 function renderLog(ex) {
-  if (!ex.sessions.length) return `<p style="font-size:11px;color:var(--muted);padding:6px 0">Sin sesiones aún.</p>`;
+  const type = ex.type || 'normal';
+  if (!ex.sessions.length) return `<p style="font-size:11px;color:var(--muted);padding:6px 0">Sin registros aún.</p>`;
   return ex.sessions.slice().reverse().slice(0, 8).map(s => {
     const chips = s.sets.map((set, i) =>
-      `<span class="set-chip">${i+1}. ${set.reps}×<span class="w">${set.kg}kg</span></span>`
+      `<span class="set-chip">${i+1}. ${fmtSet(set, type)}</span>`
     ).join('');
     return `<div class="session-entry">
       <div class="session-date">${fmtDate(s.date)}</div>
@@ -1046,7 +1163,117 @@ function todayKey() {
 
 function ensureWeekPlan(p) {
   if (!p.weekPlan) p.weekPlan = {};
-  DAYS.forEach(d => { if (!p.weekPlan[d.key]) p.weekPlan[d.key] = []; });
+  DAYS.forEach(d => { if (!Array.isArray(p.weekPlan[d.key])) p.weekPlan[d.key] = []; });
+}
+
+let activeDayKey = null;
+let currentDayExType = 'normal';
+
+function selectDayExType(type) {
+  currentDayExType = type;
+  document.querySelectorAll('#modal-day-ex .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+}
+
+function openAddDayExercise(dayKey) {
+  activeDayKey = dayKey;
+  currentDayExType = 'normal';
+  document.getElementById('day-ex-name-inp').value = '';
+  document.querySelectorAll('#modal-day-ex .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'normal'));
+  openModal('modal-day-ex');
+  setTimeout(() => document.getElementById('day-ex-name-inp').focus(), 100);
+}
+
+function addDayExercise() {
+  const name = document.getElementById('day-ex-name-inp').value.trim();
+  if (!name) { showToast('Escribe el nombre'); return; }
+  const p = profile();
+  ensureWeekPlan(p);
+  p.weekPlan[activeDayKey].push({ id: Date.now().toString(), name, type: currentDayExType, sets: [] });
+  saveCurrentProfile();
+  closeModal('modal-day-ex');
+  renderRutinas();
+}
+
+function removeDayExercise(dayKey, exId) {
+  const p = profile();
+  ensureWeekPlan(p);
+  p.weekPlan[dayKey] = p.weekPlan[dayKey].filter(e => e.id !== exId);
+  saveCurrentProfile();
+  renderRutinas();
+}
+
+function addDaySet(dayKey, exId) {
+  const p = profile();
+  ensureWeekPlan(p);
+  const ex = p.weekPlan[dayKey].find(e => e.id === exId);
+  if (!ex) return;
+  const type = ex.type || 'normal';
+  const area = document.getElementById(`dsets-${exId}`);
+  const n = area.children.length + 1;
+  const row = document.createElement('div');
+  row.className = `day-set-row type-${type}`;
+  const delBtn = `<button class="day-set-del" onclick="removeDaySet('${dayKey}','${exId}',this)">×</button>`;
+  if (type === 'bodyweight') {
+    row.innerHTML = `<span class="day-set-num">${n}</span>
+      <input type="number" placeholder="Reps" min="1" step="1"> ${delBtn}`;
+  } else if (type === 'cardio') {
+    row.innerHTML = `<span class="day-set-num">${n}</span>
+      <input type="number" placeholder="Dist." min="0" step="1">
+      <select style="padding:5px 4px;font-size:11px"><option>m</option><option>km</option><option>min</option></select>
+      ${delBtn}`;
+  } else {
+    row.innerHTML = `<span class="day-set-num">${n}</span>
+      <input type="number" placeholder="Reps" min="1" step="1">
+      <input type="number" placeholder="Kg" min="0" step="0.5">
+      ${delBtn}`;
+  }
+  area.appendChild(row);
+  renumDaySets(exId);
+}
+
+function removeDaySet(dayKey, exId, btn) {
+  btn.closest('.day-set-row').remove();
+  renumDaySets(exId);
+}
+
+function renumDaySets(exId) {
+  const area = document.getElementById(`dsets-${exId}`);
+  if (!area) return;
+  [...area.children].forEach((r, i) => { const n = r.querySelector('.day-set-num'); if(n) n.textContent = i+1; });
+}
+
+function saveDaySets(dayKey, exId) {
+  const p = profile();
+  ensureWeekPlan(p);
+  const ex = p.weekPlan[dayKey].find(e => e.id === exId);
+  if (!ex) return;
+  const type = ex.type || 'normal';
+  const area = document.getElementById(`dsets-${exId}`);
+  const sets = [];
+  [...area.children].forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (type === 'bodyweight') {
+      const reps = parseInt(inputs[0]?.value);
+      if (!isNaN(reps) && reps > 0) sets.push({ reps });
+    } else if (type === 'cardio') {
+      const val = parseFloat(inputs[0]?.value);
+      const unit = row.querySelector('select')?.value || 'm';
+      if (!isNaN(val) && val > 0) sets.push({ value: val, unit });
+    } else {
+      const reps = parseInt(inputs[0]?.value), kg = parseFloat(inputs[1]?.value);
+      if (!isNaN(reps) && reps > 0) sets.push({ reps, kg: isNaN(kg) ? 0 : kg });
+    }
+  });
+  ex.sets = sets;
+  saveCurrentProfile();
+  showToast('Guardado ✓');
+  renderRutinas();
+}
+
+function fmtDaySet(set, type) {
+  if (type === 'bodyweight') return `${set.reps}r`;
+  if (type === 'cardio') return `${set.value}${set.unit || 'm'}`;
+  return `${set.reps}r × ${set.kg}kg`;
 }
 
 function renderRutinas() {
@@ -1057,48 +1284,70 @@ function renderRutinas() {
   grid.innerHTML = '';
 
   DAYS.forEach(d => {
-    const items = p.weekPlan[d.key];
+    const exercises = p.weekPlan[d.key] || [];
+    const isToday = d.key === today;
+    const totalSets = exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
+    const summary = exercises.length
+      ? `${exercises.length} ej.${totalSets ? ' · ' + totalSets + ' series' : ''}`
+      : 'Descanso';
+
     const card = document.createElement('div');
-    card.className = 'day-card' + (d.key === today ? ' today' : '');
+    card.className = 'day-card' + (isToday ? ' today' : '');
     card.id = `day-card-${d.key}`;
+
+    const exHtml = exercises.map(ex => {
+      const type = ex.type || 'normal';
+      const setsHtml = (ex.sets || []).map((s, i) =>
+        `<span class="set-chip" style="font-size:11px">${i+1}. ${fmtDaySet(s, type)}</span>`
+      ).join('');
+      return `
+        <div class="day-ex" id="day-ex-${ex.id}">
+          <div class="day-ex-header" onclick="toggleDayEx('${ex.id}')">
+            <span class="day-ex-type">${typeIcon(type)}</span>
+            <span class="day-ex-name">${ex.name}</span>
+            <button class="day-ex-del" onclick="event.stopPropagation();removeDayExercise('${d.key}','${ex.id}')">×</button>
+            <span class="day-ex-chevron">▼</span>
+          </div>
+          <div class="day-ex-body">
+            ${setsHtml ? `<div class="sets-chips" style="margin-bottom:8px">${setsHtml}</div>` : ''}
+            <div id="dsets-${ex.id}"></div>
+            <div class="day-ex-foot">
+              <button class="add-set-link" onclick="addDaySet('${d.key}','${ex.id}')">+ Serie</button>
+              <button class="btn btn-accent btn-sm" onclick="saveDaySets('${d.key}','${ex.id}')">Guardar</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
     card.innerHTML = `
-      <div class="day-name">${d.label}${d.key === today ? '<span>HOY</span>' : ''}</div>
-      <div class="day-items" id="day-items-${d.key}">
-        ${items.map(it => `
-          <div class="day-item">
-            <span>${it.text}</span>
-            <button onclick="removeRoutineItem('${d.key}','${it.id}')">×</button>
-          </div>`).join('') || `<span style="font-size:11px;color:var(--muted)">Descanso</span>`}
+      <div class="day-header" onclick="toggleDayCard('${d.key}')">
+        <div class="day-name">
+          ${d.label}${isToday ? '<span class="day-today-badge">HOY</span>' : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="day-summary">${summary}</span>
+          <span class="day-chevron">▼</span>
+        </div>
       </div>
-      <div class="day-add">
-        <input type="text" id="day-inp-${d.key}" placeholder="Añadir…" maxlength="30"
-          onkeydown="if(event.key==='Enter')addRoutineItem('${d.key}')">
-        <button class="btn btn-accent" onclick="addRoutineItem('${d.key}')">+</button>
+      <div class="day-body">
+        <div class="day-exercises">${exHtml}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%"
+          onclick="openAddDayExercise('${d.key}')">+ Ejercicio</button>
       </div>`;
+
+    if (isToday) card.classList.add('open');
     grid.appendChild(card);
   });
 
   renderBrosWeeks();
 }
 
-function addRoutineItem(dayKey) {
-  const inp = document.getElementById(`day-inp-${dayKey}`);
-  const text = inp.value.trim();
-  if (!text) return;
-  const p = profile();
-  ensureWeekPlan(p);
-  p.weekPlan[dayKey].push({ id: Date.now().toString(), text });
-  saveCurrentProfile();
-  inp.value = '';
-  renderRutinas();
+function toggleDayCard(dayKey) {
+  document.getElementById(`day-card-${dayKey}`).classList.toggle('open');
 }
 
-function removeRoutineItem(dayKey, itemId) {
-  const p = profile();
-  ensureWeekPlan(p);
-  p.weekPlan[dayKey] = p.weekPlan[dayKey].filter(it => it.id !== itemId);
-  saveCurrentProfile();
-  renderRutinas();
+function toggleDayEx(exId) {
+  document.getElementById(`day-ex-${exId}`).classList.toggle('open');
 }
 
 function renderBrosWeeks() {
@@ -1108,16 +1357,16 @@ function renderBrosWeeks() {
     container.innerHTML = `<p style="color:var(--muted);font-size:12px">Aquí verás la semana de tus compañeros.</p>`;
     return;
   }
-  container.innerHTML = others.map((p, i) => {
+  container.innerHTML = others.map(p => {
     const idx = getUserIdx(p.id);
     const color = colorFor(idx);
     ensureWeekPlan(p);
     const days = DAYS.map(d => {
-      const items = p.weekPlan[d.key] || [];
+      const exs = p.weekPlan[d.key] || [];
       return `<div class="bro-day">
         <div class="bro-day-name">${d.label.slice(0,3)}</div>
-        ${items.length
-          ? items.map(it => `<div class="bro-day-item">${it.text}</div>`).join('')
+        ${exs.length
+          ? exs.map(e => `<div class="bro-day-item">${typeIcon(e.type||'normal')} ${e.name}${e.sets?.length ? ' ('+e.sets.length+'s)' : ''}</div>`).join('')
           : `<div class="bro-day-empty">Descanso</div>`}
       </div>`;
     }).join('');
