@@ -2124,31 +2124,25 @@ function askKirkNutrition() {
 function buildNutritionContext() {
   const p = profile();
   ensureNutrition(p);
-  const n = p.nutrition;
+  const n = p.nutrition, g = n.goals;
   const today = new Date().toISOString().slice(0,10);
-  const g = n.goals;
-  let txt = `\nNUTRICIÓN DE ${p.name}:\nObjetivos: ${g.kcal} kcal, ${g.protein}g prot, ${g.carbs}g carbs, ${g.fat}g grasa\n`;
-
-  const todayMeals = n.meals.filter(m => m.date === today);
-  if (todayMeals.length) {
-    const tot = todayMeals.reduce((a, m) => ({ kcal: a.kcal + (m.kcal||0), protein: a.protein + (m.protein||0), carbs: a.carbs + (m.carbs||0), fat: a.fat + (m.fat||0) }), { kcal:0, protein:0, carbs:0, fat:0 });
-    txt += `Hoy: ${tot.kcal}/${g.kcal} kcal (${tot.protein}g prot, ${tot.carbs}g carbs, ${tot.fat}g grasa)\n`;
-    txt += `Comidas: ${todayMeals.map(m => m.name).join(', ')}\n`;
+  // Ultra-compact: one line per concept
+  let txt = `Nutri(obj:${g.kcal}kcal/${g.protein}P/${g.carbs}C/${g.fat}G) `;
+  const tm = n.meals.filter(m => m.date === today);
+  if (tm.length) {
+    const tot = tm.reduce((a,m) => ({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),carbs:a.carbs+(m.carbs||0),fat:a.fat+(m.fat||0)}),{kcal:0,protein:0,carbs:0,fat:0});
+    txt += `hoy:${tot.kcal}kcal(${tot.protein}P,${tot.carbs}C,${tot.fat}G) comidas:${tm.map(m=>m.name).join('+')}`;
   } else {
-    txt += `Hoy: sin comidas registradas aún\n`;
+    txt += `hoy:sin comidas`;
   }
-
-  // Last 3 days
-  const recentDays = [];
-  for (let i = 1; i <= 3; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
+  // Last 2 days only
+  for (let i = 1; i <= 2; i++) {
+    const d = new Date(); d.setDate(d.getDate()-i);
     const ds = d.toISOString().slice(0,10);
-    const dayKcal = n.meals.filter(m => m.date === ds).reduce((a, m) => a + (m.kcal||0), 0);
-    if (dayKcal > 0) recentDays.push(`${ds}: ${dayKcal} kcal`);
+    const dk = n.meals.filter(m=>m.date===ds).reduce((a,m)=>a+(m.kcal||0),0);
+    if (dk > 0) txt += ` d-${i}:${dk}kcal`;
   }
-  if (recentDays.length) txt += `Últimos días: ${recentDays.join(', ')}\n`;
-
-  return txt;
+  return txt + '\n';
 }
 
 // ── IA / GROQ ─────────────────────────────────────────────────
@@ -2172,9 +2166,9 @@ function renderIA() {
 
 function renderIaWelcome() {
   document.getElementById('ia-messages').innerHTML =
-    `<div class="ia-welcome">🤖 Soy tu entrenador personal IA.<br>
-     Pregúntame lo que quieras sobre tus entrenos,<br>progresión, ejercicios o consejos.<br>
-     <br><span style="font-size:11px">Tus datos de entrenamiento se envían como contexto en cada mensaje.</span></div>`;
+    `<div class="ia-welcome">🤖 <b>Kirk</b> — tu coach personal.<br>
+     Pregúntame sobre entrenos, progresión,<br>nutrición o cualquier consejo.<br>
+     <br><span style="font-size:11px">Contexto compacto enviado con cada mensaje.</span></div>`;
 }
 
 function openIaSettings() {
@@ -2200,34 +2194,38 @@ function saveIaKey() {
 function buildWorkoutContext() {
   const p = profile();
   ensureRoutines(p);
-  let txt = `Contexto de entrenamiento de ${p.name}:\n\n`;
+  // Compact format to minimize tokens
+  let txt = `[${p.name}] `;
 
-  const recent = [...p.gymSessions].reverse().slice(0, 10);
+  // Last 5 sessions only (not 10)
+  const recent = [...p.gymSessions].reverse().slice(0, 5);
   if (recent.length) {
-    txt += `SESIONES RECIENTES:\n`;
-    recent.forEach(s => {
-      txt += `[${fmtDate(s.date)}] ${s.routineName}: `;
-      txt += s.exercises.map(ex =>
-        `${ex.name} (${(ex.sets||[]).map(st => fmtDaySet(st, ex.type||'normal')).join(',')})`
-      ).join(' | ') + '\n';
-    });
+    txt += `Últimas sesiones: `;
+    txt += recent.map(s =>
+      `${s.date.slice(5)} ${s.routineName}: ${s.exercises.map(ex =>
+        `${ex.name}(${(ex.sets||[]).map(st => fmtDaySet(st, ex.type||'normal')).join('/')})`
+      ).join(',')}`
+    ).join(' | ') + '\n';
   }
 
-  p.muscles.forEach(m => {
-    const days = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
-    txt += `${m.name}: ${m.exercises.length} ejercicios, ${days} días\n`;
-    m.exercises.forEach(ex => {
+  // Only exercises with activity (skip empty groups)
+  const activeEx = p.muscles.flatMap(m => m.exercises.filter(e => e.sessions.length > 0));
+  if (activeEx.length) {
+    txt += `Ejercicios: `;
+    txt += activeEx.map(ex => {
       const last = ex.sessions[ex.sessions.length - 1];
-      if (last) txt += `  ${ex.name}: ${last.sets.map(s => fmtDaySet(s, ex.type||'normal')).join(',')}\n`;
-    });
-  });
+      return `${ex.name}=${last.sets.map(s => fmtDaySet(s, ex.type||'normal')).join('/')}`;
+    }).join(', ') + '\n';
+  }
 
+  // Group stats: just numbers, no labels
   const myStats = getProfileStats(p);
-  txt += `\nESTADÍSTICAS GRUPO:\n${p.name}: ${myStats.sessions}d, ${myStats.vol}kg vol, mejor ${myStats.bestKg}kg\n`;
+  txt += `Stats grupo: ${p.name}(${myStats.sessions}d,${myStats.vol}kgvol,max${myStats.bestKg}kg)`;
   state.profiles.filter(b => b.id !== p.id).forEach(bro => {
     const s = getProfileStats(bro);
-    txt += `${bro.name}: ${s.sessions}d, ${s.vol}kg vol, mejor ${s.bestKg}kg\n`;
+    txt += ` ${bro.name}(${s.sessions}d,${s.vol}kgvol,max${s.bestKg}kg)`;
   });
+  txt += '\n';
   txt += buildNutritionContext();
   return txt;
 }
