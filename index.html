@@ -670,7 +670,8 @@ function renderLogin() {
     state.profiles.length >= MAX_PROFILES ? '' : 'none';
 
   state.profiles.forEach((p, idx) => {
-    const sessions = p.muscles.reduce((a, m) => a + m.exercises.reduce((b, e) => b + e.sessions.length, 0), 0);
+    const allEx = p.muscles.flatMap(m => m.exercises);
+    const sessions = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
     const color = colorFor(idx);
     const btn = document.createElement('button');
     btn.className = 'profile-btn';
@@ -795,15 +796,15 @@ function renderMuscleGrid() {
   const grid = document.getElementById('muscle-grid-view');
   grid.innerHTML = '';
   p.muscles.forEach(m => {
-    const sessions = m.exercises.reduce((a, e) => a + e.sessions.length, 0);
-    const maxS = Math.max(1, ...p.muscles.map(mm => mm.exercises.reduce((a, e) => a + e.sessions.length, 0)));
-    const pct = Math.round((sessions / maxS) * 100);
+    const days = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
+    const maxS = Math.max(1, ...p.muscles.map(mm => new Set(mm.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size));
+    const pct = Math.round((days / maxS) * 100);
     const card = document.createElement('div');
     card.className = 'muscle-card';
     card.innerHTML = `
       <span class="mc-icon">${m.icon}</span>
       <div class="mc-name">${m.name}</div>
-      <div class="mc-count">${m.exercises.length} ej. · ${sessions} ses.</div>
+      <div class="mc-count">${m.exercises.length} ej. · ${days} día${days!==1?'s':''}</div>
       <div class="mc-bar" style="width:${pct}%"></div>`;
     card.onclick = () => openMuscleGroup(m.id);
     grid.appendChild(card);
@@ -895,7 +896,7 @@ function buildExCard(ex) {
   ex.sessions.forEach(s => s.sets.forEach(set => { if (set.kg > bestKg) bestKg = set.kg; }));
   const bestBadge = bestKg ? `<span class="ex-best">↑ ${bestKg}kg</span>` : '';
   const last = ex.sessions.length ? ex.sessions[ex.sessions.length - 1] : null;
-  const meta = ex.sessions.length ? `${ex.sessions.length} ses. · ${fmtDate(last.date)}` : 'Sin sesiones';
+  const meta = ex.sessions.length ? `${ex.sessions.length} vez${ex.sessions.length!==1?'es':''} · ${fmtDate(last.date)}` : 'Sin registros';
 
   card.innerHTML = `
     <div class="ex-card-header" onclick="toggleCard('${ex.id}')">
@@ -1142,7 +1143,7 @@ function toggleBroWeek(id) {
 function renderStats() {
   const p = profile();
   const allEx = p.muscles.flatMap(m => m.exercises);
-  const totalSessions = allEx.reduce((a, e) => a + e.sessions.length, 0);
+  const totalSessions = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
   const totalSets = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
   const totalVol = Math.round(allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + set.reps * set.kg, 0), 0), 0));
   const bestKg = Math.max(0, ...allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg))));
@@ -1151,7 +1152,7 @@ function renderStats() {
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-card"><div class="stat-v">${p.muscles.length}</div><div class="stat-l">Grupos</div></div>
     <div class="stat-card"><div class="stat-v">${allEx.length}</div><div class="stat-l">Ejercicios</div></div>
-    <div class="stat-card"><div class="stat-v">${totalSessions}</div><div class="stat-l">Sesiones</div></div>
+    <div class="stat-card"><div class="stat-v">${totalSessions}</div><div class="stat-l">Días entrenados</div></div>
     <div class="stat-card"><div class="stat-v">${totalSets}</div><div class="stat-l">Series</div></div>
     <div class="stat-card"><div class="stat-v">${totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'t' : totalVol+'kg'}</div><div class="stat-l">Volumen total</div></div>
     <div class="stat-card"><div class="stat-v">${bestKg > 0 ? bestKg+'kg' : '—'}</div><div class="stat-l">Mayor peso</div></div>
@@ -1159,7 +1160,7 @@ function renderStats() {
 
   const entries = p.muscles.map(m => ({
     name: `${m.icon} ${m.name}`,
-    sessions: m.exercises.reduce((a, e) => a + e.sessions.length, 0),
+    sessions: new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size,
     exCount: m.exercises.length
   })).sort((a, b) => b.sessions - a.sessions);
   const maxS = entries.length ? Math.max(1, ...entries.map(e => e.sessions)) : 1;
@@ -1179,7 +1180,7 @@ function renderStats() {
 // ── RANKINGS ──────────────────────────────────────────────────
 function getProfileStats(p) {
   const allEx = p.muscles.flatMap(m => m.exercises);
-  const sessions = allEx.reduce((a, e) => a + e.sessions.length, 0);
+  const sessions = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
   const vol = Math.round(allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + set.reps * set.kg, 0), 0), 0));
   const bestKg = Math.max(0, ...allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg))));
   const days = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0, 10)))).size;
@@ -1198,7 +1199,7 @@ function renderRankings() {
     { icon: '💥', title: 'Volumen total', key: 'vol',      fmt: v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg', sub: d => `${d.stats.sessions} sesiones` },
     { icon: '🗓️', title: 'Días activos',  key: 'days',     fmt: v => v + ' días',  sub: d => `${d.stats.totalSets} series` },
     { icon: '🏋️', title: 'Mayor peso',    key: 'bestKg',   fmt: v => v > 0 ? v+'kg' : '—', sub: d => `${d.stats.sessions} sesiones` },
-    { icon: '🔁', title: 'Sesiones',      key: 'sessions', fmt: v => v + ' ses.',  sub: d => `${d.stats.totalSets} series` }
+    { icon: '🔁', title: 'Días entrenados', key: 'sessions', fmt: v => v + ' días', sub: d => `${d.stats.totalSets} series` }
   ];
   const medals = ['🥇', '🥈', '🥉'];
   const posClass = ['gold', 'silver', 'bronze', ''];
