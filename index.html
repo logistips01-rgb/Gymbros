@@ -1708,10 +1708,9 @@ function copyBroRoutine(broId, routineId) {
 }
 
 // ── IA / GROQ ─────────────────────────────────────────────────
-const IA_KEY_STORAGE  = 'gymbros_groq_key';
-const IA_MODELS = ['llama-3.1-8b-instant'];
-let iaModelIdx  = 0;
-let iaChatHistory = []; // [{role, content}] — session only, not persisted
+const IA_KEY_STORAGE = 'bw_groq_key';
+const IA_MODEL       = 'llama-3.3-70b-versatile';
+let _kirkHistory = []; // [{role, content}] — últimos 12, session only
 
 function getIaKey() { return localStorage.getItem(IA_KEY_STORAGE) || ''; }
 function setIaKey(k) { k ? localStorage.setItem(IA_KEY_STORAGE, k) : localStorage.removeItem(IA_KEY_STORAGE); }
@@ -1722,8 +1721,8 @@ function renderIA() {
   const main = document.getElementById('ia-main');
   main.style.display = hasKey ? 'flex' : 'none';
   if (hasKey) {
-    document.getElementById('ia-model-label').textContent = IA_MODELS[iaModelIdx];
-    if (!iaChatHistory.length) renderIaWelcome();
+    document.getElementById('ia-model-label').textContent = IA_MODEL;
+    if (!_kirkHistory.length) renderIaWelcome();
   }
 }
 
@@ -1745,12 +1744,12 @@ function openIaSettings() {
 
 function saveIaKey() {
   const key = document.getElementById('ia-key-inp').value.trim();
-  if (!key) { showToast('Introduce la API key'); return; }
-  setIaKey(key);
+  if (key && !key.startsWith('gsk_')) { showToast('La key debe empezar por gsk_'); return; }
+  setIaKey(key); // vacío → removeItem (desactiva)
   document.getElementById('ia-key-inp').value = '';
   document.getElementById('ia-key-inp').type  = 'password';
-  iaChatHistory = [];
-  showToast('API key guardada ✓');
+  _kirkHistory = [];
+  showToast(key ? 'API key guardada ✓' : 'API key eliminada');
   renderIA();
 }
 
@@ -1865,7 +1864,8 @@ async function sendIaMessage() {
   inp.style.height = '';
 
   addIaBubble('user', text.replace(/\n/g,'<br>'));
-  iaChatHistory.push({ role: 'user', content: text });
+  _kirkHistory.push({ role: 'user', content: text });
+  if (_kirkHistory.length > 12) _kirkHistory = _kirkHistory.slice(-12);
 
   const sendBtn = document.querySelector('.ia-send-btn');
   sendBtn.disabled = true;
@@ -1881,50 +1881,40 @@ ${buildWorkoutContext()}`;
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...iaChatHistory
+    ..._kirkHistory
   ];
 
-  // Try models in order until one works
-  let lastError = '';
-  for (let i = iaModelIdx; i < IA_MODELS.length; i++) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: IA_MODELS[i], messages, max_tokens: 500, temperature: 0.7 })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        lastError = err.error?.message || `Error ${res.status}`;
-        if (res.status === 400 || res.status === 404) continue; // try next model
-        throw new Error(lastError);
-      }
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || '…';
-      iaModelIdx = i;
-      document.getElementById('ia-model-label').textContent = IA_MODELS[i];
-      removeIaTyping();
-      const { html, routine } = renderIaText(reply);
-      const bubble = addIaBubble('assistant', html);
-      if (routine) {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-ghost btn-sm';
-        btn.style.cssText = 'margin-top:8px;width:100%;border-color:#16a34a;color:#16a34a';
-        btn.textContent = `📥 Guardar rutina: "${routine.name}"`;
-        btn.onclick = () => saveIaRoutine(routine, btn);
-        bubble.appendChild(btn);
-      }
-      iaChatHistory.push({ role: 'assistant', content: reply });
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: IA_MODEL, messages, max_tokens: 600, temperature: 0.7 })
+    });
+    removeIaTyping();
+    if (!res.ok) {
+      showToast(`Error Groq: ${res.status}`);
       sendBtn.disabled = false;
       return;
-    } catch (err) {
-      lastError = err.message;
     }
+    const data  = await res.json();
+    const reply = data.choices?.[0]?.message?.content;
+    if (!reply) { sendBtn.disabled = false; return; }
+    const { html, routine } = renderIaText(reply);
+    const bubble = addIaBubble('assistant', html);
+    if (routine) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.style.cssText = 'margin-top:8px;width:100%;border-color:#16a34a;color:#16a34a';
+      btn.textContent = `📥 Guardar rutina: "${routine.name}"`;
+      btn.onclick = () => saveIaRoutine(routine, btn);
+      bubble.appendChild(btn);
+    }
+    _kirkHistory.push({ role: 'assistant', content: reply });
+    if (_kirkHistory.length > 12) _kirkHistory = _kirkHistory.slice(-12);
+  } catch (err) {
+    removeIaTyping();
+    showToast(`Error: ${err.message}`);
   }
-
-  // All models failed
-  removeIaTyping();
-  addIaBubble('assistant', `<span style="color:var(--accent)">⚠️ ${lastError}</span><br><span style="font-size:11px;color:var(--muted)">Comprueba la API key en console.groq.com</span>`);
   sendBtn.disabled = false;
 }
 

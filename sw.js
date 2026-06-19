@@ -1,4 +1,4 @@
-const CACHE = 'gymbros-v17';
+const CACHE = 'gymbros-v18';
 const SHELL = [
   '/Gymbros/',
   '/Gymbros/index.html',
