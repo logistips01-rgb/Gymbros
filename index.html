@@ -229,6 +229,12 @@ header {
 .kcal-big { font-size:32px; font-weight:900; font-family:'Barlow Condensed',sans-serif; color:var(--text); }
 .kcal-goal { font-size:12px; color:var(--muted); }
 .training-badge { display:inline-block; background:#16a34a22; color:#16a34a; border:1px solid #16a34a44; border-radius:6px; font-size:10px; font-weight:700; padding:2px 8px; margin-left:8px; }
+#food-dropdown { display:none; position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:8px; max-height:220px; overflow-y:auto; box-shadow:0 6px 20px #0008; }
+.food-dd-item { padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); }
+.food-dd-item:last-child { border-bottom:none; }
+.food-dd-item:hover,.food-dd-item:active { background:var(--surface2); }
+.food-dd-name { font-size:13px; font-weight:600; color:var(--text); }
+.food-dd-macros { font-size:11px; color:var(--muted); margin-top:2px; }
 
 /* ── SECTION ── */
 .sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
@@ -660,11 +666,16 @@ header {
 <div class="modal-overlay" id="modal-meal">
   <div class="modal">
     <h3>Añadir comida</h3>
-    <div class="field">
-      <label>Nombre</label>
-      <input type="text" id="meal-name-inp" placeholder="Ej: Arroz con pollo" style="width:100%" maxlength="50">
+    <div class="field" style="position:relative">
+      <label>Buscar alimento</label>
+      <input type="text" id="meal-name-inp" placeholder="Ej: arroz, pollo, avena…" style="width:100%" maxlength="60"
+        autocomplete="off"
+        oninput="filterFoodDb(this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();saveMeal()}"
+        onblur="setTimeout(()=>{const d=document.getElementById('food-dropdown');if(d)d.style.display='none'},200)">
+      <div id="food-dropdown"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px">
       <div class="field">
         <label>Kcal</label>
         <input type="number" id="meal-kcal-inp" placeholder="500" min="0" style="width:100%">
@@ -682,13 +693,13 @@ header {
         <input type="number" id="meal-fat-inp" placeholder="15" min="0" style="width:100%">
       </div>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
-      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Avena + proteína',380,30,45,8)">🥣 Avena proteica</button>
-      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Arroz + pollo',580,48,68,10)">🍗 Arroz+pollo</button>
-      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Shake proteína',160,28,8,3)">🥤 Shake</button>
-      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Huevos revueltos x3',210,18,2,14)">🍳 Huevos x3</button>
-      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Plátano',90,1,23,0)">🍌 Plátano</button>
-      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Salmón + patata',480,42,38,14)">🐟 Salmón+patata</button>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">
+      <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Avena + proteína',380,30,45,8)">🥣 Avena</button>
+      <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Arroz + pollo',580,48,68,10)">🍗 Arroz+pollo</button>
+      <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Shake proteína',120,25,5,2)">🥤 Shake</button>
+      <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Huevos x3',231,18,3,15)">🍳 Huevos x3</button>
+      <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Plátano',107,1,27,0)">🍌 Plátano</button>
+      <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Salmón (100g)',208,20,0,13)">🐟 Salmón</button>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-meal')">Cancelar</button>
@@ -1819,6 +1830,115 @@ function copyBroRoutine(broId, routineId) {
   renderRutinas();
 }
 
+// ── BASE DE DATOS ALIMENTOS ───────────────────────────────────
+const FOOD_DB = [
+  // Proteínas
+  {n:'Pechuga de pollo (100g)',     k:165, p:31, c:0,  f:4 },
+  {n:'Pechuga de pavo (100g)',      k:135, p:30, c:0,  f:2 },
+  {n:'Pollo con piel (100g)',       k:215, p:25, c:0,  f:13},
+  {n:'Ternera magra (100g)',        k:180, p:26, c:0,  f:8 },
+  {n:'Cerdo lomo (100g)',           k:182, p:27, c:0,  f:8 },
+  {n:'Salmón (100g)',               k:208, p:20, c:0,  f:13},
+  {n:'Atún al natural (lata 120g)', k:120, p:28, c:0,  f:1 },
+  {n:'Bacalao (100g)',              k:82,  p:18, c:0,  f:1 },
+  {n:'Gambas (100g)',               k:85,  p:18, c:1,  f:1 },
+  {n:'Sardinas lata (100g)',        k:208, p:25, c:0,  f:11},
+  {n:'Huevo entero (1 ud)',         k:77,  p:6,  c:1,  f:5 },
+  {n:'Claras de huevo (3 uds)',     k:51,  p:11, c:1,  f:0 },
+  {n:'Huevos revueltos x3',         k:231, p:18, c:3,  f:15},
+  // Carbohidratos
+  {n:'Arroz blanco cocido (100g)',  k:130, p:3,  c:28, f:0 },
+  {n:'Arroz blanco crudo (100g)',   k:360, p:7,  c:78, f:1 },
+  {n:'Arroz integral cocido (100g)',k:123, p:3,  c:26, f:1 },
+  {n:'Pasta cocida (100g)',         k:158, p:6,  c:31, f:1 },
+  {n:'Pasta cruda (100g)',          k:371, p:13, c:74, f:2 },
+  {n:'Avena (100g)',                k:389, p:17, c:66, f:7 },
+  {n:'Avena + leche (70g+250ml)',   k:419, p:19, c:60, f:11},
+  {n:'Pan integral (1 rebanada)',   k:80,  p:4,  c:15, f:1 },
+  {n:'Pan blanco (1 rebanada)',     k:79,  p:3,  c:15, f:1 },
+  {n:'Patata cocida (100g)',        k:87,  p:2,  c:20, f:0 },
+  {n:'Boniato cocido (100g)',       k:86,  p:2,  c:20, f:0 },
+  {n:'Quinoa cocida (100g)',        k:120, p:4,  c:21, f:2 },
+  {n:'Lentejas cocidas (100g)',     k:116, p:9,  c:20, f:0 },
+  {n:'Garbanzos cocidos (100g)',    k:164, p:9,  c:27, f:3 },
+  {n:'Alubias cocidas (100g)',      k:127, p:9,  c:23, f:0 },
+  // Lácteos
+  {n:'Leche entera (250ml)',        k:150, p:8,  c:12, f:8 },
+  {n:'Leche semidesnatada (250ml)', k:113, p:8,  c:12, f:4 },
+  {n:'Leche desnatada (250ml)',     k:85,  p:9,  c:12, f:0 },
+  {n:'Yogur griego (125g)',         k:96,  p:9,  c:4,  f:5 },
+  {n:'Yogur natural (125g)',        k:71,  p:4,  c:8,  f:2 },
+  {n:'Queso cottage (100g)',        k:98,  p:11, c:3,  f:4 },
+  {n:'Requesón (100g)',             k:74,  p:11, c:3,  f:2 },
+  {n:'Queso manchego (30g)',        k:108, p:7,  c:0,  f:9 },
+  // Frutas
+  {n:'Plátano (1 med 120g)',        k:107, p:1,  c:27, f:0 },
+  {n:'Manzana (1 med 150g)',        k:78,  p:0,  c:21, f:0 },
+  {n:'Naranja (1 med 180g)',        k:72,  p:1,  c:18, f:0 },
+  {n:'Fresas (100g)',               k:33,  p:1,  c:8,  f:0 },
+  {n:'Uvas (100g)',                 k:69,  p:1,  c:18, f:0 },
+  {n:'Kiwi (1 ud 80g)',             k:46,  p:1,  c:11, f:0 },
+  {n:'Mango (100g)',                k:60,  p:1,  c:15, f:0 },
+  {n:'Arándanos (100g)',            k:57,  p:1,  c:14, f:0 },
+  // Suplementos
+  {n:'Shake proteína (1 scoop)',    k:120, p:25, c:5,  f:2 },
+  {n:'Proteína mass gainer (1)',    k:350, p:25, c:55, f:5 },
+  {n:'Creatina (5g)',               k:0,   p:0,  c:0,  f:0 },
+  // Grasas saludables
+  {n:'Aguacate (1/2 ud ~80g)',      k:128, p:2,  c:7,  f:12},
+  {n:'Almendras (30g)',             k:174, p:6,  c:5,  f:15},
+  {n:'Nueces (30g)',                k:196, p:5,  c:4,  f:20},
+  {n:'Mantequilla cacahuete (30g)', k:190, p:7,  c:6,  f:16},
+  {n:'Aceite de oliva (1 cda 10g)', k:88,  p:0,  c:0,  f:10},
+  {n:'Semillas chía (20g)',         k:98,  p:3,  c:9,  f:6 },
+  // Verduras
+  {n:'Brócoli cocido (200g)',       k:68,  p:6,  c:10, f:1 },
+  {n:'Espinacas (100g)',            k:23,  p:3,  c:4,  f:0 },
+  {n:'Ensalada mixta (200g)',       k:40,  p:2,  c:6,  f:1 },
+  {n:'Tomate (1 med 120g)',         k:22,  p:1,  c:5,  f:0 },
+  {n:'Zanahoria (100g)',            k:41,  p:1,  c:10, f:0 },
+  // Platos comunes gym
+  {n:'Arroz + pollo (200g+150g)',   k:580, p:48, c:68, f:10},
+  {n:'Avena + proteína (70g+1sc)', k:502, p:42, c:68, f:9 },
+  {n:'Tortilla francesa (2 huevos)',k:189, p:13, c:2,  f:14},
+  {n:'Salmón + boniato (100g+150g)',k:337, p:23, c:31, f:14},
+];
+
+function filterFoodDb(q) {
+  const dd = document.getElementById('food-dropdown');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const ql = q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const matches = FOOD_DB.filter(f =>
+    f.n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(ql)
+  ).slice(0, 9);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map((f, i) => `
+    <div class="food-dd-item" onmousedown="selectFoodItem(${FOOD_DB.indexOf(f)})">
+      <div class="food-dd-name">${f.n}</div>
+      <div class="food-dd-macros">🔥 ${f.k} kcal &nbsp;·&nbsp; 🥩 ${f.p}g &nbsp;·&nbsp; 🌾 ${f.c}g &nbsp;·&nbsp; 🧈 ${f.f}g</div>
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function selectFoodItem(idx) {
+  const f = FOOD_DB[idx];
+  document.getElementById('meal-name-inp').value    = f.n;
+  document.getElementById('meal-kcal-inp').value    = f.k;
+  document.getElementById('meal-protein-inp').value = f.p;
+  document.getElementById('meal-carbs-inp').value   = f.c;
+  document.getElementById('meal-fat-inp').value     = f.f;
+  document.getElementById('food-dropdown').style.display = 'none';
+}
+
+function selectFoodPreset(name, kcal, protein, carbs, fat) {
+  document.getElementById('meal-name-inp').value    = name;
+  document.getElementById('meal-kcal-inp').value    = kcal;
+  document.getElementById('meal-protein-inp').value = protein;
+  document.getElementById('meal-carbs-inp').value   = carbs;
+  document.getElementById('meal-fat-inp').value     = fat;
+  document.getElementById('food-dropdown').style.display = 'none';
+}
+
 // ── NUTRICIÓN ─────────────────────────────────────────────────
 function renderNutricion() {
   const p = profile();
@@ -1988,11 +2108,7 @@ function saveNutriGoals() {
 }
 
 function quickMeal(name, kcal, protein, carbs, fat) {
-  document.getElementById('meal-name-inp').value    = name;
-  document.getElementById('meal-kcal-inp').value    = kcal;
-  document.getElementById('meal-protein-inp').value = protein;
-  document.getElementById('meal-carbs-inp').value   = carbs;
-  document.getElementById('meal-fat-inp').value     = fat;
+  selectFoodPreset(name, kcal, protein, carbs, fat);
 }
 
 function saveMeal() {
