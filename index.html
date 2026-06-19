@@ -81,7 +81,7 @@ body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; 
   font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px;
   letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:16px;
 }
-.profiles-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.profiles-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:20px; }
 .profile-btn {
   display:flex; flex-direction:column; align-items:center; gap:10px;
   background:var(--surface2); border:2px solid var(--border);
@@ -395,7 +395,7 @@ header {
 <!-- ── LOGIN SCREEN ── -->
 <div id="screen-login" class="screen">
   <div class="logo-big">GYM<span>BROS</span></div>
-  <div class="tagline">4 guerreros. 0 excusas.</div>
+  <div class="tagline">5 guerreros. 0 excusas.</div>
   <div class="login-box">
     <h2>¿Quién entrena hoy?</h2>
     <div class="profiles-grid" id="profiles-list"></div>
@@ -406,7 +406,7 @@ header {
       <button class="btn btn-accent" onclick="createProfile()">Crear</button>
     </div>
     <p id="profile-limit-msg" style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;display:none">
-      Máximo 4 perfiles alcanzado
+      Máximo 5 perfiles alcanzado
     </p>
   </div>
 </div>
@@ -540,8 +540,8 @@ const db = firebase.firestore();
 
 // ── CONSTANTS ─────────────────────────────────────────────────
 const CU_KEY = 'gymbros_current_user';
-const USER_COLORS = ['#E11D2E', '#2563EB', '#16a34a', '#d97706'];
-const MAX_PROFILES = 4;
+const USER_COLORS = ['#E11D2E', '#2563EB', '#16a34a', '#d97706', '#7c3aed'];
+const MAX_PROFILES = 5;
 
 // ── STATE (in-memory cache, Firestore is source of truth) ─────
 let state = { profiles: [], currentUser: null };
