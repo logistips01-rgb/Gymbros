@@ -196,13 +196,39 @@ header {
 .tab-btn {
   flex:1; padding:9px 6px; background:transparent; border:none; border-radius:8px;
   color:var(--muted); font-family:'Barlow Condensed',sans-serif;
-  font-weight:700; font-size:14px; letter-spacing:1px; text-transform:uppercase;
+  font-weight:700; font-size:11px; letter-spacing:0px; text-transform:uppercase;
   cursor:pointer; transition:all .2s;
 }
 .tab-btn.active { background:var(--accent); color:#fff; }
 .tab-btn:not(.active):hover { color:var(--text); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
+
+/* Nutrition tab */
+.macro-bar-wrap { margin:6px 0; }
+.macro-bar-label { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:3px; }
+.macro-bar { height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+.macro-bar-fill { height:100%; border-radius:4px; transition:width .4s; }
+.meal-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.meal-card-info { flex:1; }
+.meal-card-name { font-size:13px; font-weight:600; }
+.meal-card-macros { font-size:11px; color:var(--muted); margin-top:2px; }
+.meal-del-btn { background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px; }
+.week-bar-wrap { display:flex; align-items:flex-end; gap:4px; height:50px; margin:8px 0; }
+.week-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.week-bar { width:100%; border-radius:3px 3px 0 0; min-height:3px; transition:height .3s; }
+.week-bar-day { font-size:9px; color:var(--muted); }
+.recipe-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; }
+.recipe-card-header { display:flex; justify-content:space-between; align-items:center; }
+.recipe-card-name { font-size:14px; font-weight:700; }
+.recipe-card-kcal { font-size:12px; color:var(--accent); font-weight:700; }
+.recipe-card-macros { font-size:11px; color:var(--muted); margin:4px 0; }
+.recipe-card-body { font-size:11px; color:var(--muted); margin-top:6px; border-top:1px solid var(--border); padding-top:6px; display:none; }
+.nutri-section-title { font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin:16px 0 8px; }
+.kcal-ring { text-align:center; margin:8px 0; }
+.kcal-big { font-size:32px; font-weight:900; font-family:'Barlow Condensed',sans-serif; color:var(--text); }
+.kcal-goal { font-size:12px; color:var(--muted); }
+.training-badge { display:inline-block; background:#16a34a22; color:#16a34a; border:1px solid #16a34a44; border-radius:6px; font-size:10px; font-weight:700; padding:2px 8px; margin-left:8px; }
 
 /* ── SECTION ── */
 .sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
@@ -532,6 +558,7 @@ header {
       <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
       <button class="tab-btn" onclick="switchTab('rankings')">🏆 Rankings</button>
       <button class="tab-btn" onclick="switchTab('ia')">🤖 IA</button>
+      <button class="tab-btn" onclick="switchTab('nutri')">🥗 Nutri</button>
     </div>
 
     <!-- ENTRENOS -->
@@ -595,6 +622,11 @@ header {
       <div class="ranking-grid" id="ranking-grid"></div>
     </div>
 
+    <!-- NUTRI -->
+    <div class="tab-panel" id="tab-nutri">
+      <div id="nutri-content"></div>
+    </div>
+
     <!-- IA -->
     <div class="tab-panel" id="tab-ia" style="display:flex;flex-direction:column;height:calc(100vh - 140px)">
       <!-- Setup screen -->
@@ -620,6 +652,77 @@ header {
           <button class="btn btn-accent ia-send-btn" onclick="sendIaMessage()">➤</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Añadir comida -->
+<div class="modal-overlay" id="modal-meal">
+  <div class="modal">
+    <h3>Añadir comida</h3>
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="meal-name-inp" placeholder="Ej: Arroz con pollo" style="width:100%" maxlength="50">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field">
+        <label>Kcal</label>
+        <input type="number" id="meal-kcal-inp" placeholder="500" min="0" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Proteína (g)</label>
+        <input type="number" id="meal-protein-inp" placeholder="40" min="0" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Carbos (g)</label>
+        <input type="number" id="meal-carbs-inp" placeholder="60" min="0" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Grasa (g)</label>
+        <input type="number" id="meal-fat-inp" placeholder="15" min="0" style="width:100%">
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
+      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Avena + proteína',380,30,45,8)">🥣 Avena proteica</button>
+      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Arroz + pollo',580,48,68,10)">🍗 Arroz+pollo</button>
+      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Shake proteína',160,28,8,3)">🥤 Shake</button>
+      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Huevos revueltos x3',210,18,2,14)">🍳 Huevos x3</button>
+      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Plátano',90,1,23,0)">🍌 Plátano</button>
+      <button class="btn btn-ghost btn-sm" onclick="quickMeal('Salmón + patata',480,42,38,14)">🐟 Salmón+patata</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-meal')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveMeal()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Objetivos nutricionales -->
+<div class="modal-overlay" id="modal-nutri-goals">
+  <div class="modal">
+    <h3>Objetivos diarios</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field">
+        <label>Kcal objetivo</label>
+        <input type="number" id="goal-kcal-inp" placeholder="2200" min="1000" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Proteína (g)</label>
+        <input type="number" id="goal-protein-inp" placeholder="160" min="0" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Carbos (g)</label>
+        <input type="number" id="goal-carbs-inp" placeholder="250" min="0" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Grasa (g)</label>
+        <input type="number" id="goal-fat-inp" placeholder="65" min="0" style="width:100%">
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:4px">💡 Regla base: peso corporal × 2g proteína, kcal según objetivo</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nutri-goals')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveNutriGoals()">Guardar</button>
     </div>
   </div>
 </div>
@@ -921,7 +1024,7 @@ function showMain() {
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabs = ['entrenos', 'rutinas', 'stats', 'rankings', 'ia'];
+  const tabs = ['entrenos', 'rutinas', 'stats', 'rankings', 'ia', 'nutri'];
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
@@ -929,6 +1032,7 @@ function switchTab(tab) {
   if (tab === 'rankings') renderRankings();
   if (tab === 'rutinas')  renderRutinas();
   if (tab === 'ia')       renderIA();
+  if (tab === 'nutri')    renderNutricion();
 }
 
 // ── MUSCLE GROUPS ─────────────────────────────────────────────
@@ -1238,6 +1342,14 @@ function fmtDaySet(set, type) {
 function ensureRoutines(p) {
   if (!Array.isArray(p.routines)) p.routines = [];
   if (!Array.isArray(p.gymSessions)) p.gymSessions = [];
+}
+
+function ensureNutrition(p) {
+  if (!p.nutrition) p.nutrition = {};
+  if (!p.nutrition.goals) p.nutrition.goals = { kcal: 2200, protein: 160, carbs: 250, fat: 65 };
+  if (!Array.isArray(p.nutrition.meals)) p.nutrition.meals = [];
+  if (!Array.isArray(p.nutrition.savedRecipes)) p.nutrition.savedRecipes = [];
+  if (!Array.isArray(p.nutrition.savedPlans)) p.nutrition.savedPlans = [];
 }
 
 // ── Active session state ───────────────────────────────────────
@@ -1707,6 +1819,338 @@ function copyBroRoutine(broId, routineId) {
   renderRutinas();
 }
 
+// ── NUTRICIÓN ─────────────────────────────────────────────────
+function renderNutricion() {
+  const p = profile();
+  ensureNutrition(p);
+  ensureRoutines(p);
+  const n = p.nutrition;
+  const g = n.goals;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Today's meals
+  const todayMeals = n.meals.filter(m => m.date === today);
+  const tot = todayMeals.reduce((a, m) => ({
+    kcal: a.kcal + (m.kcal || 0),
+    protein: a.protein + (m.protein || 0),
+    carbs: a.carbs + (m.carbs || 0),
+    fat: a.fat + (m.fat || 0)
+  }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+
+  // Check if trained today
+  const allEx = p.muscles.flatMap(mu => mu.exercises);
+  const trainedToday = p.gymSessions.some(s => s.date.slice(0,10) === today) ||
+    allEx.some(e => e.sessions.some(s => s.date.slice(0,10) === today));
+
+  // Week data (last 7 days)
+  const weekDays = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    const dayMeals = n.meals.filter(m => m.date === ds);
+    const dayKcal  = dayMeals.reduce((a, m) => a + (m.kcal || 0), 0);
+    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, isToday: ds === today });
+  }
+  const maxWeekKcal = Math.max(g.kcal, ...weekDays.map(d => d.kcal), 100);
+
+  // Deficit / surplus
+  const diff = tot.kcal - g.kcal;
+  const diffStr = diff === 0 ? 'En objetivo' : diff > 0 ? `+${diff} kcal surplus` : `${diff} kcal déficit`;
+  const diffColor = diff > 200 ? '#f59e0b' : diff < -500 ? '#3b82f6' : '#16a34a';
+
+  const bar = (val, goal, color) => {
+    const pct = Math.min(100, goal > 0 ? Math.round(val / goal * 100) : 0);
+    return `<div class="macro-bar"><div class="macro-bar-fill" style="width:${pct}%;background:${color}"></div></div>`;
+  };
+
+  const todayMealsHTML = todayMeals.length === 0
+    ? `<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">No has registrado comidas hoy</p>`
+    : todayMeals.map(m => `
+      <div class="meal-card">
+        <div class="meal-card-info">
+          <div class="meal-card-name">${m.name}</div>
+          <div class="meal-card-macros">🔥 ${m.kcal} kcal · 🥩 ${m.protein}g · 🌾 ${m.carbs}g · 🧈 ${m.fat}g</div>
+        </div>
+        <button class="meal-del-btn" onclick="deleteMeal('${m.id}')">🗑</button>
+      </div>`).join('');
+
+  const weekBarsHTML = weekDays.map(d => {
+    const h = Math.round((d.kcal / maxWeekKcal) * 44);
+    const color = d.isToday ? 'var(--accent)' : d.kcal >= g.kcal * 0.8 ? '#16a34a' : 'var(--border)';
+    return `<div class="week-bar-col">
+      <div class="week-bar" style="height:${Math.max(3,h)}px;background:${color}"></div>
+      <div class="week-bar-day">${d.label}</div>
+    </div>`;
+  }).join('');
+
+  const recipesHTML = n.savedRecipes.length === 0
+    ? `<p style="color:var(--muted);font-size:12px">Pídele a Kirk que te cree una receta personalizada 🤖</p>`
+    : n.savedRecipes.map((r, idx) => `
+      <div class="recipe-card">
+        <div class="recipe-card-header">
+          <div>
+            <div class="recipe-card-name">${r.name}</div>
+            <div class="recipe-card-macros">🥩 ${r.protein}g prot · 🌾 ${r.carbs}g carbs · 🧈 ${r.fat}g grasa</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="recipe-card-kcal">🔥 ${r.kcal} kcal</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" onclick="addRecipeAsMeal(${idx})">+ Añadir hoy</button>
+              <button class="meal-del-btn" onclick="deleteRecipe(${idx})">🗑</button>
+            </div>
+          </div>
+        </div>
+        <div class="recipe-card-body" id="recipe-body-${idx}">
+          ${r.ingredients && r.ingredients.length ? `<b>Ingredientes:</b> ${r.ingredients.join(', ')}<br>` : ''}
+          ${r.instructions ? `<b>Prep:</b> ${r.instructions}` : ''}
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:6px;width:100%;font-size:11px" onclick="toggleRecipeBody(${idx})">Ver detalle ▾</button>
+      </div>`).join('');
+
+  const plansHTML = n.savedPlans.length === 0 ? '' : `
+    <div class="nutri-section-title">📋 Planes guardados</div>
+    ${n.savedPlans.map((plan, pi) => `
+      <div class="recipe-card">
+        <div class="recipe-card-header">
+          <div class="recipe-card-name">${plan.name}</div>
+          <button class="meal-del-btn" onclick="deletePlan(${pi})">🗑</button>
+        </div>
+        <div style="margin-top:6px">
+          ${(plan.meals || []).map(m => `
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border)">
+              <span><b>${m.timing}</b> · ${m.name}</span>
+              <span style="color:var(--muted)">🔥${m.kcal} · 🥩${m.protein}g</span>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%" onclick="applyPlanToday(${pi})">📥 Aplicar hoy</button>
+      </div>`).join('')}`;
+
+  document.getElementById('nutri-content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:13px;color:var(--muted)">${fmtDate(today)}${trainedToday ? '<span class="training-badge">💪 DÍA DE ENTRENO</span>' : ''}</span>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-nutri-goals')">⚙️ Objetivos</button>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div class="kcal-ring">
+        <div class="kcal-big">${tot.kcal}</div>
+        <div class="kcal-goal">/ ${g.kcal} kcal objetivo</div>
+        <div style="font-size:11px;color:${diffColor};margin-top:2px;font-weight:700">${diffStr}</div>
+      </div>
+      ${bar(tot.protein, g.protein, '#ef4444')}
+      <div class="macro-bar-label"><span>🥩 Proteína ${tot.protein}g</span><span>${g.protein}g</span></div>
+      ${bar(tot.carbs, g.carbs, '#f59e0b')}
+      <div class="macro-bar-label"><span>🌾 Carbos ${tot.carbs}g</span><span>${g.carbs}g</span></div>
+      ${bar(tot.fat, g.fat, '#3b82f6')}
+      <div class="macro-bar-label"><span>🧈 Grasa ${tot.fat}g</span><span>${g.fat}g</span></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-accent" style="flex:1" onclick="openModal('modal-meal')">+ Añadir comida</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="askKirkNutrition()">🤖 Consejo de Kirk</button>
+    </div>
+
+    <div class="nutri-section-title">🍽 Comidas de hoy</div>
+    ${todayMealsHTML}
+
+    <div class="nutri-section-title">📅 Esta semana</div>
+    <div class="week-bar-wrap">${weekBarsHTML}</div>
+
+    <div class="nutri-section-title">🧑‍🍳 Mis recetas</div>
+    ${recipesHTML}
+
+    ${plansHTML}
+  `;
+}
+
+function openNutritionGoals() {
+  const g = profile().nutrition?.goals || {};
+  document.getElementById('goal-kcal-inp').value    = g.kcal    || 2200;
+  document.getElementById('goal-protein-inp').value = g.protein || 160;
+  document.getElementById('goal-carbs-inp').value   = g.carbs   || 250;
+  document.getElementById('goal-fat-inp').value     = g.fat     || 65;
+  openModal('modal-nutri-goals');
+}
+
+function saveNutriGoals() {
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.goals = {
+    kcal:    parseInt(document.getElementById('goal-kcal-inp').value)    || 2200,
+    protein: parseInt(document.getElementById('goal-protein-inp').value) || 160,
+    carbs:   parseInt(document.getElementById('goal-carbs-inp').value)   || 250,
+    fat:     parseInt(document.getElementById('goal-fat-inp').value)     || 65
+  };
+  saveCurrentProfile();
+  closeModal('modal-nutri-goals');
+  showToast('Objetivos guardados ✓');
+  renderNutricion();
+}
+
+function quickMeal(name, kcal, protein, carbs, fat) {
+  document.getElementById('meal-name-inp').value    = name;
+  document.getElementById('meal-kcal-inp').value    = kcal;
+  document.getElementById('meal-protein-inp').value = protein;
+  document.getElementById('meal-carbs-inp').value   = carbs;
+  document.getElementById('meal-fat-inp').value     = fat;
+}
+
+function saveMeal() {
+  const name = document.getElementById('meal-name-inp').value.trim();
+  if (!name) { showToast('Escribe el nombre de la comida'); return; }
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.meals.push({
+    id:      Date.now().toString(),
+    date:    new Date().toISOString().slice(0,10),
+    name,
+    kcal:    parseInt(document.getElementById('meal-kcal-inp').value)    || 0,
+    protein: parseInt(document.getElementById('meal-protein-inp').value) || 0,
+    carbs:   parseInt(document.getElementById('meal-carbs-inp').value)   || 0,
+    fat:     parseInt(document.getElementById('meal-fat-inp').value)     || 0
+  });
+  saveCurrentProfile();
+  closeModal('modal-meal');
+  ['meal-name-inp','meal-kcal-inp','meal-protein-inp','meal-carbs-inp','meal-fat-inp'].forEach(id => document.getElementById(id).value = '');
+  showToast('Comida añadida ✓');
+  renderNutricion();
+}
+
+function deleteMeal(id) {
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.meals = p.nutrition.meals.filter(m => m.id !== id);
+  saveCurrentProfile();
+  renderNutricion();
+}
+
+function addRecipeAsMeal(idx) {
+  const p = profile();
+  ensureNutrition(p);
+  const r = p.nutrition.savedRecipes[idx];
+  if (!r) return;
+  p.nutrition.meals.push({ id: Date.now().toString(), date: new Date().toISOString().slice(0,10), name: r.name, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat });
+  saveCurrentProfile();
+  showToast(`"${r.name}" añadida a hoy ✓`);
+  renderNutricion();
+}
+
+function deleteRecipe(idx) {
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.savedRecipes.splice(idx, 1);
+  saveCurrentProfile();
+  showToast('Receta eliminada');
+  renderNutricion();
+}
+
+function deletePlan(idx) {
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.savedPlans.splice(idx, 1);
+  saveCurrentProfile();
+  showToast('Plan eliminado');
+  renderNutricion();
+}
+
+function applyPlanToday(idx) {
+  const p = profile();
+  ensureNutrition(p);
+  const plan = p.nutrition.savedPlans[idx];
+  if (!plan) return;
+  const today = new Date().toISOString().slice(0,10);
+  (plan.meals || []).forEach(m => {
+    p.nutrition.meals.push({ id: Date.now().toString() + Math.random(), date: today, name: `${m.timing}: ${m.name}`, kcal: m.kcal || 0, protein: m.protein || 0, carbs: m.carbs || 0, fat: m.fat || 0 });
+  });
+  saveCurrentProfile();
+  showToast(`Plan "${plan.name}" aplicado a hoy ✓`);
+  renderNutricion();
+}
+
+function toggleRecipeBody(idx) {
+  const el = document.getElementById(`recipe-body-${idx}`);
+  if (!el) return;
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+function saveIaRecipe(recipe, btn) {
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.savedRecipes.push({
+    id:           Date.now().toString(),
+    name:         recipe.name,
+    kcal:         recipe.kcal    || 0,
+    protein:      recipe.protein || 0,
+    carbs:        recipe.carbs   || 0,
+    fat:          recipe.fat     || 0,
+    ingredients:  Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+    instructions: recipe.instructions || ''
+  });
+  saveCurrentProfile();
+  btn.textContent = '✓ Guardada en Recetas';
+  btn.disabled = true;
+  btn.style.borderColor = 'var(--muted)';
+  btn.style.color = 'var(--muted)';
+  showToast(`Receta "${recipe.name}" guardada ✓`);
+}
+
+function saveIaMealPlan(plan, btn) {
+  const p = profile();
+  ensureNutrition(p);
+  p.nutrition.savedPlans.push({
+    id:    Date.now().toString(),
+    name:  plan.name,
+    meals: Array.isArray(plan.meals) ? plan.meals : []
+  });
+  saveCurrentProfile();
+  btn.textContent = '✓ Guardado en Planes';
+  btn.disabled = true;
+  btn.style.borderColor = 'var(--muted)';
+  btn.style.color = 'var(--muted)';
+  showToast(`Plan "${plan.name}" guardado ✓`);
+}
+
+function askKirkNutrition() {
+  switchTab('ia');
+  setTimeout(() => {
+    const inp = document.getElementById('ia-input');
+    if (inp) {
+      inp.value = 'Dame un consejo nutricional para hoy basándote en mis datos de entrenamiento y lo que he comido.';
+      inp.focus();
+    }
+  }, 100);
+}
+
+function buildNutritionContext() {
+  const p = profile();
+  ensureNutrition(p);
+  const n = p.nutrition;
+  const today = new Date().toISOString().slice(0,10);
+  const g = n.goals;
+  let txt = `\nNUTRICIÓN DE ${p.name}:\nObjetivos: ${g.kcal} kcal, ${g.protein}g prot, ${g.carbs}g carbs, ${g.fat}g grasa\n`;
+
+  const todayMeals = n.meals.filter(m => m.date === today);
+  if (todayMeals.length) {
+    const tot = todayMeals.reduce((a, m) => ({ kcal: a.kcal + (m.kcal||0), protein: a.protein + (m.protein||0), carbs: a.carbs + (m.carbs||0), fat: a.fat + (m.fat||0) }), { kcal:0, protein:0, carbs:0, fat:0 });
+    txt += `Hoy: ${tot.kcal}/${g.kcal} kcal (${tot.protein}g prot, ${tot.carbs}g carbs, ${tot.fat}g grasa)\n`;
+    txt += `Comidas: ${todayMeals.map(m => m.name).join(', ')}\n`;
+  } else {
+    txt += `Hoy: sin comidas registradas aún\n`;
+  }
+
+  // Last 3 days
+  const recentDays = [];
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    const dayKcal = n.meals.filter(m => m.date === ds).reduce((a, m) => a + (m.kcal||0), 0);
+    if (dayKcal > 0) recentDays.push(`${ds}: ${dayKcal} kcal`);
+  }
+  if (recentDays.length) txt += `Últimos días: ${recentDays.join(', ')}\n`;
+
+  return txt;
+}
+
 // ── IA / GROQ ─────────────────────────────────────────────────
 const IA_KEY_STORAGE = 'bw_groq_key';
 const IA_MODEL       = 'llama-3.3-70b-versatile';
@@ -1784,6 +2228,7 @@ function buildWorkoutContext() {
     const s = getProfileStats(bro);
     txt += `${bro.name}: ${s.sessions}d, ${s.vol}kg vol, mejor ${s.bestKg}kg\n`;
   });
+  txt += buildNutritionContext();
   return txt;
 }
 
@@ -1815,13 +2260,13 @@ function removeIaTyping() {
 }
 
 function renderIaText(text) {
-  // Extract ROUTINE_JSON if present
-  let routine = null;
-  const routineMatch = text.match(/ROUTINE_JSON:(\{.*\})/);
-  if (routineMatch) {
-    try { routine = JSON.parse(routineMatch[1]); } catch {}
-    text = text.replace(/ROUTINE_JSON:\{.*\}/, '').trimEnd();
-  }
+  let routine = null, recipe = null, mealPlan = null;
+  const routineMatch  = text.match(/ROUTINE_JSON:(\{.*?\})\s*$/m);
+  const recipeMatch   = text.match(/RECIPE_JSON:(\{.*?\})\s*$/m);
+  const mealPlanMatch = text.match(/MEALPLAN_JSON:(\{.*?\})\s*$/m);
+  if (routineMatch)  { try { routine  = JSON.parse(routineMatch[1]);  } catch {} text = text.replace(routineMatch[0],  '').trimEnd(); }
+  if (recipeMatch)   { try { recipe   = JSON.parse(recipeMatch[1]);   } catch {} text = text.replace(recipeMatch[0],   '').trimEnd(); }
+  if (mealPlanMatch) { try { mealPlan = JSON.parse(mealPlanMatch[1]); } catch {} text = text.replace(mealPlanMatch[0], '').trimEnd(); }
 
   // Split into blocks separated by blank lines
   const blocks = text.split(/\n{2,}/);
@@ -1850,7 +2295,7 @@ function renderIaText(text) {
       .replace(/\n/g, '<br>');
   }).join('<br>');
 
-  return { html, routine };
+  return { html, routine, recipe, mealPlan };
 }
 
 async function sendIaMessage() {
@@ -1871,11 +2316,19 @@ async function sendIaMessage() {
   sendBtn.disabled = true;
   addIaTyping();
 
-  const systemPrompt = `Eres un entrenador personal experto, motivador y directo. Responde SIEMPRE en español. Sé concreto y práctico. Máximo 200 palabras por respuesta.
+  const systemPrompt = `Eres KIRK, el coach personal de los GymBros — un equipo de 5 guerreros que entrena con 0 excusas. Tienes expertise en fuerza, hipertrofia y nutrición deportiva de alto rendimiento. Eres directo, motivador y sin rodeos. Responde SIEMPRE en español. Máximo 200 palabras por respuesta.
 
-Cuando sugieras una rutina de ejercicios que el usuario pueda guardar, añade AL FINAL del mensaje (en línea nueva) exactamente esto:
-ROUTINE_JSON:{"name":"Nombre rutina","exercises":[{"name":"Ejercicio","type":"normal"},{"name":"Ejercicio2","type":"bodyweight"},{"name":"Ejercicio3","type":"cardio"}]}
-Los tipos válidos son: normal (con peso), bodyweight (peso propio), cardio. No expliques ni menciones el JSON.
+Cuando sugieras una RUTINA que puedan guardar, añade AL FINAL (línea nueva):
+ROUTINE_JSON:{"name":"Nombre","exercises":[{"name":"Ejercicio","type":"normal"}]}
+Tipos válidos: normal, bodyweight, cardio.
+
+Cuando des una RECETA personalizada que puedan guardar, añade AL FINAL (línea nueva):
+RECIPE_JSON:{"name":"Nombre receta","kcal":500,"protein":40,"carbs":55,"fat":12,"ingredients":["200g pechuga","150g arroz"],"instructions":"Cuece arroz 18min. Saltea pollo. Mezcla."}
+
+Cuando hagas un PLAN DE COMIDAS del día que puedan guardar, añade AL FINAL (línea nueva):
+MEALPLAN_JSON:{"name":"Nombre plan","meals":[{"timing":"Desayuno","name":"Avena proteica","kcal":420,"protein":28,"carbs":55,"fat":8},{"timing":"Comida","name":"Arroz+pollo","kcal":650,"protein":50,"carbs":70,"fat":10}]}
+
+Nunca expliques ni menciones los JSON. Solo uno por respuesta.
 
 ${buildWorkoutContext()}`;
 
@@ -1899,7 +2352,7 @@ ${buildWorkoutContext()}`;
     const data  = await res.json();
     const reply = data.choices?.[0]?.message?.content;
     if (!reply) { sendBtn.disabled = false; return; }
-    const { html, routine } = renderIaText(reply);
+    const { html, routine, recipe, mealPlan } = renderIaText(reply);
     const bubble = addIaBubble('assistant', html);
     if (routine) {
       const btn = document.createElement('button');
@@ -1907,6 +2360,22 @@ ${buildWorkoutContext()}`;
       btn.style.cssText = 'margin-top:8px;width:100%;border-color:#16a34a;color:#16a34a';
       btn.textContent = `📥 Guardar rutina: "${routine.name}"`;
       btn.onclick = () => saveIaRoutine(routine, btn);
+      bubble.appendChild(btn);
+    }
+    if (recipe) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.style.cssText = 'margin-top:6px;width:100%;border-color:#f59e0b;color:#f59e0b';
+      btn.textContent = `🧑‍🍳 Guardar receta: "${recipe.name}"`;
+      btn.onclick = () => saveIaRecipe(recipe, btn);
+      bubble.appendChild(btn);
+    }
+    if (mealPlan) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.style.cssText = 'margin-top:6px;width:100%;border-color:#3b82f6;color:#3b82f6';
+      btn.textContent = `📋 Guardar plan: "${mealPlan.name}"`;
+      btn.onclick = () => saveIaMealPlan(mealPlan, btn);
       bubble.appendChild(btn);
     }
     _kirkHistory.push({ role: 'assistant', content: reply });
