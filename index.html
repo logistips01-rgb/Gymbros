@@ -398,8 +398,23 @@ header {
 .bro-recent-header:hover { background:rgba(255,255,255,0.03); }
 .bro-recent.open .bro-recent-body { display:block; }
 .bro-recent-body { display:none; padding:0 14px 12px; border-top:1px solid var(--border); }
+.bro-recent-subtitle { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin:10px 0 6px; }
 .bro-session-row { padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .bro-session-row:last-child { border-bottom:none; }
+.bro-routine-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.bro-routine-row:last-child { border-bottom:none; }
+
+/* Exercise rankings */
+.ex-rank-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
+.ex-rank-section h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.ex-rank-section h4 span { color:var(--text); }
+.ex-rank-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
+.ex-rank-row:last-child { border-bottom:none; }
+.ex-rank-pos { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:15px; width:22px; text-align:center; flex-shrink:0; }
+.ex-rank-av { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:11px; color:#fff; flex-shrink:0; }
+.ex-rank-name { font-weight:600; font-size:12px; flex:1; }
+.ex-rank-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:16px; color:#fff; flex-shrink:0; }
+.ex-rankings-grid { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
 
 /* Routine modal */
 .type-btn-group { display:flex; gap:6px; margin-bottom:10px; }
@@ -1573,7 +1588,15 @@ function renderBrosRecent() {
             <span style="color:var(--muted)"> · ${s.exercises.length} ej · ${totalSets}s</span>
           </div>`;
         }).join('')
-      : `<p style="color:var(--muted);font-size:12px;padding-top:8px">Sin sesiones todavía.</p>`;
+      : `<span style="color:var(--muted);font-size:12px">Sin sesiones todavía.</span>`;
+    const routinesHtml = bro.routines.length
+      ? bro.routines.map(r => `
+          <div class="bro-routine-row">
+            <span style="flex:1">${typeIcon('normal')} <b>${r.name}</b>
+              <span style="color:var(--muted)"> · ${r.exercises.length} ej.</span></span>
+            <button class="btn btn-ghost btn-sm" onclick="copyBroRoutine('${bro.id}','${r.id}')">Copiar</button>
+          </div>`).join('')
+      : `<span style="color:var(--muted);font-size:12px">Sin rutinas.</span>`;
     return `
       <div class="bro-recent" id="bro-r-${bro.id}">
         <div class="bro-recent-header" onclick="document.getElementById('bro-r-${bro.id}').classList.toggle('open')">
@@ -1582,9 +1605,32 @@ function renderBrosRecent() {
           <span style="color:var(--muted);font-size:11px">${recent.length ? recent.length+' ses.' : '—'}</span>
           <span style="color:var(--muted);font-size:12px;margin-left:8px">▼</span>
         </div>
-        <div class="bro-recent-body">${sessHtml}</div>
+        <div class="bro-recent-body">
+          <div class="bro-recent-subtitle">Rutinas</div>
+          ${routinesHtml}
+          <div class="bro-recent-subtitle" style="margin-top:12px">Últimas sesiones</div>
+          ${sessHtml}
+        </div>
       </div>`;
   }).join('');
+}
+
+function copyBroRoutine(broId, routineId) {
+  const bro = state.profiles.find(p => p.id === broId);
+  if (!bro) return;
+  ensureRoutines(bro);
+  const r = bro.routines.find(r => r.id === routineId);
+  if (!r) return;
+  const p = profile();
+  ensureRoutines(p);
+  p.routines.push({
+    id: Date.now().toString(),
+    name: r.name + ' (copia)',
+    exercises: r.exercises.map(e => ({ ...e, id: (Date.now() + Math.random()).toString() }))
+  });
+  saveCurrentProfile();
+  showToast('Rutina copiada ✓');
+  renderRutinas();
 }
 
 // ── STATS ──────────────────────────────────────────────────────
@@ -1672,6 +1718,61 @@ function renderRankings() {
       </div>`).join('');
     return `<div class="ranking-section"><h3>${sec.icon} <span>${sec.title}</span></h3>${rows}</div>`;
   }).join('');
+
+  // Exercise rankings
+  const exRankings = getExerciseRankings();
+  if (exRankings.length) {
+    const medals = ['🥇', '🥈', '🥉'];
+    const exHtml = exRankings.map(ex => {
+      const sorted = Object.values(ex.byProfile).sort((a, b) => b.best - a.best);
+      const maxVal = sorted[0].best || 1;
+      const rows = sorted.map((e, i) => `
+        <div class="ex-rank-row">
+          <div class="ex-rank-pos">${medals[i] || (i+1)+'º'}</div>
+          <div class="ex-rank-av" style="background:${e.color}">${e.name[0].toUpperCase()}</div>
+          <div class="ex-rank-name">${e.name}
+            <div style="margin-top:3px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+              <div style="height:100%;border-radius:2px;background:${e.color};width:${maxVal > 0 ? Math.round((e.best/maxVal)*100) : 0}%;transition:width .6s"></div>
+            </div>
+          </div>
+          <div class="ex-rank-val">${ex.type==='normal' ? e.best+'kg' : ex.type==='bodyweight' ? e.best+'r' : e.best+(ex.unit||'m')}</div>
+        </div>`).join('');
+      const icon = ex.type === 'normal' ? '🏋️' : ex.type === 'bodyweight' ? '💪' : '🏊';
+      return `<div class="ex-rank-section"><h4>${icon} <span>${ex.displayName}</span></h4>${rows}</div>`;
+    }).join('');
+    container.innerHTML += `
+      <div class="ranking-section">
+        <h3>⚔️ <span>Batalla por ejercicio</span></h3>
+        <div class="ex-rankings-grid">${exHtml}</div>
+      </div>`;
+  }
+}
+
+function getExerciseRankings() {
+  const exMap = {};
+  state.profiles.forEach((p, idx) => {
+    ensureRoutines(p);
+    const color = colorFor(idx);
+    p.gymSessions.forEach(s => {
+      s.exercises.forEach(ex => {
+        const key  = ex.name.trim().toLowerCase();
+        const type = ex.type || 'normal';
+        const sets = ex.sets || [];
+        let best = 0;
+        if (type === 'normal')      best = Math.max(0, ...sets.map(s => s.kg || 0));
+        else if (type === 'bodyweight') best = sets.reduce((a, s) => a + (s.reps || 0), 0);
+        else                        best = sets.reduce((a, s) => a + (s.value || 0), 0);
+        if (best === 0) return;
+        if (!exMap[key]) exMap[key] = { displayName: ex.name, type, unit: sets[0]?.unit, byProfile: {} };
+        const cur = exMap[key].byProfile[p.id];
+        if (!cur || best > cur.best) exMap[key].byProfile[p.id] = { name: p.name, color, best };
+      });
+    });
+  });
+  return Object.values(exMap)
+    .filter(ex => Object.keys(ex.byProfile).length >= 2)
+    .sort((a, b) => Object.keys(b.byProfile).length - Object.keys(a.byProfile).length)
+    .slice(0, 12);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────
