@@ -2819,22 +2819,37 @@ ${buildWorkoutContext()}`;
 // ── STATS ──────────────────────────────────────────────────────
 function renderStats() {
   const p = profile();
-  const allEx = p.muscles.flatMap(m => m.exercises);
-  const totalSessions = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
-  const totalSets = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
-  const totalVol = Math.round(allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + set.reps * set.kg, 0), 0), 0));
-  const bestKg = Math.max(0, ...allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg))));
-  const days = new Set(allEx.flatMap(e => e.sessions.map(s => s.date.slice(0, 10)))).size;
+  ensureRoutines(p);
+
+  // Entrenos libres
+  const allEx       = p.muscles.flatMap(m => m.exercises);
+  const entrenoDates = allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
+  const entrenoSets  = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
+  const entrenoVol   = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, st) => c + (st.reps||0)*(st.kg||0), 0), 0), 0);
+  const entrenoKgs   = allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(st => st.kg||0)));
+
+  // Rutinas (gymSessions)
+  const rutinaDates  = p.gymSessions.map(s => s.date.slice(0,10));
+  const rutinaAllSets= p.gymSessions.flatMap(s => s.exercises.flatMap(e => (e.sets||[]).map(st => ({...st, type: e.type||'normal'}))));
+  const rutinaVol    = rutinaAllSets.filter(s => s.type === 'normal').reduce((a, s) => a + (s.reps||0)*(s.kg||0), 0);
+  const rutinaKgs    = rutinaAllSets.filter(s => s.type === 'normal').map(s => s.kg||0);
+
+  // Combinados
+  const allDates  = new Set([...entrenoDates, ...rutinaDates]);
+  const totalSets = entrenoSets + rutinaAllSets.length;
+  const totalVol  = Math.round(entrenoVol + rutinaVol);
+  const bestKg    = Math.max(0, ...[...entrenoKgs, ...rutinaKgs]);
 
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-card"><div class="stat-v">${p.muscles.length}</div><div class="stat-l">Grupos</div></div>
     <div class="stat-card"><div class="stat-v">${allEx.length}</div><div class="stat-l">Ejercicios</div></div>
-    <div class="stat-card"><div class="stat-v">${totalSessions}</div><div class="stat-l">Días entrenados</div></div>
+    <div class="stat-card"><div class="stat-v">${allDates.size}</div><div class="stat-l">Días entrenados</div></div>
     <div class="stat-card"><div class="stat-v">${totalSets}</div><div class="stat-l">Series</div></div>
     <div class="stat-card"><div class="stat-v">${totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'t' : totalVol+'kg'}</div><div class="stat-l">Volumen total</div></div>
     <div class="stat-card"><div class="stat-v">${bestKg > 0 ? bestKg+'kg' : '—'}</div><div class="stat-l">Mayor peso</div></div>
-    <div class="stat-card"><div class="stat-v">${days}</div><div class="stat-l">Días activos</div></div>`;
+    <div class="stat-card"><div class="stat-v">${p.gymSessions.length}</div><div class="stat-l">Sesiones rutina</div></div>`;
 
+  // Muscle groups bar chart (entrenos libres)
   const entries = p.muscles.map(m => ({
     name: `${m.icon} ${m.name}`,
     sessions: new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size,
@@ -2842,16 +2857,30 @@ function renderStats() {
   })).sort((a, b) => b.sessions - a.sessions);
   const maxS = entries.length ? Math.max(1, ...entries.map(e => e.sessions)) : 1;
 
-  document.getElementById('muscle-stats').innerHTML = entries.length
-    ? entries.map(e => `
+  // Rutinas usage
+  const routineCount = {};
+  p.gymSessions.forEach(s => { routineCount[s.routineName] = (routineCount[s.routineName]||0) + 1; });
+  const rutinaEntries = Object.entries(routineCount).sort((a,b) => b[1]-a[1]);
+  const maxR = rutinaEntries.length ? rutinaEntries[0][1] : 1;
+
+  document.getElementById('muscle-stats').innerHTML = (entries.length ? `
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">ENTRENOS LIBRES</div>
+    ${entries.map(e => `
       <div class="muscle-stat-item">
         <div class="mstat-label">
           <span>${e.name} <span style="color:var(--muted);font-size:11px">(${e.exCount} ej.)</span></span>
           <span>${e.sessions} ses.</span>
         </div>
         <div class="prog-track"><div class="prog-fill" style="width:${Math.round((e.sessions/maxS)*100)}%"></div></div>
-      </div>`).join('')
-    : `<p style="color:var(--muted);font-size:12px">Aún no hay datos.</p>`;
+      </div>`).join('')}` : '') +
+  (rutinaEntries.length ? `
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 6px">RUTINAS</div>
+    ${rutinaEntries.map(([name, count]) => `
+      <div class="muscle-stat-item">
+        <div class="mstat-label"><span>📋 ${name}</span><span>${count} ses.</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:${Math.round((count/maxR)*100)}%"></div></div>
+      </div>`).join('')}` : '') ||
+  `<p style="color:var(--muted);font-size:12px">Aún no hay datos.</p>`;
 }
 
 // ── RANKINGS ──────────────────────────────────────────────────
