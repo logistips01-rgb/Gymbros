@@ -711,7 +711,44 @@ header {
 <!-- MODAL: Objetivos nutricionales -->
 <div class="modal-overlay" id="modal-nutri-goals">
   <div class="modal">
-    <h3>Objetivos diarios</h3>
+    <h3>Perfil y objetivos</h3>
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">TU CUERPO</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="field">
+        <label>Sexo</label>
+        <select id="goal-sex-sel" style="width:100%" oninput="updateTdeePreview()">
+          <option value="m">Hombre</option>
+          <option value="f">Mujer</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Edad</label>
+        <input type="number" id="goal-age-inp" placeholder="25" min="15" max="80" style="width:100%" oninput="updateTdeePreview()">
+      </div>
+      <div class="field">
+        <label>Altura (cm)</label>
+        <input type="number" id="goal-height-inp" placeholder="175" min="140" max="220" style="width:100%" oninput="updateTdeePreview()">
+      </div>
+      <div class="field">
+        <label>Actividad diaria</label>
+        <select id="goal-activity-sel" style="width:100%" oninput="updateTdeePreview()">
+          <option value="1.2">Sedentario (escritorio)</option>
+          <option value="1.375">Ligero (camino algo)</option>
+          <option value="1.55">Moderado (activo)</option>
+          <option value="1.725">Muy activo (trabajo físico)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:8px">
+      <label>Objetivo</label>
+      <select id="goal-type-sel" style="width:100%" oninput="updateTdeePreview()">
+        <option value="lose">Perder grasa (-400 kcal)</option>
+        <option value="maintain">Mantener peso</option>
+        <option value="gain">Ganar músculo (+300 kcal)</option>
+      </select>
+    </div>
+    <div id="tdee-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;display:none"></div>
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">MACROS DIARIOS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="field">
         <label>Kcal objetivo</label>
@@ -1362,10 +1399,51 @@ function loadNutri() {
 function saveNutri(n) { localStorage.setItem(_nutriKey(), JSON.stringify(n)); }
 function ensureNutrition(n) {
   if (!n.goals) n.goals = { kcal: 2200, protein: 160, carbs: 250, fat: 65 };
+  if (!n.physique) n.physique = { sex: 'm', age: 0, height: 0, activity: 1.55, goalType: 'maintain' };
   if (!Array.isArray(n.meals)) n.meals = [];
   if (!Array.isArray(n.savedRecipes)) n.savedRecipes = [];
   if (!Array.isArray(n.savedPlans)) n.savedPlans = [];
   return n;
+}
+
+function calculateTDEE(weight, age, height, sex, activity) {
+  if (!weight || !age || !height) return null;
+  const bmr = sex === 'f'
+    ? Math.round(10*weight + 6.25*height - 5*age - 161)
+    : Math.round(10*weight + 6.25*height - 5*age + 5);
+  return { bmr, tdee: Math.round(bmr * activity) };
+}
+
+function updateTdeePreview() {
+  const bw       = getBodyWeight();
+  const age      = parseInt(document.getElementById('goal-age-inp')?.value) || 0;
+  const height   = parseInt(document.getElementById('goal-height-inp')?.value) || 0;
+  const sex      = document.getElementById('goal-sex-sel')?.value || 'm';
+  const activity = parseFloat(document.getElementById('goal-activity-sel')?.value) || 1.55;
+  const goalType = document.getElementById('goal-type-sel')?.value || 'maintain';
+  const el       = document.getElementById('tdee-result');
+  if (!el) return;
+  const res = calculateTDEE(bw, age, height, sex, activity);
+  if (!res) { el.style.display = 'none'; return; }
+  const adj    = { lose: -400, maintain: 0, gain: 300 }[goalType] || 0;
+  const target = res.tdee + adj;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span>🔥 BMR (metabolismo basal)</span><span style="font-weight:600">${res.bmr} kcal</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span>⚡ TDEE (con actividad diaria)</span><span style="font-weight:600">${res.tdee} kcal</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:2px">
+      <span style="font-weight:600">🎯 Objetivo recomendado</span>
+      <span style="color:var(--accent);font-weight:700">${target} kcal</span>
+    </div>`;
+  // Auto-fill macros
+  document.getElementById('goal-kcal-inp').value    = target;
+  document.getElementById('goal-protein-inp').value = Math.round(bw * 2);
+  document.getElementById('goal-fat-inp').value     = Math.round(bw * 0.8);
+  document.getElementById('goal-carbs-inp').value   = Math.max(0, Math.round((target - bw*2*4 - bw*0.8*9) / 4));
 }
 
 // ── Active session state ───────────────────────────────────────
@@ -2031,12 +2109,7 @@ function estimateKcalBurned(p, date) {
 
   // Add base overhead for training day (~10% extra for warm-up, transitions)
   if (total > 0) total = Math.round(total * 1.1);
-
-  // Steps contribution: ~0.04 kcal/step scaled by body weight
-  const steps = getSteps(date);
-  const stepsKcal = steps > 0 ? Math.round(steps * 0.04 * (bw / 70)) : 0;
-
-  return (total + stepsKcal) || null;
+  return total || null;
 }
 
 // ── BASE DE DATOS ALIMENTOS ───────────────────────────────────
@@ -2275,10 +2348,8 @@ function renderNutricion() {
   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
 
   // Calorie burn estimation
-  const todaySteps = getSteps(today);
   const todayBw = getBw(today) || getBodyWeight(); // today's entry or most recent
   const bw = getBodyWeight();
-  const stepsKcal = (todaySteps > 0 && bw) ? Math.round(todaySteps * 0.04 * (bw / 70)) : 0;
   const burned = estimateKcalBurned(p, today);
   const netKcal = burned ? tot.kcal - burned : null;
 
@@ -2402,13 +2473,6 @@ function renderNutricion() {
             onchange="saveBwToday(this.value)">
           <span style="min-width:52px"></span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;flex:1">👟 Pasos hoy</span>
-          <input type="number" id="steps-inp" value="${todaySteps || ''}" min="0" max="99999" placeholder="0"
-            style="width:85px;padding:3px 7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:right"
-            onchange="saveStepsToday(this.value)">
-          ${stepsKcal ? `<span style="font-size:11px;color:#16a34a;font-weight:700;min-width:52px;text-align:right">~${stepsKcal} kcal</span>` : `<span style="min-width:52px"></span>`}
-        </div>
         ${burned ? `<div style="display:flex;justify-content:space-between;font-size:12px">
           <span>💪 Quemado total</span><span style="color:#16a34a;font-weight:700">~${burned} kcal</span>
         </div>
@@ -2445,16 +2509,30 @@ function renderNutricion() {
 }
 
 function openNutritionGoals() {
-  const g = ensureNutrition(loadNutri()).goals;
-  document.getElementById('goal-kcal-inp').value    = g.kcal;
-  document.getElementById('goal-protein-inp').value = g.protein;
-  document.getElementById('goal-carbs-inp').value   = g.carbs;
-  document.getElementById('goal-fat-inp').value     = g.fat;
+  const n = ensureNutrition(loadNutri());
+  const g = n.goals, ph = n.physique;
+  document.getElementById('goal-sex-sel').value      = ph.sex || 'm';
+  document.getElementById('goal-age-inp').value      = ph.age || '';
+  document.getElementById('goal-height-inp').value   = ph.height || '';
+  document.getElementById('goal-activity-sel').value = ph.activity || 1.55;
+  document.getElementById('goal-type-sel').value     = ph.goalType || 'maintain';
+  document.getElementById('goal-kcal-inp').value     = g.kcal;
+  document.getElementById('goal-protein-inp').value  = g.protein;
+  document.getElementById('goal-carbs-inp').value    = g.carbs;
+  document.getElementById('goal-fat-inp').value      = g.fat;
   openModal('modal-nutri-goals');
+  updateTdeePreview();
 }
 
 function saveNutriGoals() {
   const n = ensureNutrition(loadNutri());
+  n.physique = {
+    sex:      document.getElementById('goal-sex-sel').value || 'm',
+    age:      parseInt(document.getElementById('goal-age-inp').value) || 0,
+    height:   parseInt(document.getElementById('goal-height-inp').value) || 0,
+    activity: parseFloat(document.getElementById('goal-activity-sel').value) || 1.55,
+    goalType: document.getElementById('goal-type-sel').value || 'maintain'
+  };
   n.goals = {
     kcal:    parseInt(document.getElementById('goal-kcal-inp').value)    || 2200,
     protein: parseInt(document.getElementById('goal-protein-inp').value) || 160,
@@ -2463,7 +2541,7 @@ function saveNutriGoals() {
   };
   saveNutri(n);
   closeModal('modal-nutri-goals');
-  showToast('Objetivos guardados ✓');
+  showToast('Perfil guardado ✓');
   renderNutricion();
 }
 
@@ -2578,22 +2656,25 @@ function askKirkNutrition() {
 }
 
 function buildNutritionContext() {
-  const n = ensureNutrition(loadNutri()), g = n.goals;
+  const n = ensureNutrition(loadNutri()), g = n.goals, ph = n.physique;
   const today = new Date().toISOString().slice(0,10);
-  // Ultra-compact: one line per concept
-  let txt = `Nutri(obj:${g.kcal}kcal/${g.protein}P/${g.carbs}C/${g.fat}G) `;
+  const bw = getBodyWeight();
+  // Physique + TDEE
+  let txt = '';
+  if (ph.age && ph.height && bw) {
+    const res = calculateTDEE(bw, ph.age, ph.height, ph.sex, ph.activity);
+    if (res) txt += `Físico(${ph.sex==='f'?'mujer':'hombre'},${ph.age}a,${ph.height}cm,${bw}kg) BMR:${res.bmr} TDEE:${res.tdee} obj:${ph.goalType}) `;
+  }
+  txt += `Nutri(obj:${g.kcal}kcal/${g.protein}P/${g.carbs}C/${g.fat}G) `;
   const tm = n.meals.filter(m => m.date === today);
   if (tm.length) {
     const tot = tm.reduce((a,m) => ({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),carbs:a.carbs+(m.carbs||0),fat:a.fat+(m.fat||0)}),{kcal:0,protein:0,carbs:0,fat:0});
     txt += `hoy:${tot.kcal}kcal(${tot.protein}P,${tot.carbs}C,${tot.fat}G) comidas:${tm.map(m=>m.name).join('+')}`;
     const burned = estimateKcalBurned(profile(), today);
-    const steps = getSteps(today);
-    if (steps) txt += ` pasos:${steps}`;
-    if (burned) txt += ` quemado:~${burned}kcal neto:${tot.kcal - burned}kcal`;
+    if (burned) txt += ` gym:~${burned}kcal neto:${tot.kcal - burned}kcal`;
   } else {
     txt += `hoy:sin comidas`;
   }
-  // Last 2 days only
   for (let i = 1; i <= 2; i++) {
     const d = new Date(); d.setDate(d.getDate()-i);
     const ds = d.toISOString().slice(0,10);
