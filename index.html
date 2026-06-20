@@ -1847,6 +1847,19 @@ function setBodyWeight(w) {
         : localStorage.removeItem(`gymbros_bw_${profile().id}`);
 }
 
+// ── PASOS DIARIOS ─────────────────────────────────────────────
+function _stepsKey(date) { return `gymbros_steps_${profile().id}_${date}`; }
+function getSteps(date) { return parseInt(localStorage.getItem(_stepsKey(date))) || 0; }
+function saveSteps(steps, date) {
+  steps > 0 ? localStorage.setItem(_stepsKey(date), steps)
+             : localStorage.removeItem(_stepsKey(date));
+}
+function saveStepsToday(val) {
+  const steps = parseInt(val) || 0;
+  saveSteps(steps, new Date().toISOString().slice(0,10));
+  renderNutricion();
+}
+
 // ── ESTIMACIÓN KCAL QUEMADAS ──────────────────────────────────
 const COMPOUND_RE = /sentadilla|squat|peso muerto|deadlift|press banca|bench|dominad|remo|hip thrust|fondos|dip|prensa|jaca|press militar|overhead|peso muerto|rack/i;
 
@@ -1885,7 +1898,12 @@ function estimateKcalBurned(p, date) {
 
   // Add base overhead for training day (~10% extra for warm-up, transitions)
   if (total > 0) total = Math.round(total * 1.1);
-  return total;
+
+  // Steps contribution: ~0.04 kcal/step scaled by body weight
+  const steps = getSteps(date);
+  const stepsKcal = steps > 0 ? Math.round(steps * 0.04 * (bw / 70)) : 0;
+
+  return (total + stepsKcal) || null;
 }
 
 // ── BASE DE DATOS ALIMENTOS ───────────────────────────────────
@@ -2015,6 +2033,9 @@ function renderNutricion() {
   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
 
   // Calorie burn estimation
+  const todaySteps = getSteps(today);
+  const bw = getBodyWeight();
+  const stepsKcal = (todaySteps > 0 && bw) ? Math.round(todaySteps * 0.04 * (bw / 70)) : 0;
   const burned = estimateKcalBurned(p, today);
   const netKcal = burned ? tot.kcal - burned : null;
 
@@ -2125,14 +2146,21 @@ function renderNutricion() {
       <div class="macro-bar-label"><span>🌾 Carbos ${tot.carbs}g</span><span>${g.carbs}g</span></div>
       ${bar(tot.fat, g.fat, '#3b82f6')}
       <div class="macro-bar-label"><span>🧈 Grasa ${tot.fat}g</span><span>${g.fat}g</span></div>
-      ${burned ? `<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px;display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span>💪 Quemado hoy</span><span style="color:#16a34a;font-weight:700">~${burned} kcal</span>
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;flex:1">👟 Pasos hoy</span>
+          <input type="number" id="steps-inp" value="${todaySteps || ''}" min="0" max="99999" placeholder="0"
+            style="width:85px;padding:3px 7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:right"
+            onchange="saveStepsToday(this.value)">
+          ${stepsKcal ? `<span style="font-size:11px;color:#16a34a;font-weight:700;min-width:52px;text-align:right">~${stepsKcal} kcal</span>` : `<span style="min-width:52px"></span>`}
+        </div>
+        ${burned ? `<div style="display:flex;justify-content:space-between;font-size:12px">
+          <span>💪 Quemado total</span><span style="color:#16a34a;font-weight:700">~${burned} kcal</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px">
           <span>🍽 Neto</span><span style="font-weight:700">${netKcal} kcal</span>
-        </div>
-      </div>` : ''}
+        </div>` : ''}
+      </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -2298,6 +2326,8 @@ function buildNutritionContext() {
     const tot = tm.reduce((a,m) => ({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),carbs:a.carbs+(m.carbs||0),fat:a.fat+(m.fat||0)}),{kcal:0,protein:0,carbs:0,fat:0});
     txt += `hoy:${tot.kcal}kcal(${tot.protein}P,${tot.carbs}C,${tot.fat}G) comidas:${tm.map(m=>m.name).join('+')}`;
     const burned = estimateKcalBurned(profile(), today);
+    const steps = getSteps(today);
+    if (steps) txt += ` pasos:${steps}`;
     if (burned) txt += ` quemado:~${burned}kcal neto:${tot.kcal - burned}kcal`;
   } else {
     txt += `hoy:sin comidas`;
