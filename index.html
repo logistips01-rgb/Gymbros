@@ -1834,10 +1834,13 @@ function finishSession() {
     exercises:   activeSession.exercises
   });
   const savedSess = { ...activeSession, startTime: activeSession.startTime };
+  // Check records BEFORE clearing (gymSessions already has the new one pushed)
+  const records = checkNewRecords(p.gymSessions[p.gymSessions.length - 1], p.gymSessions.slice(0, -1));
   activeSession = null;
   persistSession();
   saveCurrentProfile();
   showToast('¡Sesión guardada! 💪');
+  records.forEach((r, i) => setTimeout(() => showToast(`🏆 ¡NUEVO RÉCORD! ${r.name}: ${r.rm}kg (1RM est.)`), 800 + i * 1200));
   showSessionSummary(savedSess);
   renderRutinas();
 }
@@ -3224,7 +3227,8 @@ function renderStats() {
     <div class="stat-card"><div class="stat-v">${totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'t' : totalVol+'kg'}</div><div class="stat-l">Volumen total</div></div>
     <div class="stat-card"><div class="stat-v">${bestKg > 0 ? bestKg+'kg' : '—'}</div><div class="stat-l">Mayor peso</div></div>
     <div class="stat-card"><div class="stat-v">${p.gymSessions.length}</div><div class="stat-l">Sesiones rutina</div></div>
-    <div class="stat-card"><div class="stat-v">${getStreak(p) > 0 ? '🔥'+getStreak(p) : '—'}</div><div class="stat-l">Racha días</div></div>`;
+    <div class="stat-card"><div class="stat-v">${getStreak(p) > 0 ? '🔥'+getStreak(p) : '—'}</div><div class="stat-l">Racha días</div></div>
+    ${(()=>{ const r=getProfileBest1RM(p); return r.rm>0?`<div class="stat-card" style="grid-column:span 2"><div class="stat-v">${r.rm}kg</div><div class="stat-l">1RM est. · ${r.ex}</div></div>`:''; })()}`;
 
   // Muscle groups bar chart (entrenos libres)
   const entries = p.muscles.map(m => ({
@@ -3270,6 +3274,43 @@ function renderStats() {
 }
 
 // ── RANKINGS ──────────────────────────────────────────────────
+function estimate1RM(kg, reps) {
+  if (!kg || !reps || reps <= 0) return 0;
+  if (reps === 1) return kg;
+  return Math.round(kg * (1 + reps / 30));
+}
+
+function getProfileBest1RM(p) {
+  ensureRoutines(p);
+  let best = 0, bestEx = '';
+  const check = (name, sets) => {
+    (sets || []).forEach(s => {
+      if (s.kg && s.reps) {
+        const rm = estimate1RM(s.kg, s.reps);
+        if (rm > best) { best = rm; bestEx = name; }
+      }
+    });
+  };
+  p.gymSessions.forEach(sess => sess.exercises.forEach(e => check(e.name, e.sets)));
+  p.muscles.flatMap(m => m.exercises).forEach(e => e.sessions.forEach(s => check(e.name, s.sets)));
+  return { rm: best, ex: bestEx };
+}
+
+function checkNewRecords(sess, previousSessions) {
+  // For each exercise in sess, compare best 1RM vs all prior sessions
+  const records = [];
+  sess.exercises.forEach(ex => {
+    if ((ex.type || 'normal') !== 'normal') return;
+    const sessionBest1RM = Math.max(0, ...(ex.sets || []).map(s => estimate1RM(s.kg || 0, s.reps || 0)));
+    if (!sessionBest1RM) return;
+    const priorBest = Math.max(0, ...previousSessions
+      .filter(s => s.id !== sess.id)
+      .flatMap(s => (s.exercises || []).filter(e => e.name === ex.name).flatMap(e => (e.sets || []).map(s => estimate1RM(s.kg || 0, s.reps || 0)))));
+    if (sessionBest1RM > priorBest) records.push({ name: ex.name, rm: sessionBest1RM });
+  });
+  return records;
+}
+
 function getProfileStats(p) {
   ensureRoutines(p);
 
@@ -3292,8 +3333,9 @@ function getProfileStats(p) {
   const vol       = Math.round(entrenoVol + rutinaVol);
   const bestKg    = Math.max(0, ...[...entrenoKgs, ...rutinaKgs]);
   const totalSets = entrenoSets + rutinaAllSets.length;
+  const bestRM    = getProfileBest1RM(p).rm;
 
-  return { sessions, vol, bestKg, days, totalSets };
+  return { sessions, vol, bestKg, days, totalSets, bestRM };
 }
 
 function renderRankings() {
@@ -3304,9 +3346,10 @@ function renderRankings() {
   }
   const data = state.profiles.map((p, idx) => ({ ...p, idx, color: colorFor(idx), stats: getProfileStats(p) }));
   const sections = [
-    { icon: '💥', title: 'Volumen total', key: 'vol',      fmt: v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg', sub: d => `${d.stats.sessions} sesiones` },
-    { icon: '🗓️', title: 'Días activos',  key: 'days',     fmt: v => v + ' días',  sub: d => `${d.stats.totalSets} series` },
-    { icon: '🏋️', title: 'Mayor peso',    key: 'bestKg',   fmt: v => v > 0 ? v+'kg' : '—', sub: d => `${d.stats.sessions} sesiones` },
+    { icon: '💥', title: 'Volumen total',   key: 'vol',     fmt: v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg', sub: d => `${d.stats.sessions} sesiones` },
+    { icon: '🗓️', title: 'Días activos',    key: 'days',    fmt: v => v + ' días', sub: d => `${d.stats.totalSets} series` },
+    { icon: '🏋️', title: 'Mayor peso',      key: 'bestKg',  fmt: v => v > 0 ? v+'kg' : '—', sub: d => `${d.stats.sessions} sesiones` },
+    { icon: '💪', title: '1RM estimado',    key: 'bestRM',  fmt: v => v > 0 ? v+'kg' : '—', sub: d => { const r=getProfileBest1RM(d); return r.ex||'sin datos'; } },
     { icon: '🔁', title: 'Días entrenados', key: 'sessions', fmt: v => v + ' días', sub: d => `${d.stats.totalSets} series` }
   ];
   const medals = ['🥇', '🥈', '🥉'];
