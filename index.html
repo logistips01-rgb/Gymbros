@@ -2104,7 +2104,7 @@ function renderNutricion() {
 
   // Calorie burn estimation
   const todaySteps = getSteps(today);
-  const todayBw = getBw(today);
+  const todayBw = getBw(today) || getBodyWeight(); // today's entry or most recent
   const bw = getBodyWeight();
   const stepsKcal = (todaySteps > 0 && bw) ? Math.round(todaySteps * 0.04 * (bw / 70)) : 0;
   const burned = estimateKcalBurned(p, today);
