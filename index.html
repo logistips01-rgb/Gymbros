@@ -785,6 +785,7 @@ header {
       </div>
     </div>
     <div id="session-summary-content"></div>
+    <div id="kirk-session-comment" style="margin-top:10px"></div>
     <div class="modal-actions" style="flex-direction:column;gap:8px">
       <button class="btn btn-accent" style="width:100%" onclick="copySessionSummary()">📋 Copiar para WhatsApp</button>
       <button class="btn btn-ghost" style="width:100%" onclick="closeModal('modal-session-summary')">Cerrar</button>
@@ -1863,6 +1864,36 @@ function showSessionSummary(sess) {
     ${exList}`;
   _lastSessionSummary = `💪 *${profile().name}* ha completado *${sess.routineName}*\n⏱ ${duration} min · 🔁 ${totalSets} series · 📦 ${totalVol>=1000?(totalVol/1000).toFixed(1)+'t':totalVol+'kg'} volumen\n${sess.exercises.filter(e=>(e.sets||[]).length>0).map(e=>{const best=Math.max(0,...(e.sets||[]).map(s=>s.kg||0));return `${e.name}${best>0?` (${best}kg)`:''}: ${(e.sets||[]).length} series`;}).join(' · ')}\n#GymBros 🏋️`;
   openModal('modal-session-summary');
+  kirkSessionComment(sess, totalSets, totalVol, duration);
+}
+
+async function kirkSessionComment(sess, totalSets, totalVol, duration) {
+  const el = document.getElementById('kirk-session-comment');
+  if (!el) return;
+  const key = getIaKey();
+  if (!key) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><span style="font-size:18px">🤖</span><span>Kirk analizando tu sesión...</span></div>`;
+  const exSummary = sess.exercises.filter(e=>(e.sets||[]).length>0).map(e=>{
+    const best = Math.max(0,...(e.sets||[]).map(s=>s.kg||0));
+    const sets = e.sets||[];
+    return `${e.name}:${sets.length}x${best>0?best+'kg':'bw'}`;
+  }).join(',');
+  const prompt = `Sesión de ${profile().name}: rutina "${sess.routineName}", ${duration}min, ${totalSets} series, ${totalVol}kg volumen. Ejercicios: ${exSummary}. Dame 2-3 frases de feedback motivacional y técnico, directo y en español. Sin saludos.`;
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: IA_MODEL, messages: [{ role: 'user', content: prompt }], max_tokens: 150, temperature: 0.8 })
+    });
+    if (!res.ok) { el.innerHTML = ''; return; }
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content?.trim();
+    if (!reply) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:12px;line-height:1.5">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">🤖 KIRK</div>
+      ${reply}
+    </div>`;
+  } catch { el.innerHTML = ''; }
 }
 
 function copySessionSummary() {
