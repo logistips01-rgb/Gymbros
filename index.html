@@ -2998,8 +2998,8 @@ function getProfileStats(p) {
   // Entrenos tab data
   const allEx = p.muscles.flatMap(m => m.exercises);
   const entrenoDates  = allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
-  const entrenoVol    = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + set.reps * set.kg, 0), 0), 0);
-  const entrenoKgs    = allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg)));
+  const entrenoVol    = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + (set.reps||0)*(set.kg||0), 0), 0), 0);
+  const entrenoKgs    = allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg||0)));
   const entrenoSets   = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
 
   // Rutinas gymSessions data
