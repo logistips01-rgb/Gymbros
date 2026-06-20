@@ -1371,9 +1371,23 @@ function ensureNutrition(n) {
 // ── Active session state ───────────────────────────────────────
 let activeSession = null; // { routineId, routineName, startTime, exercises:[{id,name,type,sets:[]}] }
 
+function _sessionStorageKey() { return `gymbros_session_${profile().id}`; }
+function persistSession() {
+  if (activeSession) localStorage.setItem(_sessionStorageKey(), JSON.stringify(activeSession));
+  else localStorage.removeItem(_sessionStorageKey());
+}
+function recoverSession() {
+  if (activeSession) return; // already have one
+  try {
+    const s = JSON.parse(localStorage.getItem(_sessionStorageKey()));
+    if (s && s.exercises) { activeSession = s; }
+  } catch {}
+}
+
 function renderRutinas() {
   const p = profile();
   ensureRoutines(p);
+  recoverSession();
 
   const sessionView = document.getElementById('active-session-view');
   const normalView  = document.getElementById('routines-normal-view');
@@ -1530,20 +1544,37 @@ function startSession(routineId) {
     startTime: new Date().toISOString(),
     exercises: r.exercises.map(e => ({ id: e.id, name: e.name, type: e.type || 'normal', sets: [] }))
   };
+  persistSession();
   renderRutinas();
 }
 
 function renderActiveSession() {
   const view = document.getElementById('active-session-view');
   const dateStr = new Date(activeSession.startTime).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-  const exBlocks = activeSession.exercises.map(ex => `
+  const exBlocks = activeSession.exercises.map(ex => {
+    const lastSets = getLastExReference(ex.name, activeSession.routineId);
+    let refHtml = '';
+    if (lastSets && lastSets.length > 0) {
+      const parts = lastSets.map(s =>
+        s.kg != null ? `${s.kg}kg×${s.reps}` :
+        s.reps != null ? `${s.reps} reps` :
+        s.value != null ? `${s.value}${s.unit||'m'}` : ''
+      ).filter(Boolean);
+      refHtml = `<div style="font-size:10px;color:var(--muted);margin:-2px 0 4px;padding-left:2px">📊 Ref: ${parts.join(' · ')}</div>`;
+    }
+    return `
     <div class="sess-ex-block">
-      <div class="sess-ex-title">${typeIcon(ex.type)} ${ex.name}</div>
+      <div class="sess-ex-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>${typeIcon(ex.type)} ${ex.name}</span>
+        <button class="btn-icon" title="Cambiar ejercicio" onclick="swapSessionExercise('${ex.id}')" style="opacity:0.6;font-size:12px">⇄</button>
+      </div>
+      ${refHtml}
       <div id="sess-sets-${ex.id}"></div>
       <div class="sess-ex-foot">
         <button class="add-set-link" onclick="addSessionSet('${ex.id}')">+ Serie</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   view.innerHTML = `
     <div class="active-session-head">
@@ -1554,9 +1585,10 @@ function renderActiveSession() {
       <button class="btn btn-ghost btn-sm" onclick="cancelSession()">✕ Descartar</button>
     </div>
     ${exBlocks}
-    <button class="btn btn-accent" style="width:100%;margin-top:6px;font-size:15px" onclick="finishSession()">
-      💾 Finalizar sesión
-    </button>`;
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn btn-ghost" style="flex:1" onclick="saveSessionProgress()">💾 Guardar progreso</button>
+      <button class="btn btn-accent" style="flex:1;font-size:15px" onclick="finishSession()">✅ Finalizar</button>
+    </div>`;
 
   // Restore set rows for any sets already added
   activeSession.exercises.forEach(ex => {
@@ -1570,6 +1602,7 @@ function addSessionSet(exId) {
   ex.sets.push({});
   const n = ex.sets.length;
   _addSessionSetRow(exId, n, ex.type);
+  persistSession();
 }
 
 function _addSessionSetRow(exId, n, type) {
@@ -1609,6 +1642,7 @@ function removeSessionSet(exId, btn) {
     const num = r.querySelector('.day-set-num');
     if (num) num.textContent = i + 1;
   });
+  persistSession();
 }
 
 function collectSessionSets() {
@@ -1647,6 +1681,7 @@ function finishSession() {
     exercises:   activeSession.exercises
   });
   activeSession = null;
+  persistSession();
   saveCurrentProfile();
   showToast('¡Sesión guardada! 💪');
   renderRutinas();
@@ -1655,7 +1690,35 @@ function finishSession() {
 function cancelSession() {
   if (!confirm('¿Descartar la sesión?')) return;
   activeSession = null;
+  persistSession();
   renderRutinas();
+}
+
+function saveSessionProgress() {
+  collectSessionSets();
+  persistSession();
+  showToast('Progreso guardado 💾');
+}
+
+function swapSessionExercise(exId) {
+  const ex = activeSession.exercises.find(e => e.id === exId);
+  if (!ex) return;
+  const newName = prompt(`Cambiar "${ex.name}" por:`, ex.name);
+  if (!newName || !newName.trim() || newName.trim() === ex.name) return;
+  ex.name = newName.trim();
+  persistSession();
+  renderActiveSession();
+}
+
+function getLastExReference(exName, routineId) {
+  const p = profile();
+  if (!Array.isArray(p.gymSessions)) return null;
+  const sessions = [...p.gymSessions].reverse().filter(s => s.routineId === routineId);
+  for (const sess of sessions) {
+    const ex = (sess.exercises || []).find(e => e.name === exName);
+    if (ex && ex.sets && ex.sets.length > 0) return ex.sets;
+  }
+  return null;
 }
 
 // ── Session history ────────────────────────────────────────────
