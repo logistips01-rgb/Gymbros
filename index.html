@@ -718,10 +718,6 @@ header {
         <input type="number" id="goal-kcal-inp" placeholder="2200" min="1000" style="width:100%">
       </div>
       <div class="field">
-        <label>Peso corporal (kg)</label>
-        <input type="number" id="goal-weight-inp" placeholder="75" min="30" max="200" style="width:100%">
-      </div>
-      <div class="field">
         <label>Proteína (g)</label>
         <input type="number" id="goal-protein-inp" placeholder="160" min="0" style="width:100%">
       </div>
@@ -734,7 +730,6 @@ header {
         <input type="number" id="goal-fat-inp" placeholder="65" min="0" style="width:100%">
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted);margin-top:4px">💡 El peso se usa para estimar kcal quemadas en entrenos.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-nutri-goals')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveNutriGoals()">Guardar</button>
@@ -1840,11 +1835,86 @@ function copyBroRoutine(broId, routineId) {
   renderRutinas();
 }
 
-// ── PESO CORPORAL (privado, localStorage) ─────────────────────
-function getBodyWeight() { return parseFloat(localStorage.getItem(`gymbros_bw_${profile().id}`)) || 0; }
-function setBodyWeight(w) {
-  w > 0 ? localStorage.setItem(`gymbros_bw_${profile().id}`, w)
-        : localStorage.removeItem(`gymbros_bw_${profile().id}`);
+// ── PESO CORPORAL (privado, localStorage, por día) ────────────
+function _bwKey(date) { return `gymbros_bw_${profile().id}_${date}`; }
+function getBw(date) { return parseFloat(localStorage.getItem(_bwKey(date))) || 0; }
+function saveBw(w, date) {
+  w > 0 ? localStorage.setItem(_bwKey(date), w)
+         : localStorage.removeItem(_bwKey(date));
+}
+function saveBwToday(val) {
+  const w = parseFloat(val) || 0;
+  saveBw(w, new Date().toISOString().slice(0,10));
+  renderNutricion();
+}
+function getBodyWeight() {
+  // Most recent weight in last 90 days (used for kcal estimation)
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const w = getBw(d.toISOString().slice(0,10));
+    if (w > 0) return w;
+  }
+  return 0;
+}
+function getBwHistory(days) {
+  const result = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    result.push({ date: ds, w: getBw(ds), label: `${d.getDate()}/${d.getMonth()+1}` });
+  }
+  return result;
+}
+function getStepsHistory(days) {
+  const result = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    result.push({ date: ds, steps: getSteps(ds), label: ['D','L','M','X','J','V','S'][d.getDay()] });
+  }
+  return result;
+}
+
+function weightChartSVG(history) {
+  const pts = history.filter(d => d.w > 0);
+  if (!pts.length) return `<p style="color:var(--muted);font-size:12px;text-align:center;padding:8px 0">Sin datos aún — registra tu peso cada día</p>`;
+  if (pts.length === 1) return `<p style="color:var(--muted);font-size:12px;text-align:center;padding:8px 0">Solo un registro: ${pts[0].w} kg (${pts[0].label})</p>`;
+  const W = 300, H = 80, PAD = 6;
+  const ws = pts.map(p => p.w);
+  const minW = Math.min(...ws) - 0.5, maxW = Math.max(...ws) + 0.5;
+  const rangeW = maxW - minW || 1;
+  const sx = i => PAD + (i / (pts.length - 1)) * (W - 2 * PAD);
+  const sy = w => H - PAD - ((w - minW) / rangeW) * (H - 2 * PAD);
+  const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx(i).toFixed(1)},${sy(p.w).toFixed(1)}`).join(' ');
+  const dots = pts.map((p, i) => `<circle cx="${sx(i).toFixed(1)}" cy="${sy(p.w).toFixed(1)}" r="3" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.5"/>`).join('');
+  const first = pts[0], last = pts[pts.length - 1];
+  const diff = (last.w - first.w).toFixed(1);
+  const diffColor = diff < 0 ? '#16a34a' : diff > 0 ? '#ef4444' : 'var(--muted)';
+  return `
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+      <span>${first.label} · ${first.w}kg</span>
+      <span style="color:${diffColor};font-weight:700">${diff > 0 ? '+' : ''}${diff}kg</span>
+      <span>${last.label} · ${last.w}kg</span>
+    </div>
+    <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;display:block">
+      <path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      ${dots}
+    </svg>`;
+}
+
+function stepsBarHTML(history) {
+  const maxSteps = Math.max(...history.map(d => d.steps), 5000);
+  const today = new Date().toISOString().slice(0,10);
+  return history.map(d => {
+    const h = Math.round((d.steps / maxSteps) * 44);
+    const isToday = d.date === today;
+    const color = isToday ? 'var(--accent)' : d.steps >= 8000 ? '#16a34a' : d.steps > 0 ? '#f59e0b' : 'var(--border)';
+    return `<div class="week-bar-col">
+      <div class="week-bar" style="height:${Math.max(3,h)}px;background:${color}"></div>
+      <div class="week-bar-day">${d.label}</div>
+      ${d.steps > 0 ? `<div style="font-size:8px;color:var(--muted);text-align:center;margin-top:1px">${d.steps >= 1000 ? (d.steps/1000).toFixed(1)+'k' : d.steps}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 // ── PASOS DIARIOS ─────────────────────────────────────────────
@@ -2034,6 +2104,7 @@ function renderNutricion() {
 
   // Calorie burn estimation
   const todaySteps = getSteps(today);
+  const todayBw = getBw(today);
   const bw = getBodyWeight();
   const stepsKcal = (todaySteps > 0 && bw) ? Math.round(todaySteps * 0.04 * (bw / 70)) : 0;
   const burned = estimateKcalBurned(p, today);
@@ -2085,6 +2156,11 @@ function renderNutricion() {
       <div class="week-bar-day">${d.label}</div>
     </div>`;
   }).join('');
+
+  const bwHistory = getBwHistory(30);
+  const stepsHistory = getStepsHistory(14);
+  const bwChartHTML = weightChartSVG(bwHistory);
+  const stepsChart14HTML = stepsBarHTML(stepsHistory);
 
   const recipesHTML = n.savedRecipes.length === 0
     ? `<p style="color:var(--muted);font-size:12px">Pídele a Kirk que te cree una receta personalizada 🤖</p>`
@@ -2148,6 +2224,13 @@ function renderNutricion() {
       <div class="macro-bar-label"><span>🧈 Grasa ${tot.fat}g</span><span>${g.fat}g</span></div>
       <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px;display:flex;flex-direction:column;gap:5px">
         <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;flex:1">⚖️ Peso hoy</span>
+          <input type="number" id="bw-inp" value="${todayBw || ''}" min="30" max="200" step="0.1" placeholder="kg"
+            style="width:85px;padding:3px 7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:right"
+            onchange="saveBwToday(this.value)">
+          <span style="min-width:52px"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:12px;flex:1">👟 Pasos hoy</span>
           <input type="number" id="steps-inp" value="${todaySteps || ''}" min="0" max="99999" placeholder="0"
             style="width:85px;padding:3px 7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:right"
@@ -2174,6 +2257,14 @@ function renderNutricion() {
     <div class="nutri-section-title">📅 Esta semana</div>
     <div class="week-bar-wrap">${weekBarsHTML}</div>
 
+    <div class="nutri-section-title">📈 Progresión</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">⚖️ Peso corporal — últimos 30 días</div>
+      ${bwChartHTML}
+      <div style="font-size:12px;color:var(--muted);margin:12px 0 8px;font-weight:600">👟 Pasos — últimas 2 semanas</div>
+      <div class="week-bar-wrap">${stepsChart14HTML}</div>
+    </div>
+
     <div class="nutri-section-title">🧑‍🍳 Mis recetas</div>
     ${recipesHTML}
 
@@ -2184,7 +2275,6 @@ function renderNutricion() {
 function openNutritionGoals() {
   const g = ensureNutrition(loadNutri()).goals;
   document.getElementById('goal-kcal-inp').value    = g.kcal;
-  document.getElementById('goal-weight-inp').value  = getBodyWeight() || '';
   document.getElementById('goal-protein-inp').value = g.protein;
   document.getElementById('goal-carbs-inp').value   = g.carbs;
   document.getElementById('goal-fat-inp').value     = g.fat;
@@ -2199,7 +2289,6 @@ function saveNutriGoals() {
     carbs:   parseInt(document.getElementById('goal-carbs-inp').value)   || 250,
     fat:     parseInt(document.getElementById('goal-fat-inp').value)     || 65
   };
-  setBodyWeight(parseFloat(document.getElementById('goal-weight-inp').value) || 0);
   saveNutri(n);
   closeModal('modal-nutri-goals');
   showToast('Objetivos guardados ✓');
