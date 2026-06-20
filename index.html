@@ -774,6 +774,29 @@ header {
   </div>
 </div>
 
+<!-- MODAL: Session summary -->
+<div class="modal-overlay" id="modal-session-summary">
+  <div class="modal">
+    <h3>💪 ¡Sesión completada!</h3>
+    <div id="session-summary-content"></div>
+    <div class="modal-actions" style="flex-direction:column;gap:8px">
+      <button class="btn btn-accent" style="width:100%" onclick="copySessionSummary()">📋 Copiar para WhatsApp</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="closeModal('modal-session-summary')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Exercise progression -->
+<div class="modal-overlay" id="modal-ex-progress">
+  <div class="modal">
+    <h3 id="ex-progress-title">Progresión</h3>
+    <div id="ex-progress-content" style="min-height:100px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-accent" onclick="closeModal('modal-ex-progress')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Grupo muscular -->
 <div class="modal-overlay" id="modal-muscle">
   <div class="modal">
@@ -1448,6 +1471,8 @@ function updateTdeePreview() {
 
 // ── Active session state ───────────────────────────────────────
 let activeSession = null; // { routineId, routineName, startTime, exercises:[{id,name,type,sets:[]}] }
+let _restTimer = null;
+let _restDuration = 90;
 
 function _sessionStorageKey() { return `gymbros_session_${profile().id}`; }
 function persistSession() {
@@ -1644,7 +1669,10 @@ function renderActiveSession() {
     <div class="sess-ex-block">
       <div class="sess-ex-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>${typeIcon(ex.type)} ${ex.name}</span>
-        <button class="btn-icon" title="Cambiar ejercicio" onclick="swapSessionExercise('${ex.id}')" style="opacity:0.6;font-size:12px">⇄</button>
+        <div style="display:flex;gap:4px">
+          <button class="btn-icon" title="Progresión" onclick="openExProgress('${ex.name}')" style="opacity:0.6;font-size:12px">📈</button>
+          <button class="btn-icon" title="Cambiar ejercicio" onclick="swapSessionExercise('${ex.id}')" style="opacity:0.6;font-size:12px">⇄</button>
+        </div>
       </div>
       ${refHtml}
       <div id="sess-sets-${ex.id}"></div>
@@ -1662,6 +1690,7 @@ function renderActiveSession() {
       </div>
       <button class="btn btn-ghost btn-sm" onclick="cancelSession()">✕ Descartar</button>
     </div>
+    <div id="rest-timer-bar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px"></div>
     ${exBlocks}
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn btn-ghost" style="flex:1" onclick="saveSessionProgress()">💾 Guardar progreso</button>
@@ -1674,6 +1703,43 @@ function renderActiveSession() {
   });
 }
 
+function startRestTimer() {
+  clearRestTimer();
+  let remaining = _restDuration;
+  _updateRestBar(remaining);
+  _restTimer = setInterval(() => {
+    remaining--;
+    _updateRestBar(remaining);
+    if (remaining <= 0) {
+      clearRestTimer();
+      navigator.vibrate?.([200, 100, 200]);
+    }
+  }, 1000);
+}
+function clearRestTimer() {
+  if (_restTimer) { clearInterval(_restTimer); _restTimer = null; }
+  const bar = document.getElementById('rest-timer-bar');
+  if (bar) bar.style.display = 'none';
+}
+function _updateRestBar(s) {
+  const bar = document.getElementById('rest-timer-bar');
+  if (!bar) return;
+  bar.style.display = '';
+  const mins = Math.floor(s / 60), secs = s % 60;
+  const pct = Math.round((s / _restDuration) * 100);
+  bar.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:13px;font-weight:700">⏱ ${mins}:${String(secs).padStart(2,'0')} <span style="font-weight:400;font-size:11px;color:var(--muted)">descansando</span></span>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${[60,90,120].map(d=>`<button onclick="_restDuration=${d};startRestTimer()" style="font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:${d===_restDuration?'var(--accent)':'var(--surface)'};color:${d===_restDuration?'#000':'var(--text)'}">${d}s</button>`).join('')}
+        <button onclick="clearRestTimer()" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface)">✕</button>
+      </div>
+    </div>
+    <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;transition:width 1s linear"></div>
+    </div>`;
+}
+
 function addSessionSet(exId) {
   const ex = activeSession.exercises.find(e => e.id === exId);
   if (!ex) return;
@@ -1681,6 +1747,7 @@ function addSessionSet(exId) {
   const n = ex.sets.length;
   _addSessionSetRow(exId, n, ex.type);
   persistSession();
+  startRestTimer();
 }
 
 function _addSessionSetRow(exId, n, type) {
@@ -1746,6 +1813,7 @@ function collectSessionSets() {
 }
 
 function finishSession() {
+  clearRestTimer();
   collectSessionSets();
   const totalSets = activeSession.exercises.reduce((a, e) => a + e.sets.length, 0);
   if (totalSets === 0) { showToast('Añade al menos una serie'); return; }
@@ -1758,15 +1826,18 @@ function finishSession() {
     routineName: activeSession.routineName,
     exercises:   activeSession.exercises
   });
+  const savedSess = { ...activeSession, startTime: activeSession.startTime };
   activeSession = null;
   persistSession();
   saveCurrentProfile();
   showToast('¡Sesión guardada! 💪');
+  showSessionSummary(savedSess);
   renderRutinas();
 }
 
 function cancelSession() {
   if (!confirm('¿Descartar la sesión?')) return;
+  clearRestTimer();
   activeSession = null;
   persistSession();
   renderRutinas();
@@ -1786,6 +1857,58 @@ function swapSessionExercise(exId) {
   ex.name = newName.trim();
   persistSession();
   renderActiveSession();
+}
+
+function openExProgress(exName) {
+  const p = profile();
+  ensureRoutines(p);
+  // Collect all (date, bestKg) pairs for this exercise
+  const byDate = {};
+  // From gymSessions (routines)
+  p.gymSessions.forEach(sess => {
+    const ex = sess.exercises.find(e => e.name === exName);
+    if (!ex) return;
+    const date = sess.date.slice(0,10);
+    const best = Math.max(0, ...(ex.sets||[]).map(s=>s.kg||0));
+    if (best > 0) byDate[date] = Math.max(byDate[date]||0, best);
+  });
+  // From entrenos libres
+  p.muscles.flatMap(m=>m.exercises).filter(e=>e.name===exName).forEach(ex => {
+    ex.sessions.forEach(sess => {
+      const date = sess.date.slice(0,10);
+      const best = Math.max(0, ...(sess.sets||[]).map(s=>s.kg||0));
+      if (best > 0) byDate[date] = Math.max(byDate[date]||0, best);
+    });
+  });
+  const pts = Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0])).map(([date,kg])=>({date,kg,label:fmtDate(date)}));
+  document.getElementById('ex-progress-title').textContent = `📈 ${exName}`;
+  const el = document.getElementById('ex-progress-content');
+  if (!pts.length) {
+    el.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Sin datos de peso aún</p>`;
+  } else if (pts.length === 1) {
+    el.innerHTML = `<p style="text-align:center;padding:16px;font-size:14px">Un registro: <b>${pts[0].kg}kg</b> (${pts[0].label})</p>`;
+  } else {
+    const W=300,H=90,PAD=8;
+    const kgs=pts.map(p=>p.kg), minK=Math.min(...kgs)-2, maxK=Math.max(...kgs)+2, rangeK=maxK-minK||1;
+    const sx=i=>PAD+(i/(pts.length-1))*(W-2*PAD);
+    const sy=k=>H-PAD-((k-minK)/rangeK)*(H-2*PAD);
+    const pathD=pts.map((p,i)=>`${i===0?'M':'L'}${sx(i).toFixed(1)},${sy(p.kg).toFixed(1)}`).join(' ');
+    const dots=pts.map((p,i)=>`<circle cx="${sx(i).toFixed(1)}" cy="${sy(p.kg).toFixed(1)}" r="3.5" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.5"/>`).join('');
+    const diff=(pts[pts.length-1].kg-pts[0].kg).toFixed(1);
+    const diffColor=diff>0?'#16a34a':diff<0?'#ef4444':'var(--muted)';
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px">
+        <span>${pts[0].label} · ${pts[0].kg}kg</span>
+        <span style="color:${diffColor};font-weight:700">${diff>0?'+':''}${diff}kg</span>
+        <span>${pts[pts.length-1].label} · ${pts[pts.length-1].kg}kg</span>
+      </div>
+      <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;display:block">
+        <path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>
+        ${dots}
+      </svg>
+      <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px">${pts.length} sesiones registradas · Máx: ${Math.max(...kgs)}kg</div>`;
+  }
+  openModal('modal-ex-progress');
 }
 
 function getLastExReference(exName, routineId) {
@@ -2973,6 +3096,38 @@ ${buildWorkoutContext()}`;
 }
 
 // ── STATS ──────────────────────────────────────────────────────
+function getStreak(p) {
+  ensureRoutines(p);
+  const allDates = new Set([
+    ...p.gymSessions.map(s => s.date.slice(0,10)),
+    ...p.muscles.flatMap(m => m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10))))
+  ]);
+  let streak = 0;
+  const today = new Date();
+  // Allow today or yesterday as start (don't break streak if not trained yet today)
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    if (allDates.has(ds)) { streak++; }
+    else if (i === 0) { continue; } // haven't trained today yet, check yesterday
+    else { break; }
+  }
+  return streak;
+}
+
+function getMuscleWarnings(p) {
+  const today = new Date();
+  const warnings = [];
+  p.muscles.forEach(m => {
+    const allDates = m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
+    if (!allDates.length) return;
+    const lastDate = allDates.sort().reverse()[0];
+    const daysAgo = Math.floor((today - new Date(lastDate)) / 86400000);
+    if (daysAgo >= 10) warnings.push({ name: `${m.icon} ${m.name}`, daysAgo });
+  });
+  return warnings.sort((a,b) => b.daysAgo - a.daysAgo);
+}
+
 function renderStats() {
   const p = profile();
   ensureRoutines(p);
@@ -3003,7 +3158,8 @@ function renderStats() {
     <div class="stat-card"><div class="stat-v">${totalSets}</div><div class="stat-l">Series</div></div>
     <div class="stat-card"><div class="stat-v">${totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'t' : totalVol+'kg'}</div><div class="stat-l">Volumen total</div></div>
     <div class="stat-card"><div class="stat-v">${bestKg > 0 ? bestKg+'kg' : '—'}</div><div class="stat-l">Mayor peso</div></div>
-    <div class="stat-card"><div class="stat-v">${p.gymSessions.length}</div><div class="stat-l">Sesiones rutina</div></div>`;
+    <div class="stat-card"><div class="stat-v">${p.gymSessions.length}</div><div class="stat-l">Sesiones rutina</div></div>
+    <div class="stat-card"><div class="stat-v">${getStreak(p) > 0 ? '🔥'+getStreak(p) : '—'}</div><div class="stat-l">Racha días</div></div>`;
 
   // Muscle groups bar chart (entrenos libres)
   const entries = p.muscles.map(m => ({
@@ -3037,6 +3193,15 @@ function renderStats() {
         <div class="prog-track"><div class="prog-fill" style="width:${Math.round((count/maxR)*100)}%"></div></div>
       </div>`).join('')}` : '') ||
   `<p style="color:var(--muted);font-size:12px">Aún no hay datos.</p>`;
+
+  const warnings = getMuscleWarnings(p);
+  if (warnings.length) {
+    const warnHtml = `<div style="margin-top:12px;padding:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px">
+      <div style="font-size:11px;font-weight:600;color:#ef4444;margin-bottom:6px">⚠️ SIN ENTRENAR HACE MÁS DE 10 DÍAS</div>
+      ${warnings.map(w=>`<div style="font-size:12px;padding:2px 0">${w.name} — <span style="color:#ef4444">${w.daysAgo} días</span></div>`).join('')}
+    </div>`;
+    document.getElementById('muscle-stats').innerHTML += warnHtml;
+  }
 }
 
 // ── RANKINGS ──────────────────────────────────────────────────
