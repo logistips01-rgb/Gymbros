@@ -718,6 +718,10 @@ header {
         <input type="number" id="goal-kcal-inp" placeholder="2200" min="1000" style="width:100%">
       </div>
       <div class="field">
+        <label>Peso corporal (kg)</label>
+        <input type="number" id="goal-weight-inp" placeholder="75" min="30" max="200" style="width:100%">
+      </div>
+      <div class="field">
         <label>Proteína (g)</label>
         <input type="number" id="goal-protein-inp" placeholder="160" min="0" style="width:100%">
       </div>
@@ -730,7 +734,7 @@ header {
         <input type="number" id="goal-fat-inp" placeholder="65" min="0" style="width:100%">
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted);margin-top:4px">💡 Regla base: peso corporal × 2g proteína, kcal según objetivo</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:4px">💡 El peso se usa para estimar kcal quemadas en entrenos.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-nutri-goals')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveNutriGoals()">Guardar</button>
@@ -1836,6 +1840,54 @@ function copyBroRoutine(broId, routineId) {
   renderRutinas();
 }
 
+// ── PESO CORPORAL (privado, localStorage) ─────────────────────
+function getBodyWeight() { return parseFloat(localStorage.getItem(`gymbros_bw_${profile().id}`)) || 0; }
+function setBodyWeight(w) {
+  w > 0 ? localStorage.setItem(`gymbros_bw_${profile().id}`, w)
+        : localStorage.removeItem(`gymbros_bw_${profile().id}`);
+}
+
+// ── ESTIMACIÓN KCAL QUEMADAS ──────────────────────────────────
+const COMPOUND_RE = /sentadilla|squat|peso muerto|deadlift|press banca|bench|dominad|remo|hip thrust|fondos|dip|prensa|jaca|press militar|overhead|peso muerto|rack/i;
+
+function estimateExKcal(name, type, sets, bw) {
+  const factor = bw / 70;
+  if (type === 'cardio') {
+    // sets with .value (distance in m/km) → rough kcal
+    const dist = sets.reduce((a, s) => a + (s.value || 0), 0);
+    const unit  = sets[0]?.unit || 'm';
+    return Math.round(dist * (unit === 'km' ? 60 : 0.06) * factor);
+  }
+  if (type === 'bodyweight') return Math.round(sets.length * 7 * factor);
+  // normal: compound vs isolation
+  return Math.round(sets.length * (COMPOUND_RE.test(name) ? 9 : 6) * factor);
+}
+
+function estimateKcalBurned(p, date) {
+  const bw = getBodyWeight();
+  if (!bw) return null; // no weight set → can't estimate
+  ensureRoutines(p);
+  let total = 0;
+
+  // Rutinas sessions
+  p.gymSessions.filter(s => s.date.slice(0,10) === date).forEach(sess => {
+    sess.exercises.forEach(ex => {
+      total += estimateExKcal(ex.name, ex.type || 'normal', ex.sets || [], bw);
+    });
+  });
+
+  // Entreno libre sessions
+  p.muscles.flatMap(m => m.exercises).forEach(ex => {
+    ex.sessions.filter(s => s.date.slice(0,10) === date).forEach(sess => {
+      total += estimateExKcal(ex.name, ex.type || 'normal', sess.sets || [], bw);
+    });
+  });
+
+  // Add base overhead for training day (~10% extra for warm-up, transitions)
+  if (total > 0) total = Math.round(total * 1.1);
+  return total;
+}
+
 // ── BASE DE DATOS ALIMENTOS ───────────────────────────────────
 const FOOD_DB = [
   // Proteínas
@@ -1962,6 +2014,10 @@ function renderNutricion() {
     fat: a.fat + (m.fat || 0)
   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
 
+  // Calorie burn estimation
+  const burned = estimateKcalBurned(p, today);
+  const netKcal = burned ? tot.kcal - burned : null;
+
   // Check if trained today
   const allEx = p.muscles.flatMap(mu => mu.exercises);
   const trainedToday = p.gymSessions.some(s => s.date.slice(0,10) === today) ||
@@ -1978,8 +2034,9 @@ function renderNutricion() {
   }
   const maxWeekKcal = Math.max(g.kcal, ...weekDays.map(d => d.kcal), 100);
 
-  // Deficit / surplus
-  const diff = tot.kcal - g.kcal;
+  // Deficit / surplus (based on net if burn data available)
+  const diffBase = netKcal !== null ? netKcal : tot.kcal;
+  const diff = diffBase - g.kcal;
   const diffStr = diff === 0 ? 'En objetivo' : diff > 0 ? `+${diff} kcal surplus` : `${diff} kcal déficit`;
   const diffColor = diff > 200 ? '#f59e0b' : diff < -500 ? '#3b82f6' : '#16a34a';
 
@@ -2068,6 +2125,14 @@ function renderNutricion() {
       <div class="macro-bar-label"><span>🌾 Carbos ${tot.carbs}g</span><span>${g.carbs}g</span></div>
       ${bar(tot.fat, g.fat, '#3b82f6')}
       <div class="macro-bar-label"><span>🧈 Grasa ${tot.fat}g</span><span>${g.fat}g</span></div>
+      ${burned ? `<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span>💪 Quemado hoy</span><span style="color:#16a34a;font-weight:700">~${burned} kcal</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span>🍽 Neto</span><span style="font-weight:700">${netKcal} kcal</span>
+        </div>
+      </div>` : ''}
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -2091,6 +2156,7 @@ function renderNutricion() {
 function openNutritionGoals() {
   const g = ensureNutrition(loadNutri()).goals;
   document.getElementById('goal-kcal-inp').value    = g.kcal;
+  document.getElementById('goal-weight-inp').value  = getBodyWeight() || '';
   document.getElementById('goal-protein-inp').value = g.protein;
   document.getElementById('goal-carbs-inp').value   = g.carbs;
   document.getElementById('goal-fat-inp').value     = g.fat;
@@ -2105,6 +2171,7 @@ function saveNutriGoals() {
     carbs:   parseInt(document.getElementById('goal-carbs-inp').value)   || 250,
     fat:     parseInt(document.getElementById('goal-fat-inp').value)     || 65
   };
+  setBodyWeight(parseFloat(document.getElementById('goal-weight-inp').value) || 0);
   saveNutri(n);
   closeModal('modal-nutri-goals');
   showToast('Objetivos guardados ✓');
@@ -2230,6 +2297,8 @@ function buildNutritionContext() {
   if (tm.length) {
     const tot = tm.reduce((a,m) => ({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),carbs:a.carbs+(m.carbs||0),fat:a.fat+(m.fat||0)}),{kcal:0,protein:0,carbs:0,fat:0});
     txt += `hoy:${tot.kcal}kcal(${tot.protein}P,${tot.carbs}C,${tot.fat}G) comidas:${tm.map(m=>m.name).join('+')}`;
+    const burned = estimateKcalBurned(profile(), today);
+    if (burned) txt += ` quemado:~${burned}kcal neto:${tot.kcal - burned}kcal`;
   } else {
     txt += `hoy:sin comidas`;
   }
