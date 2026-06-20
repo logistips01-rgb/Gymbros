@@ -1835,6 +1835,34 @@ function finishSession() {
   renderRutinas();
 }
 
+let _lastSessionSummary = '';
+
+function showSessionSummary(sess) {
+  const totalSets = sess.exercises.reduce((a,e)=>a+(e.sets||[]).length,0);
+  const totalVol = Math.round(sess.exercises.reduce((a,e)=>a+(e.sets||[]).reduce((b,s)=>b+(s.reps||0)*(s.kg||0),0),0));
+  const duration = Math.round((Date.now() - new Date(sess.startTime).getTime()) / 60000);
+  const exList = sess.exercises.filter(e=>(e.sets||[]).length>0).map(e=>{
+    const best = Math.max(0,...(e.sets||[]).map(s=>s.kg||0));
+    return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span>${typeIcon(e.type)} ${e.name}</span>
+      <span style="color:var(--muted)">${(e.sets||[]).length} series${best>0?' · '+best+'kg max':''}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('session-summary-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;text-align:center">
+      <div style="background:var(--bg);border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700">${totalSets}</div><div style="font-size:10px;color:var(--muted)">Series</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700">${totalVol>=1000?(totalVol/1000).toFixed(1)+'t':totalVol+'kg'}</div><div style="font-size:10px;color:var(--muted)">Volumen</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700">${duration}m</div><div style="font-size:10px;color:var(--muted)">Tiempo</div></div>
+    </div>
+    ${exList}`;
+  _lastSessionSummary = `💪 *${profile().name}* ha completado *${sess.routineName}*\n⏱ ${duration} min · 🔁 ${totalSets} series · 📦 ${totalVol>=1000?(totalVol/1000).toFixed(1)+'t':totalVol+'kg'} volumen\n${sess.exercises.filter(e=>(e.sets||[]).length>0).map(e=>{const best=Math.max(0,...(e.sets||[]).map(s=>s.kg||0));return `${e.name}${best>0?` (${best}kg)`:''}: ${(e.sets||[]).length} series`;}).join(' · ')}\n#GymBros 🏋️`;
+  openModal('modal-session-summary');
+}
+
+function copySessionSummary() {
+  navigator.clipboard?.writeText(_lastSessionSummary).then(()=>showToast('¡Copiado! Pégalo en WhatsApp 📱'));
+}
+
 function cancelSession() {
   if (!confirm('¿Descartar la sesión?')) return;
   clearRestTimer();
