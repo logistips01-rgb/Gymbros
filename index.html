@@ -777,7 +777,13 @@ header {
 <!-- MODAL: Session summary -->
 <div class="modal-overlay" id="modal-session-summary">
   <div class="modal">
-    <h3>💪 ¡Sesión completada!</h3>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <img src="/Gymbros/icons/icon-192.png" style="width:40px;height:40px;border-radius:10px">
+      <div>
+        <div style="font-size:16px;font-weight:700">GymBros</div>
+        <div style="font-size:11px;color:var(--muted)">💪 ¡Sesión completada!</div>
+      </div>
+    </div>
     <div id="session-summary-content"></div>
     <div class="modal-actions" style="flex-direction:column;gap:8px">
       <button class="btn btn-accent" style="width:100%" onclick="copySessionSummary()">📋 Copiar para WhatsApp</button>
