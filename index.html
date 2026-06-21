@@ -2631,6 +2631,14 @@ function renderNutricion() {
         <button class="meal-del-btn" onclick="deleteMeal('${m.id}')">🗑</button>
       </div>`).join('');
 
+  const weekTotalKcal   = weekDays.reduce((a, d) => a + d.kcal, 0);
+  const weekTotalBurned = weekDays.reduce((a, d) => a + d.burned, 0);
+  const weekNet         = weekTotalKcal - weekTotalBurned;
+  const weekGoal        = g.kcal * 7;
+  const weekDiff        = weekNet - weekGoal;
+  const weekDiffStr     = weekDiff === 0 ? 'En objetivo' : weekDiff > 0 ? `+${weekDiff} kcal surplus` : `${weekDiff} kcal déficit`;
+  const weekDiffColor   = weekDiff > 500 ? '#f59e0b' : weekDiff < -1000 ? '#3b82f6' : '#16a34a';
+
   const weekBarsHTML = weekDays.map(d => {
     const h = Math.round((d.kcal / maxWeekKcal) * 44);
     const color = d.isToday ? 'var(--accent)' : d.kcal >= g.kcal * 0.8 ? '#16a34a' : 'var(--border)';
@@ -2732,6 +2740,24 @@ function renderNutricion() {
 
     <div class="nutri-section-title">📅 Esta semana</div>
     <div class="week-bar-wrap">${weekBarsHTML}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">🍽 Consumidas</div>
+        <div style="font-size:14px;font-weight:700">${weekTotalKcal.toLocaleString()}</div>
+        <div style="font-size:9px;color:var(--muted)">kcal</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">🔥 Quemadas</div>
+        <div style="font-size:14px;font-weight:700;color:#f59e0b">${weekTotalBurned > 0 ? weekTotalBurned.toLocaleString() : '—'}</div>
+        <div style="font-size:9px;color:var(--muted)">gym</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">⚖️ Neto</div>
+        <div style="font-size:14px;font-weight:700">${weekNet.toLocaleString()}</div>
+        <div style="font-size:9px;color:var(--muted)">kcal</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:6px;font-size:11px;color:${weekDiffColor};font-weight:600">${weekDiffStr} esta semana</div>
 
     <div class="nutri-section-title">📈 Progresión</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
