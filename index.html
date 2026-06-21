@@ -637,7 +637,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v59</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v60</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -784,7 +784,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v59</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v60</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -797,9 +797,17 @@ header {
       <!-- Setup screen -->
       <div id="ia-setup-card" class="ia-setup-card" style="display:none">
         <div class="ia-setup-icon">🤖</div>
-        <p>Introduce tu API key de <b>Groq</b> para activar el entrenador.</p>
-        <p style="font-size:11px;color:var(--muted);margin-top:4px">Se guarda solo en tu dispositivo.</p>
-        <div style="display:flex;gap:8px;margin-top:16px">
+        <p><b>Activa a Kirk</b> con una API key gratuita de Groq.</p>
+        <div style="text-align:left;background:var(--bg);border-radius:10px;padding:14px;margin:14px 0;font-size:12px;line-height:1.8">
+          <div style="font-weight:700;margin-bottom:6px;color:var(--accent)">Cómo obtenerla (gratis):</div>
+          <div>1. Abre <b>console.groq.com</b> en tu navegador</div>
+          <div>2. Crea una cuenta o entra con Google</div>
+          <div>3. Ve a <b>API Keys</b> → <b>Create API Key</b></div>
+          <div>4. Copia la key (empieza por <b>gsk_</b>)</div>
+          <div>5. Pégala aquí abajo y pulsa Guardar</div>
+        </div>
+        <p style="font-size:11px;color:var(--muted)">La key se guarda solo en tu dispositivo, nadie más la ve.</p>
+        <div style="display:flex;gap:8px;margin-top:12px">
           <input type="password" id="ia-key-inp" placeholder="gsk_..." style="flex:1;font-size:13px">
           <button class="btn btn-accent" onclick="saveIaKey()">Guardar</button>
         </div>
@@ -1151,29 +1159,41 @@ header {
       <details class="guide-section">
         <summary>⏱ Sesiones de entrenamiento</summary>
         <div class="guide-section-body">
-          <strong>Registrar series</strong>
+          <strong>Entreno libre con inicio y fin</strong>
           <ul>
-            <li>Entra en un ejercicio y pulsa <strong>+ Serie</strong>. Pon el peso y las reps (o metros/km para cardio).</li>
-            <li>Las series se guardan en tiempo real — si cierras la app no pierdes nada.</li>
+            <li>En la pestaña <strong>🏋️ Entreno</strong> pulsa <strong>▶ Iniciar</strong> para arrancar la sesión.</li>
+            <li>Aparece un banner con el contador de ejercicios, series y tiempo.</li>
+            <li>Navega por tus grupos musculares, entra en los ejercicios y guarda series normalmente.</li>
+            <li>Cada serie guardada se añade automáticamente a la sesión en curso.</li>
+            <li>Cuando termines pulsa <strong>✅ Finalizar</strong> en el banner — verás el resumen completo.</li>
           </ul>
-          <strong>Terminar sesión</strong>
+          <strong>Sesiones de rutina</strong>
           <ul>
-            <li>Pulsa <strong>Terminar sesión</strong> para ver el resumen: volumen total, calorías, comentario automático de Kirk.</li>
+            <li>En <strong>📅 Rutinas</strong> pulsa <strong>▶ Iniciar</strong> en cualquier rutina.</li>
+            <li>Añade series a cada ejercicio y pulsa <strong>✅ Finalizar</strong> al terminar.</li>
           </ul>
           <strong>Historial</strong>
           <ul>
-            <li>En la pestaña <strong>Stats</strong> puedes ver todas tus sesiones pasadas ordenadas por fecha.</li>
+            <li>Tanto el entreno libre como las rutinas quedan guardados en <strong>📊 Stats</strong> → Historial de sesiones.</li>
           </ul>
-          <div class="guide-tip">💡 El tiempo de descanso entre series lo controlas tú — GymBros no bloquea la pantalla.</div>
+          <div class="guide-tip">💡 Si cierras la app con una sesión activa, al volver la retomas donde la dejaste.</div>
         </div>
       </details>
 
       <details class="guide-section">
         <summary>🤖 Kirk (Inteligencia Artificial)</summary>
         <div class="guide-section-body">
+          <strong>Activar Kirk — API key gratuita de Groq</strong>
+          <ul>
+            <li>Abre <b>console.groq.com</b> en el navegador.</li>
+            <li>Crea una cuenta o entra con Google (es gratis).</li>
+            <li>Ve a <b>API Keys</b> → <b>Create API Key</b> y copia la key (empieza por <b>gsk_</b>).</li>
+            <li>En GymBros ve a la pestaña <strong>IA</strong>, pega la key y pulsa <strong>Guardar</strong>.</li>
+            <li>La key se guarda solo en tu dispositivo — cada usuario necesita la suya.</li>
+          </ul>
           <strong>Chat libre</strong>
           <ul>
-            <li>Ve a la pestaña <strong>IA</strong> y escríbele a Kirk lo que quieras: consejos de entrenamiento, nutrición, motivación…</li>
+            <li>Escríbele a Kirk lo que quieras: consejos de entrenamiento, nutrición, motivación…</li>
           </ul>
           <strong>Accesos rápidos</strong>
           <ul>
