@@ -214,7 +214,7 @@ header {
 .meal-card-name { font-size:13px; font-weight:600; }
 .meal-card-macros { font-size:11px; color:var(--muted); margin-top:2px; }
 .meal-del-btn { background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px; }
-.week-bar-wrap { display:flex; align-items:flex-end; gap:4px; height:50px; margin:8px 0; }
+.week-bar-wrap { display:flex; align-items:flex-end; gap:4px; min-height:50px; margin:8px 0; }
 .week-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .week-bar { width:100%; border-radius:3px 3px 0 0; min-height:3px; transition:height .3s; }
 .week-bar-day { font-size:9px; color:var(--muted); }
@@ -2604,7 +2604,8 @@ function renderNutricion() {
     const ds = d.toISOString().slice(0,10);
     const dayMeals = n.meals.filter(m => m.date === ds);
     const dayKcal  = dayMeals.reduce((a, m) => a + (m.kcal || 0), 0);
-    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, isToday: ds === today });
+    const dayBurned = estimateKcalBurned(p, ds) || 0;
+    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, burned: dayBurned, isToday: ds === today });
   }
   const maxWeekKcal = Math.max(g.kcal, ...weekDays.map(d => d.kcal), 100);
 
@@ -2633,16 +2634,16 @@ function renderNutricion() {
   const weekBarsHTML = weekDays.map(d => {
     const h = Math.round((d.kcal / maxWeekKcal) * 44);
     const color = d.isToday ? 'var(--accent)' : d.kcal >= g.kcal * 0.8 ? '#16a34a' : 'var(--border)';
+    const burnedLabel = d.burned > 0 ? `<div style="font-size:8px;color:#f59e0b;text-align:center;line-height:1.2">🔥${d.burned}</div>` : '';
     return `<div class="week-bar-col">
       <div class="week-bar" style="height:${Math.max(3,h)}px;background:${color}"></div>
       <div class="week-bar-day">${d.label}</div>
+      ${burnedLabel}
     </div>`;
   }).join('');
 
   const bwHistory = getBwHistory(30);
-  const stepsHistory = getStepsHistory(14);
   const bwChartHTML = weightChartSVG(bwHistory);
-  const stepsChart14HTML = stepsBarHTML(stepsHistory);
 
   const recipesHTML = n.savedRecipes.length === 0
     ? `<p style="color:var(--muted);font-size:12px">Pídele a Kirk que te cree una receta personalizada 🤖</p>`
@@ -2736,8 +2737,6 @@ function renderNutricion() {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">⚖️ Peso corporal — últimos 30 días</div>
       ${bwChartHTML}
-      <div style="font-size:12px;color:var(--muted);margin:12px 0 8px;font-weight:600">👟 Pasos — últimas 2 semanas</div>
-      <div class="week-bar-wrap">${stepsChart14HTML}</div>
     </div>
 
     <div class="nutri-section-title">🧑‍🍳 Mis recetas</div>
