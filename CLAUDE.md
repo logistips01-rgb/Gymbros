@@ -24,8 +24,9 @@
   - Pantalla de bienvenida: crear grupo / unirse con código
   - Enlace de invitación: `?invite=CODIGO` pre-rellena el campo en la pantalla de bienvenida
   - El groupId se guarda en `localStorage` como `gymbros_group`
-  - Requiere migración de los datos actuales al grupo original
+  - Requiere migración de los datos actuales al grupo original ✅ implementado
   - Futuro: panel "GymBros Network" mostrando el árbol de grupos invitados (sin datos privados)
+  - Cada grupo guarda `referredBy: groupId` → la pirámide ya queda registrada en Firestore
 
 ### Menores / ya identificadas
 - [ ] Backup de datos privados (nutrición/peso) en Firestore cifrado por usuario
