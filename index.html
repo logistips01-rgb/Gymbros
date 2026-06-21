@@ -637,7 +637,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v62</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v63</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -784,7 +784,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v62</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v63</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3435,17 +3435,27 @@ function renderNutricion() {
   const trainedToday = p.gymSessions.some(s => s.date.slice(0,10) === today) ||
     allEx.some(e => e.sessions.some(s => s.date.slice(0,10) === today));
 
-  // Week data (last 7 days)
+  // Calendar week Mon-Sun
+  const todayDate = new Date();
+  const dow = todayDate.getDay();
+  const daysToMon = dow === 0 ? 6 : dow - 1;
+  const weekMonday = new Date(todayDate);
+  weekMonday.setDate(todayDate.getDate() - daysToMon);
+  weekMonday.setHours(0,0,0,0);
+  const weekSunday = new Date(weekMonday); weekSunday.setDate(weekMonday.getDate() + 6);
+  const fmtD = d => `${d.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]}`;
+
   const weekDays = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().slice(0,10);
-    const dayMeals = n.meals.filter(m => m.date === ds);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekMonday); d.setDate(weekMonday.getDate() + i);
+    const ds = d.toISOString().slice(0, 10);
+    const isFuture = ds > today;
+    const dayMeals = isFuture ? [] : n.meals.filter(m => m.date === ds);
     const dayKcal  = dayMeals.reduce((a, m) => a + (m.kcal || 0), 0);
-    const dayBurned = estimateKcalBurned(p, ds) || 0;
-    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, burned: dayBurned, hasMeals: dayMeals.length > 0, isToday: ds === today });
+    const dayBurned = isFuture ? 0 : (estimateKcalBurned(p, ds) || 0);
+    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, burned: dayBurned, hasMeals: dayMeals.length > 0, isToday: ds === today, isFuture });
   }
-  const maxWeekKcal = Math.max(g.kcal, ...weekDays.map(d => d.kcal), 100);
+  const maxWeekKcal = Math.max(tdee || g.kcal, ...weekDays.map(d => d.kcal), 100);
 
   // Deficit / surplus vs TDEE (real energy balance)
   const diffBase = netKcal !== null ? netKcal : tot.kcal;
@@ -3456,6 +3466,14 @@ function renderNutricion() {
     : diff > 0 ? `+${diff} kcal surplus ${diffLabel}`.trim()
     : `${diff} kcal déficit ${diffLabel}`.trim();
   const diffColor = diff > 200 ? '#f59e0b' : diff <= 0 ? '#16a34a' : '#22c55e';
+
+  // Shared badge helper
+  const diffBadge = (d) => {
+    if (d === 0) return { str: 'En equilibrio', color: '#16a34a' };
+    const kg = (Math.abs(d) / 7700).toFixed(2);
+    return d < 0 ? { str: `${d} kcal déficit ≈ ${kg} kg`, color: '#16a34a' }
+                 : { str: `+${d} kcal surplus ≈ ${kg} kg`, color: '#f59e0b' };
+  };
 
   const bar = (val, goal, color) => {
     const pct = Math.min(100, goal > 0 ? Math.round(val / goal * 100) : 0);
@@ -3481,24 +3499,59 @@ function renderNutricion() {
   const weekTotalBurned = weekDaysWithData.reduce((a, d) => a + d.burned, 0);
   const weekNet         = weekTotalKcal - weekTotalBurned;
   const weekGoal        = (tdee || g.kcal) * weekDaysWithData.length;
-  const weekDiff        = weekNet - weekGoal;
-  const weekKgEquiv     = weekDaysWithData.length > 0 && weekDiff !== 0 ? Math.abs(weekDiff) / 7700 : null;
-  const weekKgStr       = weekKgEquiv ? ` ≈ ${weekKgEquiv.toFixed(2)} kg` : '';
-  const monthKgEquiv    = weekKgEquiv ? (weekKgEquiv * 4.33).toFixed(2) : null;
-  const weekDiffStr     = weekDaysWithData.length === 0 ? 'Sin datos esta semana'
-    : weekDiff === 0 ? `En objetivo (${weekDaysWithData.length} días)`
-    : weekDiff > 0 ? `+${weekDiff} kcal surplus${weekKgStr} de grasa (${weekDaysWithData.length} días)`
-    : `${weekDiff} kcal déficit${weekKgStr} de grasa (${weekDaysWithData.length} días)`;
-  const weekDiffColor   = weekDaysWithData.length === 0 ? 'var(--muted)' : weekDiff > 500 ? '#f59e0b' : weekDiff < -1000 ? '#3b82f6' : '#16a34a';
+  const weekDiff        = weekDaysWithData.length ? weekNet - weekGoal : 0;
+  const weekBadge       = weekDaysWithData.length === 0 ? { str: 'Sin datos esta semana', color: 'var(--muted)' } : diffBadge(weekDiff);
+
+  // Past 8 complete weeks (Mon-Sun)
+  const pastWeeks = [];
+  for (let w = 1; w <= 8; w++) {
+    const mon = new Date(weekMonday); mon.setDate(weekMonday.getDate() - w * 7);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    let wKcal = 0, wBurned = 0, wDays = 0;
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(mon); day.setDate(mon.getDate() + d);
+      const ds = day.toISOString().slice(0, 10);
+      const dm = n.meals.filter(m => m.date === ds);
+      if (dm.length > 0) { wKcal += dm.reduce((a, m) => a + (m.kcal || 0), 0); wBurned += estimateKcalBurned(p, ds) || 0; wDays++; }
+    }
+    if (wDays > 0) {
+      const wDiff = (wKcal - wBurned) - (tdee || g.kcal) * wDays;
+      pastWeeks.push({ label: `${fmtD(mon)} – ${fmtD(sun)}`, days: wDays, ...diffBadge(wDiff) });
+    }
+  }
+
+  // Monthly totals (all months with meal data)
+  const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const allMonths = [...new Set(n.meals.map(m => m.date.slice(0, 7)))].sort().reverse();
+  const monthsData = allMonths.map(month => {
+    const [y, mo] = month.split('-').map(Number);
+    let mKcal = 0, mBurned = 0, mDays = 0;
+    const dInM = new Date(y, mo, 0).getDate();
+    for (let d = 1; d <= dInM; d++) {
+      const ds = `${month}-${String(d).padStart(2,'0')}`;
+      const dm = n.meals.filter(m => m.date === ds);
+      if (dm.length > 0) { mKcal += dm.reduce((a, m) => a + (m.kcal || 0), 0); mBurned += estimateKcalBurned(p, ds) || 0; mDays++; }
+    }
+    const mDiff = (mKcal - mBurned) - (tdee || g.kcal) * mDays;
+    return { name: `${MONTH_NAMES[mo-1]} ${y}`, kcal: mKcal, burned: mBurned, days: mDays, ...diffBadge(mDiff) };
+  });
 
   const weekBarsHTML = weekDays.map(d => {
-    const h = Math.round((d.kcal / maxWeekKcal) * 44);
-    const color = d.isToday ? 'var(--accent)' : d.kcal >= g.kcal * 0.8 ? '#16a34a' : 'var(--border)';
-    const burnedLabel = d.burned > 0 ? `<div style="font-size:8px;color:#f59e0b;text-align:center;line-height:1.2">🔥${d.burned}</div>` : '';
+    const h = (d.isFuture || !d.hasMeals) ? 3 : Math.round((d.kcal / maxWeekKcal) * 44);
+    const color = d.isFuture ? 'var(--border)' : d.isToday ? 'var(--accent)' : d.hasMeals ? '#16a34a' : 'var(--border)';
+    const opacity = d.isFuture ? ';opacity:0.25' : '';
+    const dayStyle = d.isToday ? ' style="color:var(--accent);font-weight:700"' : '';
+    const burnedLabel = d.burned > 0 ? `<div style="font-size:7px;color:#f59e0b;text-align:center;line-height:1.5">🔥${d.burned}</div>` : '';
+    let diffLabel = '';
+    if (d.hasMeals && !d.isFuture) {
+      const dDiff = (d.kcal - d.burned) - refTdee;
+      const dColor = dDiff <= 0 ? '#16a34a' : '#f59e0b';
+      diffLabel = `<div style="font-size:7px;color:${dColor};text-align:center;line-height:1.5;font-weight:700">${dDiff > 0 ? '+' : ''}${dDiff}</div>`;
+    }
     return `<div class="week-bar-col">
-      <div class="week-bar" style="height:${Math.max(3,h)}px;background:${color}"></div>
-      <div class="week-bar-day">${d.label}</div>
-      ${burnedLabel}
+      <div class="week-bar" style="height:${Math.max(3,h)}px;background:${color}${opacity}"></div>
+      <div class="week-bar-day"${dayStyle}>${d.label}</div>
+      ${burnedLabel}${diffLabel}
     </div>`;
   }).join('');
 
@@ -3590,7 +3643,7 @@ function renderNutricion() {
     <div class="nutri-section-title">🍽 Comidas de hoy</div>
     ${todayMealsHTML}
 
-    <div class="nutri-section-title">📅 Esta semana</div>
+    <div class="nutri-section-title">📅 Esta semana <span style="font-size:11px;font-weight:400;color:var(--muted)">${fmtD(weekMonday)} – ${fmtD(weekSunday)}</span></div>
     <div class="week-bar-wrap">${weekBarsHTML}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
@@ -3609,8 +3662,31 @@ function renderNutricion() {
         <div style="font-size:9px;color:var(--muted)">kcal</div>
       </div>
     </div>
-    <div style="text-align:center;margin-top:6px;font-size:11px;color:${weekDiffColor};font-weight:600">${weekDiffStr} esta semana</div>
-    ${monthKgEquiv ? `<div style="text-align:center;margin-top:4px;font-size:11px;color:var(--muted)">📆 Si mantienes este ritmo: <span style="color:${weekDiffColor};font-weight:700">${weekDiff < 0 ? '-' : '+'}${monthKgEquiv} kg</span> al mes</div>` : ''}
+    <div style="text-align:center;margin-top:6px;font-size:11px;color:${weekBadge.color};font-weight:600">${weekBadge.str}</div>
+
+    <div class="nutri-section-title" style="margin-top:16px">📆 Semanas anteriores</div>
+    ${pastWeeks.length === 0
+      ? `<p style="color:var(--muted);font-size:12px;text-align:center;padding:8px 0">Sin datos de semanas anteriores</p>`
+      : pastWeeks.map(w => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <div>
+            <div style="font-size:12px;font-weight:600">${w.label}</div>
+            <div style="font-size:10px;color:var(--muted)">${w.days} día${w.days !== 1 ? 's' : ''} registrado${w.days !== 1 ? 's' : ''}</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:${w.color};text-align:right">${w.str}</div>
+        </div>`).join('')}
+
+    <div class="nutri-section-title" style="margin-top:16px">🗓 Por mes</div>
+    ${monthsData.length === 0
+      ? `<p style="color:var(--muted);font-size:12px;text-align:center;padding:8px 0">Sin datos mensuales</p>`
+      : monthsData.map(m => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <div>
+            <div style="font-size:13px;font-weight:700">${m.name}</div>
+            <div style="font-size:10px;color:var(--muted)">${m.days} días · 🍽 ${m.kcal.toLocaleString()} · 🔥 ${m.burned > 0 ? m.burned.toLocaleString() : '—'} kcal gym</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:${m.color};text-align:right;max-width:120px">${m.str}</div>
+        </div>`).join('')}
 
     <div class="nutri-section-title">📈 Progresión</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
