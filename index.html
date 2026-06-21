@@ -547,7 +547,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v49</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v50</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="logout()">↩ Cambiar</button>
@@ -656,6 +656,11 @@ header {
           <button class="btn btn-ghost btn-sm" onclick="openIaSettings()">⚙️ Key</button>
         </div>
         <div id="ia-messages" class="ia-messages"></div>
+        <div style="display:flex;gap:6px;padding:0 0 4px;overflow-x:auto;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkAsk('Crea una rutina personalizada basada en los ejercicios que ya tengo y mi historial de entrenamientos.')">📅 Crear rutina</button>
+          <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkAsk('Dame un consejo nutricional para hoy basándote en mis datos de entrenamiento y lo que he comido.')">🥗 Consejo nutri</button>
+          <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkAsk('Analiza mi progreso de los últimos entrenamientos y dime qué debo mejorar.')">📊 Analizar progreso</button>
+        </div>
         <div class="ia-input-row">
           <textarea id="ia-input" class="ia-input" placeholder="Pregunta lo que quieras sobre tus entrenos…" rows="1"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendIaMessage()}"></textarea>
@@ -3053,6 +3058,14 @@ function saveIaMealPlan(plan, btn) {
   btn.textContent = '✓ Guardado en Planes';
   btn.disabled = true; btn.style.borderColor = 'var(--muted)'; btn.style.color = 'var(--muted)';
   showToast(`Plan "${plan.name}" guardado ✓`);
+}
+
+function kirkAsk(text) {
+  switchTab('ia');
+  setTimeout(() => {
+    const inp = document.getElementById('ia-input');
+    if (inp) { inp.value = text; inp.focus(); sendIaMessage(); }
+  }, 100);
 }
 
 function askKirkNutrition() {
