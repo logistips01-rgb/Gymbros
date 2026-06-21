@@ -1,5 +1,8 @@
 # GymBros — Notas de desarrollo
 
+## Reglas de desarrollo
+- **Siempre** subir la versión del service worker (`sw.js`) en el mismo commit que cualquier cambio a `index.html`. Formato: `gymbros-vN` incrementando N.
+
 ## Stack
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
 - Firebase Firestore (compat SDK v10.12.0) para datos compartidos del grupo
