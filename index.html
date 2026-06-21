@@ -605,10 +605,11 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v54</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v55</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
+      <button class="switch-btn" id="btn-admin" style="display:none" onclick="openAdminPanel()">⚙️ Admin</button>
       <button class="switch-btn" onclick="logout()">↩ Cambiar</button>
       <div class="user-pill">
         <div class="uav" id="hdr-av">?</div>
@@ -985,6 +986,21 @@ header {
   </div>
 </div>
 
+<!-- MODAL: Admin Panel (Gen 1 only) -->
+<div class="modal-overlay" id="modal-admin" style="align-items:flex-start;padding:0">
+  <div class="modal" style="max-width:100%;width:100%;min-height:100dvh;border-radius:0;margin:0;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">⚙️ Panel de administración</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-admin')">✕ Cerrar</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-sm" id="admin-tab-tree" onclick="switchAdminTab('tree')">🌳 Árbol de grupos</button>
+      <button class="btn btn-sm" id="admin-tab-users" onclick="switchAdminTab('users')">👥 Usuarios activos</button>
+    </div>
+    <div id="admin-panel-body" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- Firebase SDK (compat) -->
@@ -1194,6 +1210,109 @@ async function loadNetworkStats() {
   }
 }
 
+// ── ADMIN PANEL ───────────────────────────────────────────────
+let _adminTab = 'tree';
+
+function openAdminPanel() {
+  openModal('modal-admin');
+  switchAdminTab('tree');
+}
+
+function switchAdminTab(tab) {
+  _adminTab = tab;
+  ['tree','users'].forEach(t => {
+    const btn = document.getElementById(`admin-tab-${t}`);
+    if (btn) btn.className = `btn btn-sm${t === tab ? ' btn-accent' : ' btn-ghost'}`;
+  });
+  const body = document.getElementById('admin-panel-body');
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Cargando…</div>';
+  if (tab === 'tree') renderAdminTree();
+  if (tab === 'users') renderAdminUsers();
+}
+
+async function renderAdminTree() {
+  const body = document.getElementById('admin-panel-body');
+  try {
+    const snap = await db.collection('groups').get();
+    const groups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Build tree: find roots (no referredBy or referredBy not in list)
+    const byId = {};
+    groups.forEach(g => byId[g.id] = { ...g, children: [] });
+    const roots = [];
+    groups.forEach(g => {
+      if (g.referredBy && byId[g.referredBy]) {
+        byId[g.referredBy].children.push(byId[g.id]);
+      } else {
+        roots.push(byId[g.id]);
+      }
+    });
+
+    function nodeHTML(node, depth) {
+      const genColors = ['var(--accent)','#4ade80','#60a5fa','#f59e0b'];
+      const color = genColors[(node.generation || 1) - 1] || 'var(--muted)';
+      const indent = depth * 20;
+      let html = `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0 8px ${indent}px;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;background:${color};color:#000;border-radius:4px;padding:1px 6px;font-weight:700;white-space:nowrap">G${node.generation||1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${node.name || node.id}</div>
+            <div style="font-size:11px;color:var(--muted);letter-spacing:2px">${node.code || node.id}</div>
+          </div>
+        </div>`;
+      node.children.forEach(child => { html += nodeHTML(child, depth + 1); });
+      return html;
+    }
+
+    let html = '';
+    roots.forEach(r => { html += nodeHTML(r, 0); });
+    body.innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:40px">Sin datos</div>';
+  } catch(e) {
+    body.innerHTML = `<div style="color:#f87171;text-align:center;padding:40px">Error: ${e.message}</div>`;
+  }
+}
+
+async function renderAdminUsers() {
+  const body = document.getElementById('admin-panel-body');
+  try {
+    const snap = await db.collection('groups').get();
+    const groups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    groups.sort((a, b) => (a.generation||1) - (b.generation||1));
+
+    // Load profiles for each group in parallel
+    const profileSnaps = await Promise.all(
+      groups.map(g => db.collection('groups').doc(g.id).collection('profiles').get())
+    );
+
+    let totalUsers = 0;
+    let html = '';
+    groups.forEach((g, i) => {
+      const profiles = profileSnaps[i].docs.map(d => d.data());
+      totalUsers += profiles.length;
+      const genColors = ['var(--accent)','#4ade80','#60a5fa','#f59e0b'];
+      const color = genColors[(g.generation||1)-1] || 'var(--muted)';
+      const names = profiles.map(p => p.name || '?').join(', ') || '—';
+      html += `
+        <div style="background:var(--card);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:11px;background:${color};color:#000;border-radius:4px;padding:1px 6px;font-weight:700">G${g.generation||1}</span>
+            <span style="font-weight:700;font-size:14px">${g.name || g.id}</span>
+            <span style="margin-left:auto;font-size:12px;color:var(--muted)">${profiles.length} usuario${profiles.length!==1?'s':''}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">${names}</div>
+        </div>`;
+    });
+
+    body.innerHTML = `
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">
+        ${groups.length} grupos · ${totalUsers} usuarios en total
+      </div>
+      ${html}`;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#f87171;text-align:center;padding:40px">Error: ${e.message}</div>`;
+  }
+}
+
 // ── REAL-TIME SUBSCRIPTION ────────────────────────────────────
 function subscribeToProfiles() {
   profilesRef().onSnapshot(snapshot => {
@@ -1354,6 +1473,7 @@ function showMain() {
   switchTab('entrenos');
   showMuscleGrid();
   loadNetworkStats();
+  document.getElementById('btn-admin').style.display = (getGroup()?.generation === 1) ? '' : 'none';
 }
 
 // ── TABS ──────────────────────────────────────────────────────
