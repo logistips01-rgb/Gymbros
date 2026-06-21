@@ -547,7 +547,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v48</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v49</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="logout()">↩ Cambiar</button>
@@ -573,7 +573,10 @@ header {
       <div id="view-muscles">
         <div class="sec-header">
           <span class="sec-title">Grupos musculares</span>
-          <button class="btn btn-accent btn-sm" onclick="openModal('modal-muscle')">+ Grupo</button>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="openCreateRoutineFromEntrenos()">📅 Nueva rutina</button>
+            <button class="btn btn-accent btn-sm" onclick="openModal('modal-muscle')">+ Grupo</button>
+          </div>
         </div>
         <div class="muscle-grid-view" id="muscle-grid-view"></div>
       </div>
@@ -808,6 +811,7 @@ header {
     <div id="kirk-session-comment" style="margin-top:10px"></div>
     <div class="modal-actions" style="flex-direction:column;gap:8px">
       <button class="btn btn-accent" style="width:100%" onclick="copySessionSummary()">📋 Copiar para WhatsApp</button>
+      <button class="btn btn-ghost" style="width:100%" id="btn-save-as-routine" onclick="saveSessionAsRoutine()">💾 Guardar como rutina</button>
       <button class="btn btn-ghost" style="width:100%" onclick="closeModal('modal-session-summary')">Cerrar</button>
     </div>
   </div>
@@ -886,9 +890,18 @@ header {
       <input type="text" id="routine-name-inp" placeholder="Ej: Pecho y Tríceps" style="width:100%" maxlength="40">
     </div>
     <div class="field" style="margin-top:14px">
-      <label>Ejercicios</label>
+      <label>Ejercicios en la rutina</label>
       <div class="modal-ex-list" id="modal-ex-list"></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Añadir de mis ejercicios</label>
+      <input type="text" id="ex-picker-search" placeholder="Buscar ejercicio…" style="width:100%;margin-bottom:6px"
+        oninput="renderExPickerList(this.value)">
+      <div id="ex-picker-list" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"></div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>O añadir nuevo ejercicio</label>
+      <div style="display:flex;gap:8px">
         <input type="text" id="new-ex-name-inp" placeholder="Nombre del ejercicio" style="flex:1" maxlength="40"
           onkeydown="if(event.key==='Enter')addExToRoutineModal()">
         <select id="new-ex-type-sel" style="width:auto;padding:8px">
@@ -1580,6 +1593,22 @@ function renderRoutinesList(p) {
 let editingRoutineId = null;
 let modalExercises   = []; // [{id,name,type}] while editing in modal
 
+function saveSessionAsRoutine() {
+  if (!_lastSessionForRoutine) return;
+  closeModal('modal-session-summary');
+  editingRoutineId = null;
+  modalExercises = _lastSessionForRoutine.exercises
+    .filter(e => (e.sets||[]).length > 0)
+    .map(e => ({ id: Date.now().toString() + Math.random(), name: e.name, type: e.type || 'normal' }));
+  document.getElementById('modal-routine-title').textContent = 'Guardar como rutina';
+  document.getElementById('routine-name-inp').value = '';
+  document.getElementById('new-ex-name-inp').value  = '';
+  renderModalExList();
+  renderExPickerList('');
+  openModal('modal-routine');
+  setTimeout(() => document.getElementById('routine-name-inp').focus(), 100);
+}
+
 function openCreateRoutine() {
   editingRoutineId = null;
   modalExercises   = [];
@@ -1587,9 +1616,51 @@ function openCreateRoutine() {
   document.getElementById('routine-name-inp').value = '';
   document.getElementById('new-ex-name-inp').value  = '';
   document.getElementById('new-ex-type-sel').value  = 'normal';
+  document.getElementById('ex-picker-search').value = '';
   renderModalExList();
+  renderExPickerList('');
   openModal('modal-routine');
   setTimeout(() => document.getElementById('routine-name-inp').focus(), 100);
+}
+
+function openCreateRoutineFromEntrenos() {
+  switchTab('rutinas');
+  openCreateRoutine();
+}
+
+function renderExPickerList(q) {
+  const p = profile();
+  const el = document.getElementById('ex-picker-list');
+  if (!el) return;
+  const ql = (q || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const allEx = p.muscles.flatMap(mu =>
+    mu.exercises.map(e => ({ name: e.name, type: e.type || 'normal', muscle: mu.name }))
+  );
+  const filtered = ql.length < 1
+    ? allEx
+    : allEx.filter(e => e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(ql));
+  if (!filtered.length) {
+    el.innerHTML = `<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">Sin coincidencias</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map((e, i) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer"
+      onmousedown="addExFromPicker('${e.name.replace(/'/g,"\\'")}','${e.type}')">
+      <div>
+        <div style="font-size:13px;font-weight:600">${typeIcon(e.type)} ${e.name}</div>
+        <div style="font-size:10px;color:var(--muted)">${e.muscle}</div>
+      </div>
+      <span style="color:var(--accent);font-size:18px;line-height:1">+</span>
+    </div>`).join('');
+}
+
+function addExFromPicker(name, type) {
+  if (modalExercises.some(e => e.name === name)) {
+    showToast('Ya está en la rutina');
+    return;
+  }
+  modalExercises.push({ id: Date.now().toString(), name, type });
+  renderModalExList();
 }
 
 function openEditRoutine(routineId) {
@@ -1603,7 +1674,9 @@ function openEditRoutine(routineId) {
   document.getElementById('routine-name-inp').value = r.name;
   document.getElementById('new-ex-name-inp').value  = '';
   document.getElementById('new-ex-type-sel').value  = 'normal';
+  document.getElementById('ex-picker-search').value = '';
   renderModalExList();
+  renderExPickerList('');
   openModal('modal-routine');
 }
 
@@ -1866,6 +1939,7 @@ function finishSession() {
 }
 
 let _lastSessionSummary = '';
+let _lastSessionForRoutine = null;
 
 function showSessionSummary(sess) {
   const totalSets = sess.exercises.reduce((a,e)=>a+(e.sets||[]).length,0);
@@ -1886,6 +1960,9 @@ function showSessionSummary(sess) {
     </div>
     ${exList}`;
   _lastSessionSummary = `💪 *${profile().name}* ha completado *${sess.routineName}*\n⏱ ${duration} min · 🔁 ${totalSets} series · 📦 ${totalVol>=1000?(totalVol/1000).toFixed(1)+'t':totalVol+'kg'} volumen\n${sess.exercises.filter(e=>(e.sets||[]).length>0).map(e=>{const best=Math.max(0,...(e.sets||[]).map(s=>s.kg||0));return `${e.name}${best>0?` (${best}kg)`:''}: ${(e.sets||[]).length} series`;}).join(' · ')}\n#GymBros 🏋️`;
+  _lastSessionForRoutine = sess;
+  const btnSave = document.getElementById('btn-save-as-routine');
+  if (btnSave) btnSave.style.display = sess.routineName === 'Entreno libre' ? '' : 'none';
   openModal('modal-session-summary');
   kirkSessionComment(sess, totalSets, totalVol, duration);
 }
