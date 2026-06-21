@@ -23,3 +23,6 @@
 ### Menores / ya identificadas
 - [ ] Backup de datos privados (nutrición/peso) en Firestore cifrado por usuario
 - [ ] Exportar historial de sesiones a CSV/PDF
+
+## Proyectos futuros
+- [ ] **GymSister** — versión hermana de GymBros orientada a mujeres (mismo stack, paleta y tono adaptados)
