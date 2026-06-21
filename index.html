@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GymBros · Progreso compartido</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#E11D2E">
@@ -152,7 +152,7 @@ header {
   position:sticky; top:0; z-index:100;
   background:var(--blue-deep); backdrop-filter:blur(8px);
 }
-.logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:22px; letter-spacing:3px; color:#fff; }
+.logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:22px; letter-spacing:3px; color:#fff; white-space:nowrap; }
 .logo span { color:var(--accent); }
 .header-right { display:flex; align-items:center; gap:8px; }
 .user-pill {
@@ -605,7 +605,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v55</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v56</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
@@ -1314,7 +1314,24 @@ async function renderAdminUsers() {
 }
 
 // ── REAL-TIME SUBSCRIPTION ────────────────────────────────────
+async function ensureGeneration() {
+  const g = getGroup();
+  if (!g) return;
+  if (g.generation) return; // already stored
+  try {
+    const snap = await db.collection('groups').doc(g.id).get();
+    if (snap.exists) {
+      const gen = snap.data().generation || 1;
+      setGroup({ ...g, generation: gen });
+    }
+  } catch(e) {}
+}
+
 function subscribeToProfiles() {
+  ensureGeneration().then(() => {
+    const btn = document.getElementById('btn-admin');
+    if (btn) btn.style.display = (getGroup()?.generation === 1) ? '' : 'none';
+  });
   profilesRef().onSnapshot(snapshot => {
     state.profiles = snapshot.docs.map(d => d.data());
     // Sort by creation time (id is timestamp-based)
