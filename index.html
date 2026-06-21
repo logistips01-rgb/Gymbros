@@ -504,6 +504,33 @@ header {
 .empty-state h3 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; margin-bottom:5px; color:var(--text); }
 .empty-state p { font-size:12px; line-height:1.5; }
 
+/* ── HELP BUTTON ── */
+#help-fab {
+  position:fixed; bottom:80px; right:16px; z-index:200;
+  width:42px; height:42px; border-radius:50%;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--muted); font-size:18px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,.4);
+  transition:border-color .2s, color .2s;
+}
+#help-fab:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── GUIDE ACCORDION ── */
+.guide-section { border-bottom:1px solid var(--border); }
+.guide-section summary {
+  list-style:none; padding:14px 0; font-weight:700; font-size:15px;
+  cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+}
+.guide-section summary::-webkit-details-marker { display:none; }
+.guide-section summary::after { content:'›'; font-size:20px; color:var(--accent); transition:transform .2s; }
+.guide-section[open] summary::after { transform:rotate(90deg); }
+.guide-section-body { padding:0 0 14px; font-size:13px; line-height:1.7; color:var(--muted); }
+.guide-section-body strong { color:var(--text); }
+.guide-section-body ul { padding-left:18px; margin:6px 0; }
+.guide-section-body li { margin-bottom:4px; }
+.guide-tip { background:rgba(225,29,46,.08); border-left:3px solid var(--accent); border-radius:0 6px 6px 0; padding:8px 12px; margin:8px 0; font-size:12px; color:var(--text); }
+
 /* ── TOAST ── */
 .toast {
   position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
@@ -605,7 +632,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v56</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v57</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
@@ -998,6 +1025,184 @@ header {
       <button class="btn btn-sm" id="admin-tab-users" onclick="switchAdminTab('users')">👥 Usuarios activos</button>
     </div>
     <div id="admin-panel-body" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Botón flotante de ayuda -->
+<button id="help-fab" onclick="openModal('modal-guide')" title="Guía de uso">?</button>
+
+<!-- MODAL: Guía de uso -->
+<div class="modal-overlay" id="modal-guide" style="align-items:flex-start;padding:0">
+  <div class="modal" style="max-width:100%;width:100%;min-height:100dvh;border-radius:0;margin:0;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">📖 Guía de GymBros</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-guide')">✕ Cerrar</button>
+    </div>
+    <div style="flex:1;overflow-y:auto">
+
+      <details class="guide-section">
+        <summary>🏋️ Grupos musculares y ejercicios</summary>
+        <div class="guide-section-body">
+          <strong>Crear un grupo muscular</strong>
+          <ul>
+            <li>Ve a la pestaña <strong>Entreno libre</strong>.</li>
+            <li>Pulsa <strong>+ Grupo</strong> y elige de la lista (Pecho, Espalda, Piernas…).</li>
+          </ul>
+          <strong>Añadir ejercicios</strong>
+          <ul>
+            <li>Entra en un grupo muscular y pulsa <strong>+ Ejercicio</strong>.</li>
+            <li>Pon el nombre y elige el tipo: <strong>Peso</strong> (barra/mancuernas), <strong>Propio</strong> (fondos, dominadas) o <strong>Cardio</strong> (carrera, natación).</li>
+          </ul>
+          <strong>Ver progresión</strong>
+          <ul>
+            <li>Pulsa el icono 📈 en cualquier ejercicio para ver el historial de peso y repeticiones.</li>
+          </ul>
+          <div class="guide-tip">💡 Los ejercicios de cardio calculan calorías quemadas automáticamente: natación por metros, resto por distancia.</div>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>📅 Rutinas</summary>
+        <div class="guide-section-body">
+          <strong>Crear una rutina</strong>
+          <ul>
+            <li>Ve a la pestaña <strong>Rutinas</strong> y pulsa <strong>+ Nueva rutina</strong>.</li>
+            <li>También puedes crearla desde <strong>Entreno libre</strong> con el botón <strong>📅 Nueva rutina</strong>.</li>
+            <li>Dale un nombre, añade ejercicios desde tu biblioteca o crea nuevos sobre la marcha.</li>
+          </ul>
+          <strong>Guardar sesión como rutina</strong>
+          <ul>
+            <li>Al terminar una sesión, en el resumen final pulsa <strong>Guardar como rutina</strong>.</li>
+          </ul>
+          <strong>Iniciar una rutina</strong>
+          <ul>
+            <li>Pulsa <strong>▶ Iniciar</strong> en cualquier rutina y te cargará todos los ejercicios listos para registrar series.</li>
+          </ul>
+          <div class="guide-tip">💡 Las rutinas no borran tus ejercicios sueltos — puedes mezclarlos libremente en cada sesión.</div>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>⏱ Sesiones de entrenamiento</summary>
+        <div class="guide-section-body">
+          <strong>Registrar series</strong>
+          <ul>
+            <li>Entra en un ejercicio y pulsa <strong>+ Serie</strong>. Pon el peso y las reps (o metros/km para cardio).</li>
+            <li>Las series se guardan en tiempo real — si cierras la app no pierdes nada.</li>
+          </ul>
+          <strong>Terminar sesión</strong>
+          <ul>
+            <li>Pulsa <strong>Terminar sesión</strong> para ver el resumen: volumen total, calorías, comentario automático de Kirk.</li>
+          </ul>
+          <strong>Historial</strong>
+          <ul>
+            <li>En la pestaña <strong>Stats</strong> puedes ver todas tus sesiones pasadas ordenadas por fecha.</li>
+          </ul>
+          <div class="guide-tip">💡 El tiempo de descanso entre series lo controlas tú — GymBros no bloquea la pantalla.</div>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>🤖 Kirk (Inteligencia Artificial)</summary>
+        <div class="guide-section-body">
+          <strong>Chat libre</strong>
+          <ul>
+            <li>Ve a la pestaña <strong>IA</strong> y escríbele a Kirk lo que quieras: consejos de entrenamiento, nutrición, motivación…</li>
+          </ul>
+          <strong>Accesos rápidos</strong>
+          <ul>
+            <li><strong>Crear rutina</strong> — Kirk diseña una rutina personalizada según tus objetivos.</li>
+            <li><strong>Consejo nutri</strong> — análisis de tu dieta del día y recomendaciones.</li>
+            <li><strong>Analizar progreso</strong> — revisión de tus últimas sesiones y tendencias.</li>
+          </ul>
+          <strong>Comentarios automáticos</strong>
+          <ul>
+            <li>Al terminar cada sesión, Kirk genera automáticamente un comentario motivacional.</li>
+          </ul>
+          <div class="guide-tip">💡 Kirk usa tus datos reales (sesiones, macros, peso) para darte respuestas personalizadas, no genéricas.</div>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>🥗 Nutrición</summary>
+        <div class="guide-section-body">
+          <strong>Configurar objetivos</strong>
+          <ul>
+            <li>Pulsa el icono ⚙️ en la pestaña <strong>Nutri</strong> para introducir tu peso, altura, edad, sexo y objetivo (déficit / mantenimiento / volumen).</li>
+            <li>GymBros calcula tu TDEE y reparte los macros automáticamente.</li>
+          </ul>
+          <strong>Registrar comidas</strong>
+          <ul>
+            <li>Pulsa <strong>+ Añadir comida</strong>, busca el alimento en la base de datos o escríbelo manualmente.</li>
+            <li>Introduce la cantidad en gramos y confirma.</li>
+            <li>Para repetir una comida ya registrada, pulsa el botón <strong>🔁</strong> en la tarjeta y ajusta la cantidad.</li>
+          </ul>
+          <strong>Balance semanal</strong>
+          <ul>
+            <li>Debajo de las barras semanales verás el déficit o superávit en kcal, su equivalente en kg de grasa y la proyección mensual.</li>
+            <li>Solo cuentan los días en los que has registrado al menos una comida.</li>
+          </ul>
+          <div class="guide-tip">💡 Los datos de nutrición son privados y solo se guardan en tu dispositivo (localStorage). No los ven tus compañeros.</div>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>🏆 Rankings y Stats</summary>
+        <div class="guide-section-body">
+          <strong>Rankings</strong>
+          <ul>
+            <li>Muestra quién lleva más volumen, más sesiones y más calorías quemadas en el grupo.</li>
+            <li>Se actualiza en tiempo real — todos ven los mismos datos.</li>
+          </ul>
+          <strong>Stats personales</strong>
+          <ul>
+            <li>Historial de sesiones, progresión por ejercicio y resúmenes semanales.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>👥 Grupos y sistema de referidos</summary>
+        <div class="guide-section-body">
+          <strong>Tu grupo</strong>
+          <ul>
+            <li>Al entrar por primera vez creas o te unes a un grupo con código + contraseña.</li>
+            <li>Todos los entrenamientos, rankings y stats son privados de tu grupo.</li>
+          </ul>
+          <strong>Invitar a alguien</strong>
+          <ul>
+            <li>Pulsa <strong>📨 Invitar</strong> en el header — se abre WhatsApp con un enlace de invitación.</li>
+            <li>La persona que recibe el enlace puede crear su propio grupo independiente (no ve tus datos).</li>
+          </ul>
+          <strong>Sistema piramidal</strong>
+          <ul>
+            <li>Los grupos originales son <strong>Generación 1</strong>. Sus invitados son Gen 2, y así hasta Gen 4.</li>
+            <li>Cada generación solo puede ver sus propios datos.</li>
+          </ul>
+          <div class="guide-tip">💡 El código de tu grupo siempre lo puedes ver en el botón 📨 Invitar — genera el enlace con tu código incluido.</div>
+        </div>
+      </details>
+
+      <details class="guide-section">
+        <summary>📱 Instalar en el móvil (PWA)</summary>
+        <div class="guide-section-body">
+          <strong>Android (Chrome)</strong>
+          <ul>
+            <li>Abre GymBros en Chrome → menú ⋮ → <strong>Añadir a pantalla de inicio</strong>.</li>
+          </ul>
+          <strong>iPhone (Safari)</strong>
+          <ul>
+            <li>Abre GymBros en Safari → botón compartir □↑ → <strong>Añadir a pantalla de inicio</strong>.</li>
+          </ul>
+          <strong>Actualizar la app</strong>
+          <ul>
+            <li>Cuando haya una nueva versión verás un aviso en pantalla con el botón <strong>Recargar</strong>.</li>
+            <li>Si no aparece, cierra la app del multitarea y vuelve a abrirla.</li>
+          </ul>
+        </div>
+      </details>
+
+    </div>
   </div>
 </div>
 
@@ -4009,7 +4214,25 @@ if (!_grp) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(console.error);
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // Comprobar actualizaciones cada vez que la app vuelve al foco
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update();
+      });
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            // Hay nueva versión esperando → avisar al usuario
+            const t = document.getElementById('toast');
+            if (t) {
+              t.innerHTML = '🔄 Nueva versión disponible — <button onclick="location.reload()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;font-size:inherit;padding:0;text-decoration:underline">Recargar</button>';
+              t.classList.add('show');
+            }
+          }
+        });
+      });
+    }).catch(console.error);
   });
 }
 </script>

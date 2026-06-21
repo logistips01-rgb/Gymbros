@@ -8,7 +8,7 @@
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
 - Firebase Firestore (compat SDK v10.12.0) para datos compartidos del grupo
 - `localStorage` para datos privados: nutrición, peso corporal, sesión activa
-- Service worker (`sw.js`) — cache-first, versión actual `gymbros-v56`
+- Service worker (`sw.js`) — cache-first, versión actual `gymbros-v57`
 - Deploy: GitHub Pages (auto en push a `main`)
 - IA: Groq API, modelo `llama-3.3-70b-versatile`, max 150 tokens (comentarios de sesión)
 
