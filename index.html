@@ -2264,14 +2264,18 @@ function saveStepsToday(val) {
 
 // ── ESTIMACIÓN KCAL QUEMADAS ──────────────────────────────────
 const COMPOUND_RE = /sentadilla|squat|peso muerto|deadlift|press banca|bench|dominad|remo|hip thrust|fondos|dip|prensa|jaca|press militar|overhead|peso muerto|rack/i;
+const SWIM_RE = /nataci[oó]n|swim|piscina|largo|crawl|braza|mariposa|espalda/i;
 
 function estimateExKcal(name, type, sets, bw) {
   const factor = bw / 70;
   if (type === 'cardio') {
-    // sets with .value (distance in m/km) → rough kcal
     const dist = sets.reduce((a, s) => a + (s.value || 0), 0);
     const unit  = sets[0]?.unit || 'm';
-    return Math.round(dist * (unit === 'km' ? 60 : 0.06) * factor);
+    const isSwim = SWIM_RE.test(name);
+    // Natación ~300 kcal/km (0.3/m), carrera/otros ~60 kcal/km (0.06/m)
+    const kcalPerM = isSwim ? 0.3 : 0.06;
+    const distM = unit === 'km' ? dist * 1000 : dist;
+    return Math.round(distM * kcalPerM * factor);
   }
   if (type === 'bodyweight') return Math.round(sets.length * 7 * factor);
   // normal: compound vs isolation
