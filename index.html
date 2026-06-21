@@ -605,7 +605,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v52</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v53</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
@@ -3814,11 +3814,13 @@ if (!_grp) {
   document.getElementById('loading').style.display = 'none';
   const _invCode = new URL(location.href).searchParams.get('invite') || '';
   if (_invCode) {
-    showGroupTab('join');
-    const inp = document.getElementById('grp-join-code');
-    if (inp) inp.value = _invCode.toUpperCase();
-  } else {
+    // Tiene invitación: puede crear su propio grupo o unirse a uno existente
+    document.getElementById('grp-join-code').value = _invCode.toUpperCase();
     showGroupTab('create');
+  } else {
+    // Sin invitación: solo puede unirse, no crear
+    document.getElementById('grp-tab-create').style.display = 'none';
+    showGroupTab('join');
   }
   showScreen('group');
 } else {
