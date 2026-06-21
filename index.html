@@ -637,7 +637,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v58</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v59</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -660,10 +660,25 @@ header {
 
     <!-- ENTRENOS -->
     <div class="tab-panel active" id="tab-entrenos">
+      <!-- Banner sesión libre activa -->
+      <div id="free-session-bar" style="display:none;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:13px;font-weight:700">⏱ Entreno libre en curso</div>
+            <div id="free-session-info" style="font-size:11px;color:var(--muted)"></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-ghost btn-sm" onclick="cancelSession()">✕</button>
+            <button class="btn btn-accent btn-sm" onclick="finishSession()">✅ Finalizar</button>
+          </div>
+        </div>
+      </div>
+
       <div id="view-muscles">
         <div class="sec-header">
           <span class="sec-title">Grupos musculares</span>
           <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" id="btn-start-free" onclick="startFreeSession()">▶ Iniciar</button>
             <button class="btn btn-ghost btn-sm" onclick="openCreateRoutineFromEntrenos()">📅 Nueva rutina</button>
             <button class="btn btn-accent btn-sm" onclick="openModal('modal-muscle')">+ Grupo</button>
           </div>
@@ -769,7 +784,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v58</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v59</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1740,6 +1755,7 @@ function showMain() {
   av.textContent = p.name[0].toUpperCase();
   av.style.background = color;
   document.getElementById('hdr-name').textContent = p.name;
+  recoverSession();
   switchTab('entrenos');
   showMuscleGrid();
 }
@@ -1756,6 +1772,7 @@ function switchTab(tab) {
   if (tab === 'ia')       renderIA();
   if (tab === 'nutri')    renderNutricion();
   if (tab === 'config')   renderConfig();
+  if (tab === 'entrenos') updateFreeSessionBar();
 }
 
 function renderConfig() {
@@ -1788,6 +1805,7 @@ function showMuscleGrid() {
   document.getElementById('view-muscles').style.display = '';
   document.getElementById('view-exercises').style.display = 'none';
   renderMuscleGrid();
+  updateFreeSessionBar();
 }
 
 function renderMuscleGrid() {
@@ -1987,6 +2005,35 @@ function renumSets(exId) {
   [...document.getElementById(`sets-${exId}`).children].forEach((r, i) => r.querySelector('.set-num').textContent = i + 1);
 }
 
+function startFreeSession() {
+  if (activeSession) { showToast('Ya hay una sesión en curso'); return; }
+  activeSession = {
+    routineId: null,
+    routineName: 'Entreno libre',
+    startTime: new Date().toISOString(),
+    exercises: []
+  };
+  persistSession();
+  updateFreeSessionBar();
+  showToast('¡Entreno iniciado! Guarda series para añadirlas 💪');
+}
+
+function updateFreeSessionBar() {
+  const bar = document.getElementById('free-session-bar');
+  const info = document.getElementById('free-session-info');
+  const btnStart = document.getElementById('btn-start-free');
+  if (!bar) return;
+  const isFree = activeSession && !activeSession.routineId;
+  bar.style.display = isFree ? '' : 'none';
+  if (btnStart) btnStart.style.display = (activeSession && !activeSession.routineId) ? 'none' : '';
+  if (isFree && info) {
+    const exCount = activeSession.exercises.filter(e => e.sets.length > 0).length;
+    const setCount = activeSession.exercises.reduce((a, e) => a + e.sets.length, 0);
+    const mins = Math.round((Date.now() - new Date(activeSession.startTime).getTime()) / 60000);
+    info.textContent = `${exCount} ejercicio${exCount !== 1 ? 's' : ''} · ${setCount} series · ${mins} min`;
+  }
+}
+
 function saveSession(exId) {
   const p = profile();
   const m = p.muscles.find(m => m.id === activeMuscle);
@@ -2009,14 +2056,29 @@ function saveSession(exId) {
     }
   }
   if (!sets.length) { showToast('Añade al menos una serie'); return; }
+
+  // Save to per-exercise history (for progression charts)
   ex.sessions.push({ id: Date.now().toString(), date: new Date().toISOString(), sets });
   saveCurrentProfile();
+
+  // If a free session is active, accumulate into it too
+  if (activeSession && !activeSession.routineId) {
+    const existing = activeSession.exercises.find(e => e.id === exId);
+    if (existing) {
+      existing.sets.push(...sets);
+    } else {
+      activeSession.exercises.push({ id: exId, name: ex.name, type, sets: [...sets] });
+    }
+    persistSession();
+    updateFreeSessionBar();
+  }
+
   const card = document.getElementById(`card-${exId}`);
   const wasOpen = card.classList.contains('open');
   const newCard = buildExCard(ex);
   if (wasOpen) newCard.classList.add('open');
   card.replaceWith(newCard);
-  showToast('Sesión guardada ✓');
+  showToast(activeSession && !activeSession.routineId ? 'Serie añadida a la sesión ✓' : 'Sesión guardada ✓');
 }
 
 function delSession(exId, sessionId) {
@@ -2572,7 +2634,8 @@ function finishSession() {
   showToast('¡Sesión guardada! 💪');
   records.forEach((r, i) => setTimeout(() => showToast(`🏆 ¡NUEVO RÉCORD! ${r.name}: ${r.rm}kg (1RM est.)`), 800 + i * 1200));
   showSessionSummary(savedSess);
-  renderRutinas();
+  if (savedSess.routineId) renderRutinas();
+  else { updateFreeSessionBar(); showMuscleGrid(); }
 }
 
 let _lastSessionSummary = '';
@@ -2640,9 +2703,11 @@ function copySessionSummary() {
 function cancelSession() {
   if (!confirm('¿Descartar la sesión?')) return;
   clearRestTimer();
+  const wasFree = activeSession && !activeSession.routineId;
   activeSession = null;
   persistSession();
-  renderRutinas();
+  if (wasFree) { updateFreeSessionBar(); showMuscleGrid(); }
+  else renderRutinas();
 }
 
 function saveSessionProgress() {
