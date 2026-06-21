@@ -2,6 +2,7 @@
 
 ## Reglas de desarrollo
 - **Siempre** subir la versión del service worker (`sw.js`) en el mismo commit que cualquier cambio a `index.html`. Formato: `gymbros-vN` incrementando N.
+- **Siempre** sincronizar el número de versión visible en el header del HTML (`vN` junto al logo) con la versión del SW. Son el mismo número. El usuario lo usa para verificar que la actualización ha llegado a su móvil.
 
 ## Stack
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
