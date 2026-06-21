@@ -8,21 +8,24 @@
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
 - Firebase Firestore (compat SDK v10.12.0) para datos compartidos del grupo
 - `localStorage` para datos privados: nutrición, peso corporal, sesión activa
-- Service worker (`sw.js`) — cache-first, versión actual `gymbros-v39`
+- Service worker (`sw.js`) — cache-first, versión actual `gymbros-v50`
 - Deploy: GitHub Pages (auto en push a `main`)
 - IA: Groq API, modelo `llama-3.3-70b-versatile`, max 150 tokens (comentarios de sesión)
 
 ## Mejoras pendientes
 
 ### Alta prioridad
-- [ ] **Soporte multi-grupo con contraseña**
-  Permitir crear grupos de amigos aislados, cada uno accesible con un código + contraseña.
-  - Estructura: `groups/{groupId}/sessions/`, `groups/{groupId}/users/`
+- [ ] **Soporte multi-grupo con contraseña + sistema piramidal de referidos**
+  Grupos aislados con código + contraseña. Los 5 bros originales pueden invitar a nuevos usuarios que crean su propio grupo independiente. Datos siempre aislados entre grupos.
+  - Estructura Firestore: `groups/{groupId}/sessions/`, `groups/{groupId}/users/`
+  - Documento de grupo: `{ name, passwordHash, inviteCode, referredBy, createdAt }`
+  - `referredBy` = groupId del grupo que generó la invitación (null para el grupo original)
   - Password hashed con Web Crypto SHA-256 en cliente
   - Pantalla de bienvenida: crear grupo / unirse con código
+  - Enlace de invitación: `?invite=CODIGO` pre-rellena el campo en la pantalla de bienvenida
   - El groupId se guarda en `localStorage` como `gymbros_group`
-  - El groupId sirve como código de invitación compartible por WhatsApp
-  - Requiere migración de los datos actuales al nuevo grupo
+  - Requiere migración de los datos actuales al grupo original
+  - Futuro: panel "GymBros Network" mostrando el árbol de grupos invitados (sin datos privados)
 
 ### Menores / ya identificadas
 - [ ] Backup de datos privados (nutrición/peso) en Firestore cifrado por usuario
