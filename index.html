@@ -637,7 +637,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v61</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v62</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -784,7 +784,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v61</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v62</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3408,6 +3408,11 @@ function renderNutricion() {
   ensureRoutines(p);
   const n = ensureNutrition(loadNutri());
   const g = n.goals;
+  const ph = n.physique;
+  const tdeeCalc = (ph && ph.age && ph.height)
+    ? calculateTDEE(ph.weight || getBodyWeight(), ph.age, ph.height, ph.sex || 'm', ph.activity || 1.55)
+    : null;
+  const tdee = tdeeCalc ? tdeeCalc.tdee : null;
   const today = new Date().toISOString().slice(0, 10);
 
   // Today's meals
@@ -3442,11 +3447,15 @@ function renderNutricion() {
   }
   const maxWeekKcal = Math.max(g.kcal, ...weekDays.map(d => d.kcal), 100);
 
-  // Deficit / surplus (based on net if burn data available)
+  // Deficit / surplus vs TDEE (real energy balance)
   const diffBase = netKcal !== null ? netKcal : tot.kcal;
-  const diff = diffBase - g.kcal;
-  const diffStr = diff === 0 ? 'En objetivo' : diff > 0 ? `+${diff} kcal surplus` : `${diff} kcal déficit`;
-  const diffColor = diff > 200 ? '#f59e0b' : diff < -500 ? '#3b82f6' : '#16a34a';
+  const refTdee = tdee || g.kcal;
+  const diff = diffBase - refTdee;
+  const diffLabel = tdee ? 'vs TDEE' : '';
+  const diffStr = diff === 0 ? 'En equilibrio'
+    : diff > 0 ? `+${diff} kcal surplus ${diffLabel}`.trim()
+    : `${diff} kcal déficit ${diffLabel}`.trim();
+  const diffColor = diff > 200 ? '#f59e0b' : diff <= 0 ? '#16a34a' : '#22c55e';
 
   const bar = (val, goal, color) => {
     const pct = Math.min(100, goal > 0 ? Math.round(val / goal * 100) : 0);
@@ -3471,7 +3480,7 @@ function renderNutricion() {
   const weekTotalKcal   = weekDaysWithData.reduce((a, d) => a + d.kcal, 0);
   const weekTotalBurned = weekDaysWithData.reduce((a, d) => a + d.burned, 0);
   const weekNet         = weekTotalKcal - weekTotalBurned;
-  const weekGoal        = g.kcal * weekDaysWithData.length;
+  const weekGoal        = (tdee || g.kcal) * weekDaysWithData.length;
   const weekDiff        = weekNet - weekGoal;
   const weekKgEquiv     = weekDaysWithData.length > 0 && weekDiff !== 0 ? Math.abs(weekDiff) / 7700 : null;
   const weekKgStr       = weekKgEquiv ? ` ≈ ${weekKgEquiv.toFixed(2)} kg` : '';
