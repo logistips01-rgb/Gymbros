@@ -514,6 +514,8 @@ header {
   border:1px solid var(--border); box-shadow:0 8px 24px rgba(0,0,0,0.4);
 }
 .toast.show { opacity:1; }
+.grp-tab { flex:1; padding:10px; background:none; border:none; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; }
+.grp-tab.active { background:var(--accent); color:#fff; }
 </style>
 </head>
 <body>
@@ -523,6 +525,62 @@ header {
   <div class="logo-spin">GYM<span>BROS</span></div>
   <div class="spinner"></div>
   <p>Conectando…</p>
+</div>
+
+<!-- ── GROUP SCREEN ── -->
+<div id="screen-group" class="screen">
+  <div class="logo-big">GYM<span>BROS</span></div>
+  <div class="tagline">Tu grupo. Tu progreso.</div>
+  <div class="login-box" style="max-width:360px">
+    <div style="display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <button id="grp-tab-create" class="grp-tab active" onclick="showGroupTab('create')">Crear grupo</button>
+      <button id="grp-tab-join"   class="grp-tab"        onclick="showGroupTab('join')">Unirme</button>
+    </div>
+
+    <!-- Panel: Crear -->
+    <div id="grp-panel-create">
+      <div class="field">
+        <label>Nombre del grupo</label>
+        <input type="text" id="grp-create-name" placeholder="Ej: Los GymBros" maxlength="30" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="grp-create-pwd" placeholder="Mínimo 4 caracteres" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Confirmar contraseña</label>
+        <input type="password" id="grp-create-pwd2" placeholder="Repite la contraseña" style="width:100%">
+      </div>
+      <button id="grp-create-btn" class="btn btn-accent" style="width:100%;margin-top:4px" onclick="createGroupAction()">Crear grupo</button>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">Se generará un código único para invitar a otros</p>
+    </div>
+
+    <!-- Panel: Creado con éxito -->
+    <div id="grp-panel-created" style="display:none;text-align:center">
+      <div style="font-size:32px;margin-bottom:8px">🎉</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:4px">Grupo creado:</div>
+      <div id="grp-created-name" style="font-size:18px;font-weight:700;margin-bottom:16px"></div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tu código de grupo</div>
+      <div id="grp-created-code" style="font-size:36px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--accent);letter-spacing:4px;margin-bottom:8px"></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:20px">Comparte este código + contraseña con tu grupo. Sin ellos, nadie puede acceder.</p>
+      <button class="btn btn-accent" style="width:100%" onclick="proceedAfterCreate()">Entrar a GymBros →</button>
+    </div>
+
+    <!-- Panel: Unirse -->
+    <div id="grp-panel-join" style="display:none">
+      <div class="field">
+        <label>Código del grupo</label>
+        <input type="text" id="grp-join-code" placeholder="Ej: GYM4K7" maxlength="6" style="width:100%;text-transform:uppercase;letter-spacing:3px;font-size:18px;font-weight:700;text-align:center"
+          oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="grp-join-pwd" placeholder="Contraseña del grupo" style="width:100%"
+          onkeydown="if(event.key==='Enter')joinGroupAction()">
+      </div>
+      <button id="grp-join-btn" class="btn btn-accent" style="width:100%;margin-top:4px" onclick="joinGroupAction()">Unirme</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── LOGIN SCREEN ── -->
@@ -547,9 +605,10 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v50</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v51</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
+      <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
       <button class="switch-btn" onclick="logout()">↩ Cambiar</button>
       <div class="user-pill">
         <div class="uav" id="hdr-av">?</div>
@@ -948,6 +1007,23 @@ const CU_KEY = 'gymbros_current_user';
 const USER_COLORS = ['#E11D2E', '#2563EB', '#16a34a', '#d97706', '#7c3aed'];
 const MAX_PROFILES = 5;
 
+const GROUP_KEY = 'gymbros_group';
+function getGroup() { return JSON.parse(localStorage.getItem(GROUP_KEY) || 'null'); }
+function setGroup(g) { g ? localStorage.setItem(GROUP_KEY, JSON.stringify(g)) : localStorage.removeItem(GROUP_KEY); }
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function genGroupCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function profilesRef() {
+  const g = getGroup();
+  return db.collection('groups').doc(g.id).collection('profiles');
+}
+
 // ── STATE (in-memory cache, Firestore is source of truth) ─────
 let state = { profiles: [], currentUser: null };
 let activeMuscle = null;
@@ -965,21 +1041,119 @@ function setCU(id) { id ? localStorage.setItem(CU_KEY, id) : localStorage.remove
 function saveCurrentProfile() {
   const p = profile();
   if (!p) return;
-  db.collection('profiles').doc(p.id).set(p)
+  profilesRef().doc(p.id).set(p)
     .catch(err => { console.error(err); showToast('Error al guardar ⚠️'); });
 }
 
 function saveNewProfile(p) {
-  return db.collection('profiles').doc(p.id).set(p);
+  return profilesRef().doc(p.id).set(p);
 }
 
 function deleteProfileFromDB(id) {
-  return db.collection('profiles').doc(id).delete();
+  return profilesRef().doc(id).delete();
+}
+
+// ── GROUP MANAGEMENT ──────────────────────────────────────────
+function showGroupTab(tab) {
+  document.getElementById('grp-tab-create').classList.toggle('active', tab === 'create');
+  document.getElementById('grp-tab-join').classList.toggle('active', tab === 'join');
+  document.getElementById('grp-panel-create').style.display = tab === 'create' ? '' : 'none';
+  document.getElementById('grp-panel-join').style.display   = tab === 'join'   ? '' : 'none';
+}
+
+async function createGroupAction() {
+  const name = document.getElementById('grp-create-name').value.trim();
+  const pwd  = document.getElementById('grp-create-pwd').value.trim();
+  const pwd2 = document.getElementById('grp-create-pwd2').value.trim();
+  if (!name) { showToast('Ponle un nombre al grupo'); return; }
+  if (pwd.length < 4) { showToast('Contraseña mínimo 4 caracteres'); return; }
+  if (pwd !== pwd2) { showToast('Las contraseñas no coinciden'); return; }
+
+  const btn = document.getElementById('grp-create-btn');
+  btn.disabled = true; btn.textContent = 'Creando…';
+
+  const code = genGroupCode();
+  const passwordHash = await sha256(pwd);
+  const inviteCode = new URL(location.href).searchParams.get('invite') || null;
+  let referredBy = null;
+  if (inviteCode) {
+    try {
+      const snap = await db.collection('groups').doc(inviteCode.toUpperCase()).get();
+      if (snap.exists) referredBy = inviteCode.toUpperCase();
+    } catch(e) {}
+  }
+
+  try {
+    await db.collection('groups').doc(code).set({
+      name, code, passwordHash, referredBy,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      open: true
+    });
+    setGroup({ id: code, name, code });
+    // Show code to user before proceeding
+    document.getElementById('grp-created-code').textContent = code;
+    document.getElementById('grp-created-name').textContent = name;
+    document.getElementById('grp-panel-create').style.display = 'none';
+    document.getElementById('grp-panel-created').style.display = '';
+    // Migrate old data if exists
+    try {
+      const oldSnap = await db.collection('profiles').get();
+      if (!oldSnap.empty) {
+        const batch = db.batch();
+        oldSnap.docs.forEach(doc => batch.set(profilesRef().doc(doc.id), doc.data()));
+        await batch.commit();
+        showToast('Datos anteriores migrados ✓');
+      }
+    } catch(e) {}
+  } catch(e) {
+    showToast('Error al crear el grupo'); btn.disabled = false; btn.textContent = 'Crear grupo';
+  }
+}
+
+async function joinGroupAction() {
+  const code = document.getElementById('grp-join-code').value.trim().toUpperCase();
+  const pwd  = document.getElementById('grp-join-pwd').value.trim();
+  if (!code) { showToast('Introduce el código del grupo'); return; }
+  if (!pwd)  { showToast('Introduce la contraseña'); return; }
+
+  const btn = document.getElementById('grp-join-btn');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+
+  try {
+    const snap = await db.collection('groups').doc(code).get();
+    if (!snap.exists) { showToast('Código no encontrado'); btn.disabled = false; btn.textContent = 'Unirme'; return; }
+    const g = snap.data();
+    const hash = await sha256(pwd);
+    if (hash !== g.passwordHash) { showToast('Contraseña incorrecta'); btn.disabled = false; btn.textContent = 'Unirme'; return; }
+    setGroup({ id: code, name: g.name, code });
+    subscribeToProfiles();
+  } catch(e) {
+    showToast('Error de conexión'); btn.disabled = false; btn.textContent = 'Unirme';
+  }
+}
+
+function proceedAfterCreate() {
+  subscribeToProfiles();
+}
+
+function shareGroupInvite() {
+  const g = getGroup();
+  if (!g) return;
+  const url = `https://logistips01-rgb.github.io/Gymbros?invite=${g.code}`;
+  const msg = encodeURIComponent(`🏋️ ¡Únete a GymBros!\nCrea tu propio grupo de entrenamiento:\n${url}\n\nUsa el código *${g.code}* al registrarte.`);
+  window.open(`whatsapp://send?text=${msg}`, '_blank');
+}
+
+function leaveGroup() {
+  if (!confirm('¿Salir del grupo? Tus datos locales se conservan.')) return;
+  setGroup(null);
+  setCU(null);
+  location.reload();
 }
 
 // ── REAL-TIME SUBSCRIPTION ────────────────────────────────────
 function subscribeToProfiles() {
-  db.collection('profiles').onSnapshot(snapshot => {
+  profilesRef().onSnapshot(snapshot => {
     state.profiles = snapshot.docs.map(d => d.data());
     // Sort by creation time (id is timestamp-based)
     state.profiles.sort((a, b) => a.id.localeCompare(b.id));
@@ -1023,6 +1197,7 @@ function subscribeToProfiles() {
 
 // ── SCREENS ───────────────────────────────────────────────────
 function showScreen(which) {
+  document.getElementById('screen-group').classList.toggle('active', which === 'group');
   document.getElementById('screen-login').classList.toggle('active', which === 'login');
   document.getElementById('screen-main').classList.toggle('active', which === 'main');
 }
@@ -3633,7 +3808,21 @@ function showToast(msg) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
-subscribeToProfiles();
+const _grp = getGroup();
+if (!_grp) {
+  document.getElementById('loading').style.display = 'none';
+  const _invCode = new URL(location.href).searchParams.get('invite') || '';
+  if (_invCode) {
+    showGroupTab('join');
+    const inp = document.getElementById('grp-join-code');
+    if (inp) inp.value = _invCode.toUpperCase();
+  } else {
+    showGroupTab('create');
+  }
+  showScreen('group');
+} else {
+  subscribeToProfiles();
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
