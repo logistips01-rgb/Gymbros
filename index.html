@@ -605,7 +605,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v53</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v54</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
@@ -616,6 +616,8 @@ header {
       </div>
     </div>
   </header>
+
+  <div id="network-stats-card" style="display:none;background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:14px"></div>
 
   <div id="screen-main-body">
     <div class="tabs">
@@ -1076,20 +1078,29 @@ async function createGroupAction() {
   const passwordHash = await sha256(pwd);
   const inviteCode = new URL(location.href).searchParams.get('invite') || null;
   let referredBy = null;
+  let generation = 1;
   if (inviteCode) {
     try {
       const snap = await db.collection('groups').doc(inviteCode.toUpperCase()).get();
-      if (snap.exists) referredBy = inviteCode.toUpperCase();
+      if (snap.exists) {
+        referredBy = inviteCode.toUpperCase();
+        generation = (snap.data().generation || 1) + 1;
+        if (generation > 4) {
+          showToast('Este grupo ha alcanzado el límite de 4 generaciones');
+          btn.disabled = false; btn.textContent = 'Crear grupo';
+          return;
+        }
+      }
     } catch(e) {}
   }
 
   try {
     await db.collection('groups').doc(code).set({
-      name, code, passwordHash, referredBy,
+      name, code, passwordHash, referredBy, generation,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       open: true
     });
-    setGroup({ id: code, name, code });
+    setGroup({ id: code, name, code, generation });
     // Show code to user before proceeding
     document.getElementById('grp-created-code').textContent = code;
     document.getElementById('grp-created-name').textContent = name;
@@ -1126,7 +1137,7 @@ async function joinGroupAction() {
     const g = snap.data();
     const hash = await sha256(pwd);
     if (hash !== g.passwordHash) { showToast('Contraseña incorrecta'); btn.disabled = false; btn.textContent = 'Unirme'; return; }
-    setGroup({ id: code, name: g.name, code });
+    setGroup({ id: code, name: g.name, code, generation: g.generation || 1 });
     subscribeToProfiles();
   } catch(e) {
     showToast('Error de conexión'); btn.disabled = false; btn.textContent = 'Unirme';
@@ -1150,6 +1161,37 @@ function leaveGroup() {
   setGroup(null);
   setCU(null);
   location.reload();
+}
+
+async function loadNetworkStats() {
+  const myGrp = getGroup();
+  if (!myGrp || myGrp.generation !== 1) return;
+  try {
+    const snap = await db.collection('groups').get();
+    const groups = snap.docs.map(d => d.data());
+    const byGen = [0, 0, 0, 0]; // indices 0-3 = gen 1-4
+    groups.forEach(g => {
+      const idx = (g.generation || 1) - 1;
+      if (idx >= 0 && idx < 4) byGen[idx]++;
+    });
+    const totalGroups = groups.length;
+    const el = document.getElementById('network-stats-card');
+    if (!el) return;
+    el.innerHTML = `
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--accent)">Red GymBros</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+        ${byGen.map((n, i) => `
+          <div>
+            <div style="font-size:22px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:${i===0?'var(--accent)':'var(--text)'}">${n}</div>
+            <div style="font-size:10px;color:var(--muted)">Gen ${i+1}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">${totalGroups} grupos en total</div>
+    `;
+    el.style.display = '';
+  } catch(e) {
+    console.warn('loadNetworkStats:', e);
+  }
 }
 
 // ── REAL-TIME SUBSCRIPTION ────────────────────────────────────
@@ -1311,6 +1353,7 @@ function showMain() {
   document.getElementById('hdr-name').textContent = p.name;
   switchTab('entrenos');
   showMuscleGrid();
+  loadNetworkStats();
 }
 
 // ── TABS ──────────────────────────────────────────────────────
