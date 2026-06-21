@@ -2631,13 +2631,17 @@ function renderNutricion() {
         <button class="meal-del-btn" onclick="deleteMeal('${m.id}')">🗑</button>
       </div>`).join('');
 
-  const weekTotalKcal   = weekDays.reduce((a, d) => a + d.kcal, 0);
-  const weekTotalBurned = weekDays.reduce((a, d) => a + d.burned, 0);
+  const weekDaysWithData = weekDays.filter(d => d.kcal > 0);
+  const weekTotalKcal   = weekDaysWithData.reduce((a, d) => a + d.kcal, 0);
+  const weekTotalBurned = weekDaysWithData.reduce((a, d) => a + d.burned, 0);
   const weekNet         = weekTotalKcal - weekTotalBurned;
-  const weekGoal        = g.kcal * 7;
+  const weekGoal        = g.kcal * weekDaysWithData.length;
   const weekDiff        = weekNet - weekGoal;
-  const weekDiffStr     = weekDiff === 0 ? 'En objetivo' : weekDiff > 0 ? `+${weekDiff} kcal surplus` : `${weekDiff} kcal déficit`;
-  const weekDiffColor   = weekDiff > 500 ? '#f59e0b' : weekDiff < -1000 ? '#3b82f6' : '#16a34a';
+  const weekDiffStr     = weekDaysWithData.length === 0 ? 'Sin datos esta semana'
+    : weekDiff === 0 ? `En objetivo (${weekDaysWithData.length} días)`
+    : weekDiff > 0 ? `+${weekDiff} kcal surplus (${weekDaysWithData.length} días)`
+    : `${weekDiff} kcal déficit (${weekDaysWithData.length} días)`;
+  const weekDiffColor   = weekDaysWithData.length === 0 ? 'var(--muted)' : weekDiff > 500 ? '#f59e0b' : weekDiff < -1000 ? '#3b82f6' : '#16a34a';
 
   const weekBarsHTML = weekDays.map(d => {
     const h = Math.round((d.kcal / maxWeekKcal) * 44);
