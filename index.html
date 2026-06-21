@@ -605,7 +605,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v51</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v52</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="shareGroupInvite()">📨 Invitar</button>
@@ -1106,7 +1106,8 @@ async function createGroupAction() {
       }
     } catch(e) {}
   } catch(e) {
-    showToast('Error al crear el grupo'); btn.disabled = false; btn.textContent = 'Crear grupo';
+    console.error('createGroup error:', e);
+    showToast('Error al crear el grupo: ' + (e.code || e.message || e)); btn.disabled = false; btn.textContent = 'Crear grupo';
   }
 }
 
