@@ -214,6 +214,7 @@ header {
 .meal-card-name { font-size:13px; font-weight:600; }
 .meal-card-macros { font-size:11px; color:var(--muted); margin-top:2px; }
 .meal-del-btn { background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px; }
+.meal-repeat-btn { background:none; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:12px; cursor:pointer; padding:3px 7px; }
 .week-bar-wrap { display:flex; align-items:flex-end; gap:4px; min-height:50px; margin:8px 0; }
 .week-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .week-bar { width:100%; border-radius:3px 3px 0 0; min-height:3px; transition:height .3s; }
@@ -546,7 +547,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v47</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0">v48</span></div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>En vivo</div>
       <button class="switch-btn" onclick="logout()">↩ Cambiar</button>
@@ -662,6 +663,24 @@ header {
   </div>
 </div>
 
+<!-- MODAL: Repetir comida -->
+<div class="modal-overlay" id="modal-repeat-meal">
+  <div class="modal">
+    <h3>Repetir comida</h3>
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px" id="repeat-meal-name"></div>
+    <div class="field">
+      <label>Cantidad (1 = igual, 2 = doble, 0.5 = mitad…)</label>
+      <input type="number" id="repeat-qty-inp" value="1" min="0.1" step="0.1" style="width:100%"
+        oninput="updateRepeatPreview()">
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin:8px 0 16px" id="repeat-preview"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-repeat-meal')">Cancelar</button>
+      <button class="btn btn-accent" onclick="confirmRepeatMeal()">Añadir</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Añadir comida -->
 <div class="modal-overlay" id="modal-meal">
   <div class="modal">
@@ -671,6 +690,7 @@ header {
       <input type="text" id="meal-name-inp" placeholder="Ej: arroz, pollo, avena…" style="width:100%" maxlength="60"
         autocomplete="off"
         oninput="filterFoodDb(this.value)"
+        onfocus="filterFoodDb(this.value)"
         onkeydown="if(event.key==='Enter'){event.preventDefault();saveMeal()}"
         onblur="setTimeout(()=>{const d=document.getElementById('food-dropdown');if(d)d.style.display='none'},200)">
       <div id="food-dropdown"></div>
@@ -2540,13 +2560,14 @@ const FOOD_DB = [
 
 function filterFoodDb(q) {
   const dd = document.getElementById('food-dropdown');
-  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
-  const ql = q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-  const matches = FOOD_DB.filter(f =>
-    f.n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(ql)
-  ).slice(0, 9);
+  const ql = (q || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const matches = ql.length < 2
+    ? FOOD_DB.slice(0, 20)
+    : FOOD_DB.filter(f =>
+        f.n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(ql)
+      ).slice(0, 12);
   if (!matches.length) { dd.style.display = 'none'; return; }
-  dd.innerHTML = matches.map((f, i) => `
+  dd.innerHTML = matches.map(f => `
     <div class="food-dd-item" onmousedown="selectFoodItem(${FOOD_DB.indexOf(f)})">
       <div class="food-dd-name">${f.n}</div>
       <div class="food-dd-macros">🔥 ${f.k} kcal &nbsp;·&nbsp; 🥩 ${f.p}g &nbsp;·&nbsp; 🌾 ${f.c}g &nbsp;·&nbsp; 🧈 ${f.f}g</div>
@@ -2632,7 +2653,10 @@ function renderNutricion() {
           <div class="meal-card-name">${m.name}</div>
           <div class="meal-card-macros">🔥 ${m.kcal} kcal · 🥩 ${m.protein}g · 🌾 ${m.carbs}g · 🧈 ${m.fat}g</div>
         </div>
-        <button class="meal-del-btn" onclick="deleteMeal('${m.id}')">🗑</button>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="meal-repeat-btn" onclick="repeatMeal('${m.id}')">+1</button>
+          <button class="meal-del-btn" onclick="deleteMeal('${m.id}')">🗑</button>
+        </div>
       </div>`).join('');
 
   const weekDaysWithData = weekDays.filter(d => d.hasMeals);
@@ -2849,6 +2873,40 @@ function deleteMeal(id) {
   const n = ensureNutrition(loadNutri());
   n.meals = n.meals.filter(m => m.id !== id);
   saveNutri(n);
+  renderNutricion();
+}
+
+let _repeatMealSrc = null;
+function repeatMeal(id) {
+  const n = ensureNutrition(loadNutri());
+  _repeatMealSrc = n.meals.find(m => m.id === id);
+  if (!_repeatMealSrc) return;
+  document.getElementById('repeat-meal-name').textContent = _repeatMealSrc.name;
+  document.getElementById('repeat-qty-inp').value = 1;
+  updateRepeatPreview();
+  openModal('modal-repeat-meal');
+}
+function updateRepeatPreview() {
+  if (!_repeatMealSrc) return;
+  const qty = parseFloat(document.getElementById('repeat-qty-inp').value) || 1;
+  document.getElementById('repeat-preview').textContent =
+    `🔥 ${Math.round(_repeatMealSrc.kcal*qty)} kcal · 🥩 ${Math.round(_repeatMealSrc.protein*qty)}g · 🌾 ${Math.round(_repeatMealSrc.carbs*qty)}g · 🧈 ${Math.round(_repeatMealSrc.fat*qty)}g`;
+}
+function confirmRepeatMeal() {
+  if (!_repeatMealSrc) return;
+  const qty = parseFloat(document.getElementById('repeat-qty-inp').value) || 1;
+  const n = ensureNutrition(loadNutri());
+  n.meals.push({
+    id: Date.now().toString(),
+    date: new Date().toISOString().slice(0,10),
+    name: _repeatMealSrc.name,
+    kcal:    Math.round(_repeatMealSrc.kcal    * qty),
+    protein: Math.round(_repeatMealSrc.protein * qty),
+    carbs:   Math.round(_repeatMealSrc.carbs   * qty),
+    fat:     Math.round(_repeatMealSrc.fat     * qty),
+  });
+  saveNutri(n);
+  closeModal('modal-repeat-meal');
   renderNutricion();
 }
 
