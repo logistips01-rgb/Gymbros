@@ -56,10 +56,10 @@ body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; 
 /* ── SCREENS ── */
 .screen { display:none; }
 .screen.active { display:block; }
-#screen-login.active { display:flex; }
+#screen-login.active, #screen-group.active { display:flex; }
 
-/* ── LOGIN ── */
-#screen-login {
+/* ── LOGIN / GROUP ── */
+#screen-login, #screen-group {
   flex-direction:column; align-items:center; justify-content:flex-start;
   min-height:100vh; padding:40px 20px;
   background:radial-gradient(ellipse at top, #1a2f52 0%, var(--bg) 65%);
@@ -125,12 +125,12 @@ body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; 
 .new-profile-form { display:flex; gap:8px; }
 
 /* ── INPUTS & BUTTONS ── */
-input[type="text"],input[type="number"],select {
+input[type="text"],input[type="number"],input[type="password"],select {
   background:var(--surface2); border:1px solid var(--border);
   border-radius:var(--r); padding:9px 12px; color:var(--text);
   font-family:'Inter',sans-serif; font-size:14px; outline:none; transition:border-color .2s;
 }
-input[type="text"]:focus,input[type="number"]:focus,select:focus { border-color:var(--accent); }
+input[type="text"]:focus,input[type="number"]:focus,input[type="password"]:focus,select:focus { border-color:var(--accent); }
 input::placeholder { color:var(--muted); }
 .btn { padding:9px 16px; border-radius:var(--r); border:none; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; font-size:14px; transition:all .2s; white-space:nowrap; }
 .btn-accent { background:var(--accent); color:#fff; }
