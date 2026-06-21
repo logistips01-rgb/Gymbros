@@ -2605,7 +2605,7 @@ function renderNutricion() {
     const dayMeals = n.meals.filter(m => m.date === ds);
     const dayKcal  = dayMeals.reduce((a, m) => a + (m.kcal || 0), 0);
     const dayBurned = estimateKcalBurned(p, ds) || 0;
-    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, burned: dayBurned, isToday: ds === today });
+    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, burned: dayBurned, hasMeals: dayMeals.length > 0, isToday: ds === today });
   }
   const maxWeekKcal = Math.max(g.kcal, ...weekDays.map(d => d.kcal), 100);
 
@@ -2631,7 +2631,7 @@ function renderNutricion() {
         <button class="meal-del-btn" onclick="deleteMeal('${m.id}')">🗑</button>
       </div>`).join('');
 
-  const weekDaysWithData = weekDays.filter(d => d.kcal > 0);
+  const weekDaysWithData = weekDays.filter(d => d.hasMeals);
   const weekTotalKcal   = weekDaysWithData.reduce((a, d) => a + d.kcal, 0);
   const weekTotalBurned = weekDaysWithData.reduce((a, d) => a + d.burned, 0);
   const weekNet         = weekTotalKcal - weekTotalBurned;
