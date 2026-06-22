@@ -644,7 +644,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v65</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v66</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -791,7 +791,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v65</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v66</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3616,14 +3616,14 @@ function renderNutricion() {
   const trainedToday = p.gymSessions.some(s => s.date.slice(0,10) === today) ||
     allEx.some(e => e.sessions.some(s => s.date.slice(0,10) === today));
 
-  // Calendar week Mon-Sun (use getTime() offsets to keep same UTC hour as today)
+  // Calendar week Mon-Sun — todo en UTC para ser consistente con las fechas de las comidas
   const todayDate = new Date();
-  const dow = todayDate.getDay();
-  const daysToMon = dow === 0 ? 6 : dow - 1;
+  const utcDow = todayDate.getUTCDay(); // 0=Dom, 1=Lun … 6=Sáb en UTC
+  const daysToMon = utcDow === 0 ? 6 : utcDow - 1;
   const weekMondayMs = todayDate.getTime() - daysToMon * 86400000;
   const weekMonday = new Date(weekMondayMs);
   const weekSunday = new Date(weekMondayMs + 6 * 86400000);
-  const fmtD = d => `${d.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]}`;
+  const fmtD = d => `${d.getUTCDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getUTCMonth()]}`;
 
   const weekDays = [];
   for (let i = 0; i < 7; i++) {
@@ -3633,7 +3633,7 @@ function renderNutricion() {
     const dayMeals = isFuture ? [] : n.meals.filter(m => m.date === ds);
     const dayKcal  = dayMeals.reduce((a, m) => a + (m.kcal || 0), 0);
     const dayBurned = isFuture ? 0 : (estimateKcalBurned(p, ds) || 0);
-    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getDay()], kcal: dayKcal, burned: dayBurned, hasMeals: dayMeals.length > 0, isToday: ds === today, isFuture });
+    weekDays.push({ label: ['D','L','M','X','J','V','S'][d.getUTCDay()], kcal: dayKcal, burned: dayBurned, hasMeals: dayMeals.length > 0, isToday: ds === today, isFuture });
   }
   const maxWeekKcal = Math.max(tdee || g.kcal, ...weekDays.map(d => d.kcal), 100);
 
