@@ -553,6 +553,9 @@ header {
 .barcode-frame { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:72%; height:38%; border:2.5px solid var(--accent); border-radius:8px; box-shadow:0 0 0 9999px rgba(0,0,0,0.45); pointer-events:none; }
 .ex-progress-chart { padding:8px 0 2px; }
 .ex-progress-chart svg { display:block; }
+.kirk-stag-card { background:#2a1f00; border:1px solid #ca8a04; border-radius:10px; padding:10px 12px; margin:6px 0 4px; font-size:12.5px; }
+.kirk-stag-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:600; color:#fbbf24; margin-bottom:5px; }
+.kirk-stag-body { color:#fef3c7; line-height:1.55; }
 .ia-weekly-card { background:var(--accent-dim); border:1px solid var(--accent); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:13px; line-height:1.6; }
 
 /* ── TOAST ── */
@@ -656,7 +659,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v74</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v75</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -806,7 +809,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v74</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v75</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2468,6 +2471,93 @@ function buildExProgressChart(ex) {
   </div>`;
 }
 
+function buildKirkStagnantCard(ex) {
+  if ((ex.type || 'normal') !== 'normal') return '';
+  const sess = ex.sessions;
+  if (sess.length < 3) return '';
+  const last3 = sess.slice(-3);
+  const maxWeights = last3.map(s => {
+    const kgs = (s.sets || []).map(st => parseFloat(st.kg) || 0).filter(k => k > 0);
+    return kgs.length ? Math.max(...kgs) : 0;
+  });
+  if (maxWeights.some(w => w === 0)) return '';
+  if (!(maxWeights[0] === maxWeights[1] && maxWeights[1] === maxWeights[2])) return '';
+
+  const dismissKey = `kirk_stag_dismiss_${ex.id}`;
+  if (sessionStorage.getItem(dismissKey)) return '';
+
+  const cacheKey = `gymbros_kirk_stag_${profile()?.id}_${ex.id}`;
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
+
+  const cardId = `kirk-stag-${ex.id}`;
+  if (cached && cached.sessionCount === sess.length) {
+    return `<div id="${cardId}" class="kirk-stag-card">
+      <div class="kirk-stag-head">
+        <span>⚠️ Kirk detecta estancamiento</span>
+        <button class="btn-icon" onclick="kirkDismiss('${ex.id}','${dismissKey}')">✕</button>
+      </div>
+      <div class="kirk-stag-body">${cached.text}</div>
+    </div>`;
+  }
+
+  setTimeout(() => kirkStagnantSuggestion(ex.id), 0);
+  return `<div id="${cardId}" class="kirk-stag-card">
+    <div class="kirk-stag-head">
+      <span>⚠️ Kirk detecta estancamiento</span>
+      <button class="btn-icon" onclick="kirkDismiss('${ex.id}','${dismissKey}')">✕</button>
+    </div>
+    <div class="kirk-stag-body" id="${cardId}-text"><span style="opacity:.5">Kirk analizando…</span></div>
+  </div>`;
+}
+
+async function kirkStagnantSuggestion(exId) {
+  const key = getIaKey();
+  if (!key) return;
+  const p = profile();
+  if (!p) return;
+  const mg = p.muscles.find(m => m.exercises.some(e => e.id === exId));
+  if (!mg) return;
+  const ex = mg.exercises.find(e => e.id === exId);
+  if (!ex) return;
+
+  const last5 = ex.sessions.slice(-5);
+  const context = last5.map((s, i) => {
+    const maxKg = Math.max(...(s.sets || []).map(st => parseFloat(st.kg) || 0).filter(k => k > 0), 0);
+    const totalReps = (s.sets || []).reduce((acc, st) => acc + (parseFloat(st.reps) || 0), 0);
+    return `Sesión ${i+1}: ${maxKg}kg × ${totalReps} reps`;
+  }).join(', ');
+
+  const cardId = `kirk-stag-${exId}`;
+  const textEl = document.getElementById(`${cardId}-text`);
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: IA_MODEL, messages: [
+        { role: 'system', content: 'Eres KIRK, coach personal de GymBros. Responde SIEMPRE en español. Máximo 80 palabras. Sé directo y motivador.' },
+        { role: 'user', content: `El ejercicio "${ex.name}" lleva 3 sesiones sin subir peso (${context}). Dame UN consejo concreto y accionable para romper el estancamiento.` }
+      ], max_tokens: 120, temperature: 0.7 })
+    });
+    if (!res.ok) throw new Error('groq error');
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content?.trim() || '';
+    if (text) {
+      const cacheKey = `gymbros_kirk_stag_${p.id}_${exId}`;
+      localStorage.setItem(cacheKey, JSON.stringify({ text, sessionCount: ex.sessions.length }));
+      if (textEl) textEl.textContent = text;
+    }
+  } catch(e) {
+    if (textEl) textEl.innerHTML = '<span style="opacity:.5">Kirk no disponible ahora.</span>';
+  }
+}
+
+function kirkDismiss(exId, dismissKey) {
+  sessionStorage.setItem(dismissKey, '1');
+  const card = document.getElementById(`kirk-stag-${exId}`);
+  if (card) card.remove();
+}
+
 function buildExCard(ex) {
   const card = document.createElement('div');
   card.className = 'ex-card';
@@ -2499,6 +2589,7 @@ function buildExCard(ex) {
     </div>
     <div class="ex-body">
       ${buildExProgressChart(ex)}
+      ${buildKirkStagnantCard(ex)}
       ${renderProgBars(ex)}
       <div class="session-form">
         <h4>Registrar sesión</h4>
