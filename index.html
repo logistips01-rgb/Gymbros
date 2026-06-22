@@ -252,27 +252,39 @@ header {
 .bc-current { color:var(--text); font-weight:600; }
 
 /* ── MUSCLE GRID ── */
-.muscle-grid-view { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.muscle-grid-view { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
 .muscle-card {
   background:var(--surface); border:1px solid var(--border);
-  border-radius:12px; padding:18px 14px;
+  border-radius:12px; padding:14px 12px;
   cursor:pointer; transition:border-color .2s, transform .15s, box-shadow .2s;
-  position:relative; overflow:hidden;
+  position:relative; overflow:hidden; min-height:110px;
 }
 .muscle-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 6px 20px rgba(225,29,46,0.12); }
-.mc-icon { font-size:28px; margin-bottom:10px; display:block; }
-.mc-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; }
-.mc-count { font-size:11px; color:var(--muted); margin-top:3px; }
+.mc-watermark {
+  font-family:'Barlow Condensed',sans-serif; font-weight:900;
+  font-size:88px; color:var(--accent); opacity:.07;
+  position:absolute; bottom:-16px; right:-6px;
+  line-height:1; user-select:none; letter-spacing:-3px; pointer-events:none;
+}
+.mc-badge {
+  display:inline-flex; align-items:center;
+  background:var(--card); border-left:3px solid var(--accent);
+  padding:2px 7px; margin-bottom:10px;
+  font-family:'Barlow Condensed',sans-serif; font-weight:900;
+  font-size:14px; color:var(--text); letter-spacing:1.5px;
+}
+.mc-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:18px; }
+.mc-count { font-size:10px; color:var(--muted); margin-top:3px; }
 .mc-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); border-radius:0 2px 0 0; transition:width .5s ease; }
 .muscle-card-add {
   background:transparent; border:2px dashed var(--border);
-  border-radius:12px; padding:18px 14px;
+  border-radius:12px; padding:14px 12px;
   cursor:pointer; transition:border-color .2s, color .2s;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:6px; min-height:110px; color:var(--muted);
 }
 .muscle-card-add:hover { border-color:var(--accent); color:var(--accent); }
-.muscle-card-add span { font-size:24px; }
+.muscle-card-add span { font-size:24px; font-weight:900; }
 .muscle-card-add small { font-size:12px; font-weight:600; }
 
 /* ── EXERCISES ── */
@@ -644,7 +656,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v69</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v70</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -793,7 +805,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v69</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v70</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2008,8 +2020,10 @@ function renderMuscleGrid() {
     const pct = Math.round((days / maxS) * 100);
     const card = document.createElement('div');
     card.className = 'muscle-card';
+    const mono = m.name.slice(0,2).toUpperCase();
     card.innerHTML = `
-      <span class="mc-icon">${m.icon}</span>
+      <div class="mc-watermark">${mono}</div>
+      <div class="mc-badge">${mono}</div>
       <div class="mc-name">${m.name}</div>
       <div class="mc-count">${m.exercises.length} ej. · ${days} día${days!==1?'s':''}</div>
       <div class="mc-bar" style="width:${pct}%"></div>`;
