@@ -1,8 +1,15 @@
 # GymBros — Notas de desarrollo
 
 ## Reglas de desarrollo
-- **Siempre** subir la versión del service worker (`sw.js`) en el mismo commit que cualquier cambio a `index.html`. Formato: `gymbros-vN` incrementando N.
-- **Siempre** sincronizar el número de versión visible en el header del HTML (`vN` junto al logo) con la versión del SW. Son el mismo número. El usuario lo usa para verificar que la actualización ha llegado a su móvil.
+- **Siempre** subir la versión del service worker (`sw.js`) en el mismo commit que cualquier cambio a `index.html`.
+- **Siempre** sincronizar el número de versión visible en el header del HTML (`vN` junto al logo) con la versión del SW. El usuario lo usa para verificar que la actualización ha llegado a su móvil.
+
+### Esquema de versiones
+- Actual: secuencial `v74`, `v75`… hasta `v99`
+- Al llegar a `v100` → reiniciar a `v1.0` (semantic versioning)
+- Luego `v1.1`, `v1.2`… `v1.99`
+- Al llegar a `v1.99` → saltar a `v2.1`
+- Formato en SW: `gymbros-vN` (ej. `gymbros-v1.0`, `gymbros-v2.1`)
 
 ## Stack
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
