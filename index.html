@@ -656,7 +656,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v70</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v71</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -805,7 +805,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v70</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v71</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4871,20 +4871,15 @@ if ('serviceWorker' in navigator) {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') reg.update();
       });
-      reg.addEventListener('updatefound', () => {
-        const nw = reg.installing;
-        nw.addEventListener('statechange', () => {
-          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            // Hay nueva versión esperando → avisar al usuario
-            const t = document.getElementById('toast');
-            if (t) {
-              t.innerHTML = '🔄 Nueva versión disponible — <button onclick="location.reload()" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;font-size:inherit;padding:0;text-decoration:underline">Recargar</button>';
-              t.classList.add('show');
-            }
-          }
-        });
-      });
     }).catch(console.error);
+
+    // El SW usa skipWaiting() → cuando toma el control, recargar automáticamente
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   });
 }
 </script>
