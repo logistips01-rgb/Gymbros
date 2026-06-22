@@ -9,7 +9,7 @@
 - Al llegar a `v100` → reiniciar a `v1.0` (semantic versioning)
 - Luego `v1.1`, `v1.2`… `v1.99`
 - Al llegar a `v1.99` → saltar a `v2.1`
-- Formato en SW: `gymbros-vN` (ej. `gymbros-v1.0`, `gymbros-v2.1`)
+- Formato en header y SW: `v1.0`, `v1.1`… `v2.1` (siempre con la `v` delante)
 
 ## Stack
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
