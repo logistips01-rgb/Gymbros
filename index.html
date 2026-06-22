@@ -536,6 +536,13 @@ header {
 .guide-section-body li { margin-bottom:4px; }
 .guide-tip { background:rgba(225,29,46,.08); border-left:3px solid var(--accent); border-radius:0 6px 6px 0; padding:8px 12px; margin:8px 0; font-size:12px; color:var(--text); }
 
+/* ── BARCODE SCANNER ── */
+#barcode-video { width:100%; display:block; border-radius:8px; background:#000; }
+.barcode-frame { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:72%; height:38%; border:2.5px solid var(--accent); border-radius:8px; box-shadow:0 0 0 9999px rgba(0,0,0,0.45); pointer-events:none; }
+.ex-progress-chart { padding:8px 0 2px; }
+.ex-progress-chart svg { display:block; }
+.ia-weekly-card { background:var(--accent-dim); border:1px solid var(--accent); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:13px; line-height:1.6; }
+
 /* ── TOAST ── */
 .toast {
   position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
@@ -637,7 +644,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v64</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v65</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -784,7 +791,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v64</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v65</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -823,6 +830,7 @@ header {
           <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkAsk('Crea una rutina personalizada basada en los ejercicios que ya tengo y mi historial de entrenamientos.')">📅 Crear rutina</button>
           <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkAsk('Dame un consejo nutricional para hoy basándote en mis datos de entrenamiento y lo que he comido.')">🥗 Consejo nutri</button>
           <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkAsk('Analiza mi progreso de los últimos entrenamientos y dime qué debo mejorar.')">📊 Analizar progreso</button>
+          <button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:11px" onclick="kirkWeeklySummary()">🗓 Resumen semana</button>
         </div>
         <div class="ia-input-row">
           <textarea id="ia-input" class="ia-input" placeholder="Pregunta lo que quieras sobre tus entrenos…" rows="1"
@@ -884,7 +892,8 @@ header {
         <input type="number" id="meal-fat-inp" placeholder="15" min="0" style="width:100%">
       </div>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin:6px 0 2px" onclick="closeModal('modal-meal');openBarcodeScanner()">📷 Escanear código de barras</button>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">
       <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Avena + proteína',380,30,45,8)">🥣 Avena</button>
       <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Arroz + pollo',580,48,68,10)">🍗 Arroz+pollo</button>
       <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Shake proteína',120,25,5,2)">🥤 Shake</button>
@@ -895,6 +904,42 @@ header {
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-meal')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveMeal()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Escáner código de barras -->
+<div class="modal-overlay" id="modal-barcode">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0">📷 Escáner</h3>
+      <button class="btn-icon" style="font-size:18px" onclick="stopBarcodeScanner()">✕</button>
+    </div>
+    <div id="barcode-video-section">
+      <div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:4/3;background:#000">
+        <video id="barcode-video" playsinline autoplay muted></video>
+        <div class="barcode-frame"></div>
+      </div>
+      <div id="barcode-status" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px">Iniciando cámara…</div>
+    </div>
+    <div id="barcode-manual-section" style="display:none;margin-top:8px">
+      <div class="field">
+        <label>Código de barras (escríbelo)</label>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="barcode-manual-inp" placeholder="8412345678901" style="flex:1">
+          <button class="btn btn-accent" onclick="scanManualBarcode()">Buscar</button>
+        </div>
+      </div>
+    </div>
+    <div id="barcode-result" style="display:none;margin-top:12px">
+      <div id="barcode-product-name" style="font-weight:700;font-size:15px;margin-bottom:4px"></div>
+      <div id="barcode-product-info" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+      <div class="field">
+        <label>Cantidad (g / ml)</label>
+        <input type="number" id="barcode-grams-inp" value="100" min="1" max="2000" style="width:100%" oninput="updateBarcodePreview()">
+      </div>
+      <div id="barcode-preview" style="font-size:13px;font-weight:600;text-align:center;margin:6px 0 14px;color:var(--text)"></div>
+      <button class="btn btn-accent" style="width:100%" onclick="confirmBarcodeMeal()">Añadir al diario</button>
     </div>
   </div>
 </div>
@@ -1937,6 +1982,42 @@ function renderExercises(m) {
   m.exercises.forEach(ex => list.appendChild(buildExCard(ex)));
 }
 
+function buildExProgressChart(ex) {
+  const sess = ex.sessions.slice(-12);
+  if (sess.length < 2) return '';
+  const maxKgs = sess.map(s => {
+    const kgs = (s.sets || []).map(st => parseFloat(st.kg) || 0).filter(k => k > 0);
+    return kgs.length ? Math.max(...kgs) : 0;
+  });
+  if (maxKgs.every(k => k === 0)) return '';
+  const maxV = Math.max(...maxKgs), minV = Math.min(...maxKgs.filter(k => k > 0));
+  const range = maxV - minV || 1;
+  const W = 200, H = 44, P = 6;
+  const pts = maxKgs.map((kg, i) => {
+    const x = P + (i / (maxKgs.length - 1)) * (W - 2 * P);
+    const y = H - P - ((kg - minV) / range) * (H - 2 * P);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const trend = maxKgs[maxKgs.length-1] >= maxKgs[0] ? '#16a34a' : '#ef4444';
+  const dots = maxKgs.map((kg, i) => {
+    const x = P + (i / (maxKgs.length - 1)) * (W - 2 * P);
+    const y = H - P - ((kg - minV) / range) * (H - 2 * P);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="${trend}"/>`;
+  }).join('');
+  const d0 = sess[0].date.slice(5,10).replace('-','/');
+  const dN = sess[sess.length-1].date.slice(5,10).replace('-','/');
+  return `<div class="ex-progress-chart">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:3px">📈 Progresión ${sess.length} sesiones</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="border-radius:4px;background:var(--bg)">
+      <polyline points="${pts}" fill="none" stroke="${trend}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px">
+      <span>${d0}</span><span style="color:${trend};font-weight:700">${maxKgs[maxKgs.length-1]} kg</span><span>${dN}</span>
+    </div>
+  </div>`;
+}
+
 function buildExCard(ex) {
   const card = document.createElement('div');
   card.className = 'ex-card';
@@ -1967,6 +2048,7 @@ function buildExCard(ex) {
       </div>
     </div>
     <div class="ex-body">
+      ${buildExProgressChart(ex)}
       ${renderProgBars(ex)}
       <div class="session-form">
         <h4>Registrar sesión</h4>
@@ -3402,6 +3484,105 @@ function selectFoodPreset(name, kcal, protein, carbs, fat) {
   document.getElementById('food-dropdown').style.display = 'none';
 }
 
+// ── BARCODE SCANNER ───────────────────────────────────────────
+let _barcodeStream = null;
+let _barcodeInterval = null;
+let _barcodeData = null;
+
+async function openBarcodeScanner() {
+  _barcodeData = null;
+  document.getElementById('barcode-result').style.display = 'none';
+  document.getElementById('barcode-manual-section').style.display = 'none';
+  document.getElementById('barcode-video-section').style.display = '';
+  document.getElementById('barcode-status').textContent = 'Iniciando cámara…';
+  openModal('modal-barcode');
+
+  if (!('BarcodeDetector' in window)) {
+    document.getElementById('barcode-video-section').style.display = 'none';
+    document.getElementById('barcode-manual-section').style.display = '';
+    return;
+  }
+  try {
+    _barcodeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('barcode-video');
+    video.srcObject = _barcodeStream;
+    await video.play();
+    document.getElementById('barcode-status').textContent = 'Apunta al código de barras del producto…';
+    const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','upc_e','code_128'] });
+    _barcodeInterval = setInterval(async () => {
+      try {
+        const found = await detector.detect(video);
+        if (found.length) { clearInterval(_barcodeInterval); _barcodeInterval = null; await applyBarcode(found[0].rawValue); }
+      } catch {}
+    }, 500);
+  } catch {
+    document.getElementById('barcode-video-section').style.display = 'none';
+    document.getElementById('barcode-manual-section').style.display = '';
+    document.getElementById('barcode-status').textContent = 'No se pudo acceder a la cámara';
+  }
+}
+
+function stopBarcodeScanner() {
+  if (_barcodeInterval) { clearInterval(_barcodeInterval); _barcodeInterval = null; }
+  if (_barcodeStream) { _barcodeStream.getTracks().forEach(t => t.stop()); _barcodeStream = null; }
+  closeModal('modal-barcode');
+}
+
+async function scanManualBarcode() {
+  const code = document.getElementById('barcode-manual-inp').value.trim();
+  if (!code) return;
+  await applyBarcode(code);
+}
+
+async function applyBarcode(barcode) {
+  const status = document.getElementById('barcode-status');
+  if (status) status.textContent = `Buscando ${barcode}…`;
+  if (_barcodeStream) { _barcodeStream.getTracks().forEach(t => t.stop()); _barcodeStream = null; }
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,brands,nutriments`);
+    const data = await res.json();
+    if (data.status !== 1 || !data.product) { showToast('Producto no encontrado'); return; }
+    const pr = data.product;
+    const nm = pr.nutriments || {};
+    _barcodeData = {
+      name: pr.product_name || pr.brands || 'Producto',
+      kcalPer100:    Math.round(nm['energy-kcal_100g'] || (nm['energy_100g'] || 0) / 4.184),
+      proteinPer100: Math.round((nm['proteins_100g'] || 0) * 10) / 10,
+      carbsPer100:   Math.round((nm['carbohydrates_100g'] || 0) * 10) / 10,
+      fatPer100:     Math.round((nm['fat_100g'] || 0) * 10) / 10,
+    };
+    document.getElementById('barcode-video-section').style.display = 'none';
+    document.getElementById('barcode-manual-section').style.display = 'none';
+    document.getElementById('barcode-product-name').textContent = _barcodeData.name;
+    document.getElementById('barcode-product-info').textContent =
+      `Por 100g: 🔥 ${_barcodeData.kcalPer100} kcal · 🥩 ${_barcodeData.proteinPer100}g · 🌾 ${_barcodeData.carbsPer100}g · 🧈 ${_barcodeData.fatPer100}g`;
+    document.getElementById('barcode-grams-inp').value = 100;
+    document.getElementById('barcode-result').style.display = '';
+    updateBarcodePreview();
+  } catch { showToast('Error buscando producto'); }
+}
+
+function updateBarcodePreview() {
+  if (!_barcodeData) return;
+  const g = parseInt(document.getElementById('barcode-grams-inp').value) || 100;
+  const f = g / 100;
+  document.getElementById('barcode-preview').textContent =
+    `🔥 ${Math.round(_barcodeData.kcalPer100*f)} kcal · 🥩 ${Math.round(_barcodeData.proteinPer100*f)}g · 🌾 ${Math.round(_barcodeData.carbsPer100*f)}g · 🧈 ${Math.round(_barcodeData.fatPer100*f)}g`;
+}
+
+function confirmBarcodeMeal() {
+  if (!_barcodeData) return;
+  const g = parseInt(document.getElementById('barcode-grams-inp').value) || 100;
+  const f = g / 100;
+  document.getElementById('meal-name-inp').value    = `${_barcodeData.name} (${g}g)`;
+  document.getElementById('meal-kcal-inp').value    = Math.round(_barcodeData.kcalPer100 * f);
+  document.getElementById('meal-protein-inp').value = Math.round(_barcodeData.proteinPer100 * f);
+  document.getElementById('meal-carbs-inp').value   = Math.round(_barcodeData.carbsPer100 * f);
+  document.getElementById('meal-fat-inp').value     = Math.round(_barcodeData.fatPer100 * f);
+  closeModal('modal-barcode');
+  openModal('modal-meal');
+}
+
 // ── NUTRICIÓN ─────────────────────────────────────────────────
 function renderNutricion() {
   const p = profile();
@@ -3930,6 +4111,88 @@ let _kirkHistory = []; // [{role, content}] — últimos 12, session only
 
 function getIaKey() { return localStorage.getItem(IA_KEY_STORAGE) || ''; }
 function setIaKey(k) { k ? localStorage.setItem(IA_KEY_STORAGE, k) : localStorage.removeItem(IA_KEY_STORAGE); }
+
+// ── WEEKLY KIRK SUMMARY ────────────────────────────────────────
+function _kirkSummaryKey() { return `kirkWeeklySummary_${profile()?.id}`; }
+function getWeekKey() {
+  const now = new Date();
+  const dow = now.getDay();
+  const mon = new Date(now.getTime() - (dow === 0 ? 6 : dow - 1) * 86400000);
+  return mon.toISOString().slice(0, 10);
+}
+function loadKirkWeeklySummary() {
+  try { return JSON.parse(localStorage.getItem(_kirkSummaryKey())); } catch { return null; }
+}
+function saveKirkWeeklySummary(data) { localStorage.setItem(_kirkSummaryKey(), JSON.stringify(data)); }
+
+function buildWeeklySummaryContext() {
+  const p = profile();
+  const n = ensureNutrition(loadNutri());
+  const now = new Date();
+  const dow = now.getDay();
+  // Last week Mon-Sun
+  const thisMon = now.getTime() - (dow === 0 ? 6 : dow - 1) * 86400000;
+  const lastMon = thisMon - 7 * 86400000;
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lastMon + i * 86400000);
+    const ds = d.toISOString().slice(0, 10);
+    const meals = n.meals.filter(m => m.date === ds);
+    const kcal = meals.reduce((a, m) => a + (m.kcal || 0), 0);
+    const burned = estimateKcalBurned(p, ds) || 0;
+    const sessions = (p.gymSessions || []).filter(s => s.date.slice(0,10) === ds);
+    days.push({ ds, kcal, burned, sessions });
+  }
+  const trainDays = days.filter(d => d.sessions.length > 0).length;
+  const mealDays  = days.filter(d => d.kcal > 0).length;
+  const totalKcal = days.reduce((a, d) => a + d.kcal, 0);
+  const totalBurned = days.reduce((a, d) => a + d.burned, 0);
+  const ph = n.physique || {};
+  const tdeeCalc = ph.age && ph.height ? calculateTDEE(ph.weight || getBodyWeight(), ph.age, ph.height, ph.sex || 'm', ph.activity || 1.55) : null;
+  const tdeeVal = tdeeCalc ? tdeeCalc.tdee : (n.goals?.kcal || 0);
+  const netKcal = totalKcal - totalBurned;
+  const deficit = tdeeVal ? (netKcal - tdeeVal * mealDays) : null;
+  return `RESUMEN SEMANA PASADA:\n- Días entrenados: ${trainDays}/7\n- Días con comidas registradas: ${mealDays}/7\n- Kcal consumidas: ${totalKcal}\n- Kcal quemadas gym: ${totalBurned}\n- Neto: ${netKcal}${deficit !== null ? `\n- Balance vs TDEE: ${deficit > 0 ? '+' : ''}${deficit} kcal` : ''}\n- Sesiones: ${days.flatMap(d => d.sessions).map(s => s.routineName || 'Libre').join(', ') || 'Ninguna'}`;
+}
+
+async function kirkWeeklySummary() {
+  const key = getIaKey();
+  if (!key) { openIaSettings(); return; }
+  const weekKey = getWeekKey();
+  const stored = loadKirkWeeklySummary();
+  if (stored?.week === weekKey) {
+    // Already generated this week — show it
+    const msgs = document.getElementById('ia-messages');
+    const existing = msgs.querySelector('.ia-weekly-card');
+    if (!existing) {
+      msgs.insertAdjacentHTML('afterbegin', `<div class="ia-weekly-card">🗓 <b>Resumen semana anterior</b><br>${stored.text}</div>`);
+    }
+    return;
+  }
+  const sendBtn = document.querySelector('.ia-send-btn');
+  if (sendBtn) sendBtn.disabled = true;
+  addIaTyping();
+  try {
+    const summaryCtx = buildWeeklySummaryContext();
+    const systemPrompt = `Eres KIRK, coach personal de GymBros. Responde SIEMPRE en español. Máximo 150 palabras.`;
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: IA_MODEL, messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `${summaryCtx}\n\nDame un resumen motivador de la semana pasada: qué fue bien, qué mejorar, y un objetivo concreto para esta semana. Sin json. Directo y al grano.` }
+      ], max_tokens: 250, temperature: 0.7 })
+    });
+    removeIaTyping();
+    if (sendBtn) sendBtn.disabled = false;
+    if (!res.ok) { showToast(`Error Groq: ${res.status}`); return; }
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || '';
+    saveKirkWeeklySummary({ week: weekKey, text: reply });
+    const msgs = document.getElementById('ia-messages');
+    msgs.insertAdjacentHTML('afterbegin', `<div class="ia-weekly-card">🗓 <b>Resumen semana anterior</b><br>${reply.replace(/\n/g,'<br>')}</div>`);
+  } catch { removeIaTyping(); if (sendBtn) sendBtn.disabled = false; showToast('Error generando resumen'); }
+}
 
 function renderIA() {
   const hasKey = !!getIaKey();
