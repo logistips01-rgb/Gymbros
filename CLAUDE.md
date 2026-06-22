@@ -8,9 +8,9 @@
 - PWA single-file (`index.html`) — vanilla JS, sin build tools
 - Firebase Firestore (compat SDK v10.12.0) para datos compartidos del grupo
 - `localStorage` para datos privados: nutrición, peso corporal, sesión activa
-- Service worker (`sw.js`) — cache-first, versión actual `gymbros-v61`
+- Service worker (`sw.js`) — cache-first, versión actual `gymbros-v72`
 - Deploy: GitHub Pages (auto en push a `main`)
-- IA: Groq API, modelo `llama-3.3-70b-versatile`, max 150 tokens (comentarios de sesión)
+- IA: Groq API, modelo `llama-3.3-70b-versatile`, max 600 tokens (comentarios de sesión y resumen semanal Kirk)
 
 ## Mejoras pendientes
 
@@ -23,7 +23,17 @@
   - Contador de usuarios activos por generación visible solo para Gen 1
   - Migración automática de datos antiguos al primer grupo
 
-### Menores / ya identificadas
+### Ya implementadas en sesiones anteriores
+- [x] Nutrición: balance vs TDEE real (no vs objetivo ajustado)
+- [x] Calendario semanal Lun-Dom + histórico de semanas y meses
+- [x] Scanner de código de barras (BarcodeDetector + Open Food Facts)
+- [x] Gráficos SVG de progresión por ejercicio
+- [x] Resumen semanal Kirk AI
+- [x] Ejercicio destacado del mes (admin Gen 1 lo fija, card visible para todos con progreso del grupo)
+- [x] Auto-recarga al activar nuevo SW (`controllerchange`)
+- [x] Fix timezone: `getUTCDay()` consistente con fechas UTC almacenadas
+
+### Pendientes
 - [ ] Backup de datos privados (nutrición/peso) en Firestore cifrado por usuario
 - [ ] Exportar historial de sesiones a CSV/PDF
 

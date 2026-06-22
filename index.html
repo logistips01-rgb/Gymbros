@@ -656,7 +656,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v71</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v72</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -680,7 +680,7 @@ header {
     <!-- ENTRENOS -->
     <div class="tab-panel active" id="tab-entrenos">
       <!-- Banner sesión libre activa -->
-      <div id="free-session-bar" style="display:none;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:none">
+      <div id="free-session-bar" style="display:none;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
           <div>
             <div style="font-size:13px;font-weight:700">⏱ Entreno libre en curso</div>
@@ -805,7 +805,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v71</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v72</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -834,7 +834,7 @@ header {
         </div>
       </div>
       <!-- Chat -->
-      <div id="ia-main" style="display:none;flex:1;display:none;flex-direction:column;gap:10px">
+      <div id="ia-main" style="display:none;flex:1;flex-direction:column;gap:10px">
         <div class="ia-key-row">
           <span style="font-size:12px;color:var(--muted)">🔑 Groq · <span id="ia-model-label"></span></span>
           <button class="btn btn-ghost btn-sm" onclick="openIaSettings()">⚙️ Key</button>
@@ -1890,7 +1890,7 @@ function renderLogin() {
 }
 
 async function createProfile() {
-  if (state.profiles.length >= MAX_PROFILES) { showToast('Máximo 4 perfiles'); return; }
+  if (state.profiles.length >= MAX_PROFILES) { showToast(`Máximo ${MAX_PROFILES} perfiles`); return; }
   const inp = document.getElementById('new-profile-name');
   const name = inp.value.trim();
   if (!name) { showToast('Escribe tu nombre'); return; }
@@ -2395,7 +2395,7 @@ function ensureRoutines(p) {
 }
 
 // Nutrición: privada por usuario, almacenada solo en localStorage del dispositivo
-function _nutriKey() { return `gymbros_nutri_${profile().id}`; }
+function _nutriKey() { return `gymbros_nutri_${profile()?.id}`; }
 function loadNutri() {
   try { return JSON.parse(localStorage.getItem(_nutriKey())) || {}; } catch { return {}; }
 }
@@ -2454,7 +2454,7 @@ let activeSession = null; // { routineId, routineName, startTime, exercises:[{id
 let _restTimer = null;
 let _restDuration = 90;
 
-function _sessionStorageKey() { return `gymbros_session_${profile().id}`; }
+function _sessionStorageKey() { return `gymbros_session_${profile()?.id}`; }
 function persistSession() {
   if (activeSession) localStorage.setItem(_sessionStorageKey(), JSON.stringify(activeSession));
   else localStorage.removeItem(_sessionStorageKey());
@@ -3208,7 +3208,7 @@ function copyBroRoutine(broId, routineId) {
 }
 
 // ── PESO CORPORAL (privado, localStorage, por día) ────────────
-function _bwKey(date) { return `gymbros_bw_${profile().id}_${date}`; }
+function _bwKey(date) { return `gymbros_bw_${profile()?.id}_${date}`; }
 function getBw(date) { return parseFloat(localStorage.getItem(_bwKey(date))) || 0; }
 function saveBw(w, date) {
   w > 0 ? localStorage.setItem(_bwKey(date), w)
@@ -3290,7 +3290,7 @@ function stepsBarHTML(history) {
 }
 
 // ── PASOS DIARIOS ─────────────────────────────────────────────
-function _stepsKey(date) { return `gymbros_steps_${profile().id}_${date}`; }
+function _stepsKey(date) { return `gymbros_steps_${profile()?.id}_${date}`; }
 function getSteps(date) { return parseInt(localStorage.getItem(_stepsKey(date))) || 0; }
 function saveSteps(steps, date) {
   steps > 0 ? localStorage.setItem(_stepsKey(date), steps)
