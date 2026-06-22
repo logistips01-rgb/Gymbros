@@ -656,7 +656,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v73</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v74</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -806,7 +806,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v73</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v74</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1766,20 +1766,32 @@ async function renderAdminReto() {
             <div style="font-size:10px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${current.mes === currentMonth ? 'Activo · ' : ''}${current.mes}</div>
             <div style="font-size:18px;font-weight:900">${current.nombre}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Objetivo: ${current.objetivo} ${current.unidad}</div>
+            ${current.ejercicio ? `<div style="font-size:11px;color:#f59e0b;margin-top:2px">Auto-tracking: ${current.ejercicio} (${current.metrica})</div>` : ''}
             ${current.descripcion ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">"${current.descripcion}"</div>` : ''}
           </div>` : ''}
         <div style="font-size:13px;font-weight:700;margin-bottom:12px">${current && current.mes === currentMonth ? 'Editar' : 'Nuevo'} reto — ${mesLabel}</div>
         <label style="font-size:12px;color:var(--muted)">Nombre del reto</label>
-        <input type="text" id="reto-nombre" placeholder="ej. Dominadas en junio" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:12px" value="${current?.nombre || ''}">
+        <input type="text" id="reto-nombre" placeholder="ej. 100 km en bici" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:12px" value="${current?.nombre || ''}">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
           <div>
             <label style="font-size:12px;color:var(--muted)">Objetivo (número)</label>
-            <input type="number" id="reto-objetivo" placeholder="ej. 500" min="1" style="width:100%;box-sizing:border-box;margin-top:4px" value="${current?.objetivo || ''}">
+            <input type="number" id="reto-objetivo" placeholder="ej. 100" min="1" style="width:100%;box-sizing:border-box;margin-top:4px" value="${current?.objetivo || ''}">
           </div>
           <div>
-            <label style="font-size:12px;color:var(--muted)">Unidad</label>
-            <input type="text" id="reto-unidad" placeholder="ej. reps, km, kg" style="width:100%;box-sizing:border-box;margin-top:4px" value="${current?.unidad || ''}">
+            <label style="font-size:12px;color:var(--muted)">Unidad visible</label>
+            <input type="text" id="reto-unidad" placeholder="ej. km, reps, kg" style="width:100%;box-sizing:border-box;margin-top:4px" value="${current?.unidad || ''}">
           </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Auto-tracking desde sesiones (opcional)</div>
+          <label style="font-size:12px;color:var(--muted)">Nombre exacto del ejercicio</label>
+          <input type="text" id="reto-ejercicio" placeholder="ej. Bici (debe coincidir exactamente)" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:10px" value="${current?.ejercicio || ''}">
+          <label style="font-size:12px;color:var(--muted)">Métrica a sumar</label>
+          <select id="reto-metrica" style="width:100%;box-sizing:border-box;margin-top:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px">
+            <option value="distancia" ${current?.metrica==='distancia'?'selected':''}>Distancia (campo valor en cardio)</option>
+            <option value="reps" ${current?.metrica==='reps'?'selected':''}>Repeticiones (suma de reps)</option>
+            <option value="volumen" ${current?.metrica==='volumen'?'selected':''}>Volumen (series × kg)</option>
+          </select>
         </div>
         <label style="font-size:12px;color:var(--muted)">Descripción</label>
         <textarea id="reto-descripcion" placeholder="Descripción del reto…" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:16px;min-height:60px;resize:vertical">${current?.descripcion || ''}</textarea>
@@ -1796,26 +1808,56 @@ async function saveReto() {
   if (!nombre) { showToast('Escribe el nombre del reto'); return; }
   const objetivo = parseFloat(document.getElementById('reto-objetivo').value) || 0;
   if (!objetivo) { showToast('Escribe un objetivo numérico'); return; }
-  const unidad = (document.getElementById('reto-unidad').value || '').trim() || 'reps';
+  const unidad     = (document.getElementById('reto-unidad').value     || '').trim() || 'reps';
+  const ejercicio  = (document.getElementById('reto-ejercicio').value  || '').trim();
+  const metrica    = document.getElementById('reto-metrica').value || 'distancia';
   const descripcion = (document.getElementById('reto-descripcion').value || '').trim();
   const mes = new Date().toISOString().slice(0, 7);
   const p = profile();
   try {
-    await db.collection('groups').doc(g.id).update({ reto: { nombre, objetivo, unidad, descripcion, mes, autor: p?.name || '' } });
+    await db.collection('groups').doc(g.id).update({
+      reto: { nombre, objetivo, unidad, ejercicio, metrica, descripcion, mes, autor: p?.name || '' }
+    });
     showToast('¡Reto del mes guardado!');
   } catch(e) { showToast('Error al guardar'); }
+}
+
+function _retoContrib(amount, exName) {
+  const r = state.reto;
+  if (!r) return;
+  const mes = new Date().toISOString().slice(0, 7);
+  if (r.mes !== mes) return;
+  const p = profile();
+  if (!p.retoContrib) p.retoContrib = {};
+  p.retoContrib[mes] = Math.round(((p.retoContrib[mes] || 0) + amount) * 100) / 100;
+  saveCurrentProfile();
+  renderRetoCard();
+  showToast(`+${amount} ${r.unidad} al reto`);
+}
+
+function autoRetoContrib(ex, type, sets) {
+  const r = state.reto;
+  if (!r || !r.ejercicio) return;
+  const mes = new Date().toISOString().slice(0, 7);
+  if (r.mes !== mes) return;
+  if (ex.name.toLowerCase().trim() !== r.ejercicio.toLowerCase().trim()) return;
+  let amount = 0;
+  if (r.metrica === 'distancia' && type === 'cardio') {
+    amount = sets.reduce((s, st) => s + (parseFloat(st.value) || 0), 0);
+  } else if (r.metrica === 'reps') {
+    amount = sets.reduce((s, st) => s + (parseFloat(st.reps) || 0), 0);
+  } else if (r.metrica === 'volumen') {
+    amount = sets.reduce((s, st) => s + (parseFloat(st.reps) || 0) * (parseFloat(st.kg) || 0), 0);
+  }
+  if (amount > 0) _retoContrib(Math.round(amount * 100) / 100, ex.name);
 }
 
 function addRetoContrib(n) {
   n = parseFloat(n) || 0;
   if (n <= 0) return;
-  const p = profile();
-  const mes = new Date().toISOString().slice(0, 7);
-  if (!p.retoContrib) p.retoContrib = {};
-  p.retoContrib[mes] = (p.retoContrib[mes] || 0) + n;
-  saveCurrentProfile();
-  renderRetoCard();
-  showToast(`+${n} ${state.reto?.unidad || ''} añadidos`);
+  _retoContrib(n);
+  const inp = document.getElementById('reto-add-inp');
+  if (inp) inp.value = '';
 }
 
 function renderRetoCard() {
@@ -1830,10 +1872,10 @@ function renderRetoCard() {
     n: p.retoContrib?.[currentMonth] || 0
   })).filter(b => b.n > 0).sort((a, b) => b.n - a.n);
 
-  const total = contribs.reduce((s, b) => s + b.n, 0);
+  const total = Math.round(contribs.reduce((s, b) => s + b.n, 0) * 100) / 100;
   const pct = Math.min(100, Math.round((total / r.objetivo) * 100));
-
-  const myContrib = (profile()?.retoContrib?.[currentMonth] || 0);
+  const myContrib = Math.round((profile()?.retoContrib?.[currentMonth] || 0) * 100) / 100;
+  const autoTracking = !!r.ejercicio;
 
   const broRows = contribs.map(b => `
     <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
@@ -1851,7 +1893,8 @@ function renderRetoCard() {
       <div style="position:absolute;top:12px;right:14px;font-size:10px;font-weight:800;color:color-mix(in srgb,#f59e0b 80%,white);letter-spacing:1.5px">${mesLabel}</div>
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#f59e0b;letter-spacing:1.5px;margin-bottom:6px">⚔️ Reto del mes</div>
       <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px">${r.nombre}</div>
-      <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:${r.descripcion?'8px':'4px'}">Objetivo: ${r.objetivo} ${r.unidad}</div>
+      <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:${r.descripcion||autoTracking?'8px':'4px'}">Objetivo: ${r.objetivo} ${r.unidad}</div>
+      ${autoTracking ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Auto-tracking: registra <b style="color:var(--text)">${r.ejercicio}</b> y suma solo</div>` : ''}
       ${r.descripcion ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px;font-style:italic">"${r.descripcion}"</div>` : ''}
       <div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:6px;overflow:hidden">
         <div style="background:#f59e0b;height:100%;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
@@ -1862,10 +1905,10 @@ function renderRetoCard() {
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:${contribs.length?'12px':'0'}">
         <span style="font-size:12px;color:var(--muted)">Mi aportación: <b style="color:var(--text)">${myContrib} ${r.unidad}</b></span>
-        <div style="margin-left:auto;display:flex;gap:4px">
-          <input type="number" id="reto-add-inp" min="1" placeholder="+" style="width:60px;padding:3px 6px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);text-align:center">
+        ${!autoTracking ? `<div style="margin-left:auto;display:flex;gap:4px">
+          <input type="number" id="reto-add-inp" min="0.1" step="0.1" placeholder="+" style="width:60px;padding:3px 6px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);text-align:center">
           <button class="btn btn-accent btn-sm" onclick="addRetoContrib(document.getElementById('reto-add-inp').value)">Añadir</button>
-        </div>
+        </div>` : ''}
       </div>
       ${contribs.length > 0 ? `
         <div style="border-top:1px solid var(--border);padding-top:10px">
@@ -2572,6 +2615,7 @@ function saveSession(exId) {
 
   // Save to per-exercise history (for progression charts)
   ex.sessions.push({ id: Date.now().toString(), date: new Date().toISOString(), sets });
+  autoRetoContrib(ex, type, sets);
   saveCurrentProfile();
 
   // If a free session is active, accumulate into it too
