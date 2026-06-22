@@ -644,7 +644,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v66</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v67</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -680,6 +680,8 @@ header {
           </div>
         </div>
       </div>
+
+      <div id="destacado-card" style="margin-bottom:12px"></div>
 
       <div id="view-muscles">
         <div class="sec-header">
@@ -791,7 +793,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v66</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v67</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1146,6 +1148,7 @@ header {
     <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap">
       <button class="btn btn-sm" id="admin-tab-tree" onclick="switchAdminTab('tree')">🌳 Árbol de grupos</button>
       <button class="btn btn-sm" id="admin-tab-users" onclick="switchAdminTab('users')">👥 Usuarios activos</button>
+      <button class="btn btn-sm" id="admin-tab-destacado" onclick="switchAdminTab('destacado')">⭐ Destacado del mes</button>
     </div>
     <div id="admin-panel-body" style="flex:1;overflow-y:auto"></div>
   </div>
@@ -1383,7 +1386,7 @@ function profilesRef() {
 }
 
 // ── STATE (in-memory cache, Firestore is source of truth) ─────
-let state = { profiles: [], currentUser: null };
+let state = { profiles: [], currentUser: null, destacado: null, _groupUnsub: null };
 let activeMuscle = null;
 let firstLoad = true;
 
@@ -1560,7 +1563,7 @@ function openAdminPanel() {
 
 function switchAdminTab(tab) {
   _adminTab = tab;
-  ['tree','users'].forEach(t => {
+  ['tree','users','destacado'].forEach(t => {
     const btn = document.getElementById(`admin-tab-${t}`);
     if (btn) btn.className = `btn btn-sm${t === tab ? ' btn-accent' : ' btn-ghost'}`;
   });
@@ -1568,6 +1571,7 @@ function switchAdminTab(tab) {
   body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Cargando…</div>';
   if (tab === 'tree') renderAdminTree();
   if (tab === 'users') renderAdminUsers();
+  if (tab === 'destacado') renderAdminDestacado();
 }
 
 async function renderAdminTree() {
@@ -1653,6 +1657,110 @@ async function renderAdminUsers() {
   }
 }
 
+async function renderAdminDestacado() {
+  const body = document.getElementById('admin-panel-body');
+  const g = getGroup();
+  try {
+    const snap = await db.collection('groups').doc(g.id).get();
+    const current = snap.exists ? (snap.data().destacado || null) : null;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const [y, m] = currentMonth.split('-');
+    const mesLabel = `${monthNames[parseInt(m)-1]} ${y}`;
+
+    body.innerHTML = `
+      <div style="margin-bottom:8px">
+        ${current ? `
+          <div style="background:var(--card);border-radius:10px;padding:14px;margin-bottom:16px">
+            <div style="font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${current.mes === currentMonth ? 'Activo · ' : ''}${current.mes}</div>
+            <div style="font-size:18px;font-weight:900">${current.nombre}</div>
+            ${current.objetivo ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">Objetivo: ${current.objetivo}</div>` : ''}
+            ${current.consejo ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">"${current.consejo}"</div>` : ''}
+          </div>` : ''}
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">${current && current.mes === currentMonth ? 'Editar' : 'Nuevo'} destacado — ${mesLabel}</div>
+        <label style="font-size:12px;color:var(--muted)">Nombre del ejercicio</label>
+        <input type="text" id="dest-nombre" placeholder="ej. Dominada" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:12px" value="${current?.nombre || ''}">
+        <label style="font-size:12px;color:var(--muted)">Objetivo del mes</label>
+        <input type="text" id="dest-objetivo" placeholder="ej. 3×5 sin ayuda" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:12px" value="${current?.objetivo || ''}">
+        <label style="font-size:12px;color:var(--muted)">Consejo</label>
+        <textarea id="dest-consejo" placeholder="Tip técnico o motivacional…" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:16px;min-height:80px;resize:vertical">${current?.consejo || ''}</textarea>
+        <button class="btn btn-accent" style="width:100%" onclick="saveDestacado()">💾 Guardar destacado</button>
+      </div>`;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#f87171;text-align:center;padding:40px">Error: ${e.message}</div>`;
+  }
+}
+
+async function saveDestacado() {
+  const g = getGroup();
+  const nombre = (document.getElementById('dest-nombre').value || '').trim();
+  if (!nombre) { showToast('Escribe el nombre del ejercicio'); return; }
+  const objetivo = (document.getElementById('dest-objetivo').value || '').trim();
+  const consejo = (document.getElementById('dest-consejo').value || '').trim();
+  const mes = new Date().toISOString().slice(0, 7);
+  const p = profile();
+  const destacado = { nombre, objetivo, consejo, mes, autor: p?.name || '' };
+  try {
+    await db.collection('groups').doc(g.id).update({ destacado });
+    showToast('¡Ejercicio del mes guardado!');
+  } catch(e) {
+    showToast('Error al guardar');
+  }
+}
+
+function renderDestacadoCard() {
+  const el = document.getElementById('destacado-card');
+  if (!el) return;
+  const d = state.destacado;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  if (!d || d.mes !== currentMonth) { el.innerHTML = ''; return; }
+
+  const broProgress = state.profiles.map(p => {
+    let sessions = 0, bestReps = 0, bestKg = 0;
+    (p.muscles || []).forEach(m => {
+      (m.exercises || []).forEach(ex => {
+        if ((ex.name || '').toLowerCase().trim() !== d.nombre.toLowerCase().trim()) return;
+        (ex.sessions || []).filter(s => s.date && s.date.slice(0,7) === currentMonth).forEach(sess => {
+          sessions++;
+          (sess.sets || []).forEach(st => {
+            if ((parseFloat(st.reps) || 0) > bestReps) bestReps = parseFloat(st.reps);
+            if ((parseFloat(st.kg) || 0) > bestKg) bestKg = parseFloat(st.kg);
+          });
+        });
+      });
+    });
+    return { name: p.name, sessions, bestReps, bestKg };
+  }).filter(b => b.sessions > 0).sort((a, b) => b.sessions - a.sessions);
+
+  const broRows = broProgress.map(b => {
+    const detail = b.bestKg > 0 ? `${b.bestKg} kg` : b.bestReps > 0 ? `${b.bestReps} reps` : '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:15px">💪</span>
+      <span style="font-weight:600;font-size:13px;flex:1">${b.name}</span>
+      <span style="font-size:12px;color:var(--muted)">${b.sessions} sesión${b.sessions!==1?'es':''}</span>
+      ${detail ? `<span style="font-size:11px;background:var(--surface);border-radius:4px;padding:1px 8px;color:var(--accent);font-weight:700">${detail}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const [y, mo] = d.mes.split('-');
+  const mesLabel = `${monthNames[parseInt(mo)-1].toUpperCase()} ${y}`;
+
+  el.innerHTML = `
+    <div style="background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:14px;padding:16px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:12px;right:14px;font-size:10px;font-weight:800;color:color-mix(in srgb,var(--accent) 80%,white);letter-spacing:1.5px">${mesLabel}</div>
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--accent);letter-spacing:1.5px;margin-bottom:6px">⭐ Ejercicio del mes</div>
+      <div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;margin-bottom:8px">${d.nombre}</div>
+      ${d.objetivo ? `<div style="display:inline-block;background:var(--accent);color:#000;font-size:11px;font-weight:800;border-radius:6px;padding:2px 10px;margin-bottom:10px">Objetivo: ${d.objetivo}</div>` : ''}
+      ${d.consejo ? `<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:${broProgress.length?'12px':'0'};font-style:italic">"${d.consejo}"</div>` : ''}
+      ${broProgress.length > 0 ? `
+        <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:8px;font-weight:700;letter-spacing:1px">PROGRESO DEL GRUPO</div>
+          ${broRows}
+        </div>` : `<div style="font-size:12px;color:var(--muted);margin-top:4px">Ningún bro ha registrado este ejercicio aún</div>`}
+    </div>`;
+}
+
 // ── REAL-TIME SUBSCRIPTION ────────────────────────────────────
 async function ensureGeneration() {
   const g = getGroup();
@@ -1667,8 +1775,20 @@ async function ensureGeneration() {
   } catch(e) {}
 }
 
+function subscribeToGroupDoc() {
+  const g = getGroup();
+  if (!g) return;
+  if (state._groupUnsub) return;
+  state._groupUnsub = db.collection('groups').doc(g.id).onSnapshot(snap => {
+    if (!snap.exists) return;
+    state.destacado = snap.data().destacado || null;
+    renderDestacadoCard();
+  }, () => {});
+}
+
 function subscribeToProfiles() {
   ensureGeneration();
+  subscribeToGroupDoc();
   profilesRef().onSnapshot(snapshot => {
     state.profiles = snapshot.docs.map(d => d.data());
     // Sort by creation time (id is timestamp-based)
@@ -1702,6 +1822,7 @@ function subscribeToProfiles() {
     if (rutinaPanel.classList.contains('active')) renderRutinas();
     const iaPanel = document.getElementById('tab-ia');
     if (iaPanel.classList.contains('active')) renderIA();
+    renderDestacadoCard();
 
   }, err => {
     console.error('Firestore error:', err);
