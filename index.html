@@ -656,7 +656,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v72</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v73</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -694,6 +694,7 @@ header {
       </div>
 
       <div id="destacado-card" style="margin-bottom:12px"></div>
+      <div id="reto-card" style="margin-bottom:12px"></div>
 
       <div id="view-muscles">
         <div class="sec-header">
@@ -805,7 +806,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v72</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v73</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -906,7 +907,10 @@ header {
         <input type="number" id="meal-fat-inp" placeholder="15" min="0" style="width:100%">
       </div>
     </div>
-    <button class="btn btn-ghost btn-sm" style="width:100%;margin:6px 0 2px" onclick="closeModal('modal-meal');openBarcodeScanner()">📷 Escanear código de barras</button>
+    <div style="display:flex;gap:6px;margin:6px 0 2px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeModal('modal-meal');openBarcodeScanner()">📷 Escanear</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeModal('modal-meal');openRecipes()">📋 Mis recetas</button>
+    </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">
       <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Avena + proteína',380,30,45,8)">🥣 Avena</button>
       <button class="btn btn-ghost btn-sm" onclick="selectFoodPreset('Arroz + pollo',580,48,68,10)">🍗 Arroz+pollo</button>
@@ -918,6 +922,28 @@ header {
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-meal')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveMeal()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Recetas guardadas -->
+<div class="modal-overlay" id="modal-recipes">
+  <div class="modal" style="max-height:90dvh;display:flex;flex-direction:column">
+    <h3>Mis recetas</h3>
+    <div id="recipes-list" style="flex:1;overflow-y:auto;margin-bottom:12px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;flex-shrink:0">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Nueva receta</div>
+      <input type="text" id="new-recipe-name" placeholder="Nombre (ej. Batido post-entreno)" style="width:100%;box-sizing:border-box;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div class="field"><label>Kcal</label><input type="number" id="new-recipe-kcal" min="0" style="width:100%"></div>
+        <div class="field"><label>Proteína (g)</label><input type="number" id="new-recipe-protein" min="0" style="width:100%"></div>
+        <div class="field"><label>Carbos (g)</label><input type="number" id="new-recipe-carbs" min="0" style="width:100%"></div>
+        <div class="field"><label>Grasa (g)</label><input type="number" id="new-recipe-fat" min="0" style="width:100%"></div>
+      </div>
+    </div>
+    <div class="modal-actions" style="flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-recipes')">Cerrar</button>
+      <button class="btn btn-accent" onclick="saveNewRecipe()">Guardar receta</button>
     </div>
   </div>
 </div>
@@ -1161,6 +1187,7 @@ header {
       <button class="btn btn-sm" id="admin-tab-tree" onclick="switchAdminTab('tree')">🌳 Árbol de grupos</button>
       <button class="btn btn-sm" id="admin-tab-users" onclick="switchAdminTab('users')">👥 Usuarios activos</button>
       <button class="btn btn-sm" id="admin-tab-destacado" onclick="switchAdminTab('destacado')">⭐ Destacado del mes</button>
+      <button class="btn btn-sm" id="admin-tab-reto" onclick="switchAdminTab('reto')">⚔️ Reto del mes</button>
     </div>
     <div id="admin-panel-body" style="flex:1;overflow-y:auto"></div>
   </div>
@@ -1398,7 +1425,7 @@ function profilesRef() {
 }
 
 // ── STATE (in-memory cache, Firestore is source of truth) ─────
-let state = { profiles: [], currentUser: null, destacado: null, _groupUnsub: null };
+let state = { profiles: [], currentUser: null, destacado: null, reto: null, _groupUnsub: null };
 let activeMuscle = null;
 let firstLoad = true;
 
@@ -1575,7 +1602,7 @@ function openAdminPanel() {
 
 function switchAdminTab(tab) {
   _adminTab = tab;
-  ['tree','users','destacado'].forEach(t => {
+  ['tree','users','destacado','reto'].forEach(t => {
     const btn = document.getElementById(`admin-tab-${t}`);
     if (btn) btn.className = `btn btn-sm${t === tab ? ' btn-accent' : ' btn-ghost'}`;
   });
@@ -1584,6 +1611,7 @@ function switchAdminTab(tab) {
   if (tab === 'tree') renderAdminTree();
   if (tab === 'users') renderAdminUsers();
   if (tab === 'destacado') renderAdminDestacado();
+  if (tab === 'reto') renderAdminReto();
 }
 
 async function renderAdminTree() {
@@ -1720,6 +1748,247 @@ async function saveDestacado() {
   }
 }
 
+// ── RETO DEL MES ──────────────────────────────────────────────
+async function renderAdminReto() {
+  const body = document.getElementById('admin-panel-body');
+  const g = getGroup();
+  try {
+    const snap = await db.collection('groups').doc(g.id).get();
+    const current = snap.exists ? (snap.data().reto || null) : null;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const [y, m] = currentMonth.split('-');
+    const mesLabel = `${monthNames[parseInt(m)-1]} ${y}`;
+    body.innerHTML = `
+      <div>
+        ${current ? `
+          <div style="background:var(--card);border-radius:10px;padding:14px;margin-bottom:16px">
+            <div style="font-size:10px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${current.mes === currentMonth ? 'Activo · ' : ''}${current.mes}</div>
+            <div style="font-size:18px;font-weight:900">${current.nombre}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Objetivo: ${current.objetivo} ${current.unidad}</div>
+            ${current.descripcion ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">"${current.descripcion}"</div>` : ''}
+          </div>` : ''}
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">${current && current.mes === currentMonth ? 'Editar' : 'Nuevo'} reto — ${mesLabel}</div>
+        <label style="font-size:12px;color:var(--muted)">Nombre del reto</label>
+        <input type="text" id="reto-nombre" placeholder="ej. Dominadas en junio" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:12px" value="${current?.nombre || ''}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div>
+            <label style="font-size:12px;color:var(--muted)">Objetivo (número)</label>
+            <input type="number" id="reto-objetivo" placeholder="ej. 500" min="1" style="width:100%;box-sizing:border-box;margin-top:4px" value="${current?.objetivo || ''}">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted)">Unidad</label>
+            <input type="text" id="reto-unidad" placeholder="ej. reps, km, kg" style="width:100%;box-sizing:border-box;margin-top:4px" value="${current?.unidad || ''}">
+          </div>
+        </div>
+        <label style="font-size:12px;color:var(--muted)">Descripción</label>
+        <textarea id="reto-descripcion" placeholder="Descripción del reto…" style="width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:16px;min-height:60px;resize:vertical">${current?.descripcion || ''}</textarea>
+        <button class="btn btn-accent" style="width:100%" onclick="saveReto()">💾 Guardar reto</button>
+      </div>`;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#f87171;text-align:center;padding:40px">Error: ${e.message}</div>`;
+  }
+}
+
+async function saveReto() {
+  const g = getGroup();
+  const nombre = (document.getElementById('reto-nombre').value || '').trim();
+  if (!nombre) { showToast('Escribe el nombre del reto'); return; }
+  const objetivo = parseFloat(document.getElementById('reto-objetivo').value) || 0;
+  if (!objetivo) { showToast('Escribe un objetivo numérico'); return; }
+  const unidad = (document.getElementById('reto-unidad').value || '').trim() || 'reps';
+  const descripcion = (document.getElementById('reto-descripcion').value || '').trim();
+  const mes = new Date().toISOString().slice(0, 7);
+  const p = profile();
+  try {
+    await db.collection('groups').doc(g.id).update({ reto: { nombre, objetivo, unidad, descripcion, mes, autor: p?.name || '' } });
+    showToast('¡Reto del mes guardado!');
+  } catch(e) { showToast('Error al guardar'); }
+}
+
+function addRetoContrib(n) {
+  n = parseFloat(n) || 0;
+  if (n <= 0) return;
+  const p = profile();
+  const mes = new Date().toISOString().slice(0, 7);
+  if (!p.retoContrib) p.retoContrib = {};
+  p.retoContrib[mes] = (p.retoContrib[mes] || 0) + n;
+  saveCurrentProfile();
+  renderRetoCard();
+  showToast(`+${n} ${state.reto?.unidad || ''} añadidos`);
+}
+
+function renderRetoCard() {
+  const el = document.getElementById('reto-card');
+  if (!el) return;
+  const r = state.reto;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  if (!r || r.mes !== currentMonth) { el.innerHTML = ''; return; }
+
+  const contribs = state.profiles.map(p => ({
+    name: p.name,
+    n: p.retoContrib?.[currentMonth] || 0
+  })).filter(b => b.n > 0).sort((a, b) => b.n - a.n);
+
+  const total = contribs.reduce((s, b) => s + b.n, 0);
+  const pct = Math.min(100, Math.round((total / r.objetivo) * 100));
+
+  const myContrib = (profile()?.retoContrib?.[currentMonth] || 0);
+
+  const broRows = contribs.map(b => `
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px">⚔️</span>
+      <span style="flex:1;font-size:13px;font-weight:600">${b.name}</span>
+      <span style="font-size:12px;font-weight:700;color:#f59e0b">${b.n} ${r.unidad}</span>
+    </div>`).join('');
+
+  const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const [y, mo] = r.mes.split('-');
+  const mesLabel = `${monthNames[parseInt(mo)-1].toUpperCase()} ${y}`;
+
+  el.innerHTML = `
+    <div style="background:linear-gradient(135deg,color-mix(in srgb,#f59e0b 10%,var(--card)),var(--card));border:1px solid color-mix(in srgb,#f59e0b 35%,transparent);border-radius:14px;padding:16px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:12px;right:14px;font-size:10px;font-weight:800;color:color-mix(in srgb,#f59e0b 80%,white);letter-spacing:1.5px">${mesLabel}</div>
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#f59e0b;letter-spacing:1.5px;margin-bottom:6px">⚔️ Reto del mes</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px">${r.nombre}</div>
+      <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:${r.descripcion?'8px':'4px'}">Objetivo: ${r.objetivo} ${r.unidad}</div>
+      ${r.descripcion ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px;font-style:italic">"${r.descripcion}"</div>` : ''}
+      <div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:6px;overflow:hidden">
+        <div style="background:#f59e0b;height:100%;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:12px">
+        <span><b style="color:#f59e0b">${total}</b> / ${r.objetivo} ${r.unidad}</span>
+        <span>${pct}% completado</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:${contribs.length?'12px':'0'}">
+        <span style="font-size:12px;color:var(--muted)">Mi aportación: <b style="color:var(--text)">${myContrib} ${r.unidad}</b></span>
+        <div style="margin-left:auto;display:flex;gap:4px">
+          <input type="number" id="reto-add-inp" min="1" placeholder="+" style="width:60px;padding:3px 6px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);text-align:center">
+          <button class="btn btn-accent btn-sm" onclick="addRetoContrib(document.getElementById('reto-add-inp').value)">Añadir</button>
+        </div>
+      </div>
+      ${contribs.length > 0 ? `
+        <div style="border-top:1px solid var(--border);padding-top:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:8px;font-weight:700;letter-spacing:1px">RANKING DEL GRUPO</div>
+          ${broRows}
+        </div>` : ''}
+    </div>`;
+}
+
+// ── RECETAS GUARDADAS ──────────────────────────────────────────
+function _recipesKey() { return `gymbros_recipes_${profile()?.id}`; }
+function getRecipes() { try { return JSON.parse(localStorage.getItem(_recipesKey()) || '[]'); } catch { return []; } }
+function saveRecipesLS(arr) { if (_recipesKey().includes('undefined')) return; localStorage.setItem(_recipesKey(), JSON.stringify(arr)); }
+
+function openRecipes() {
+  renderRecipesList();
+  openModal('modal-recipes');
+}
+
+function renderRecipesList() {
+  const list = document.getElementById('recipes-list');
+  if (!list) return;
+  const recipes = getRecipes();
+  if (recipes.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px">Sin recetas guardadas aún.<br>Crea la primera abajo.</div>`;
+    return;
+  }
+  list.innerHTML = recipes.map(r => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-weight:700;font-size:14px">${r.name}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-accent btn-sm" onclick="applyRecipe('${r.id}')">Usar</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteRecipe('${r.id}')">🗑</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${r.kcal} kcal · ${r.protein}g prot · ${r.carbs}g carbs · ${r.fat}g grasa</div>
+    </div>`).join('');
+}
+
+function applyRecipe(id) {
+  const r = getRecipes().find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('meal-name-inp').value = r.name;
+  document.getElementById('meal-kcal-inp').value = r.kcal;
+  document.getElementById('meal-protein-inp').value = r.protein;
+  document.getElementById('meal-carbs-inp').value = r.carbs;
+  document.getElementById('meal-fat-inp').value = r.fat;
+  closeModal('modal-recipes');
+  openModal('modal-meal');
+}
+
+function saveNewRecipe() {
+  const name = (document.getElementById('new-recipe-name').value || '').trim();
+  if (!name) { showToast('Escribe el nombre de la receta'); return; }
+  const kcal    = parseFloat(document.getElementById('new-recipe-kcal').value)    || 0;
+  const protein = parseFloat(document.getElementById('new-recipe-protein').value) || 0;
+  const carbs   = parseFloat(document.getElementById('new-recipe-carbs').value)   || 0;
+  const fat     = parseFloat(document.getElementById('new-recipe-fat').value)     || 0;
+  const recipes = getRecipes();
+  recipes.push({ id: Date.now().toString(), name, kcal, protein, carbs, fat });
+  saveRecipesLS(recipes);
+  ['new-recipe-name','new-recipe-kcal','new-recipe-protein','new-recipe-carbs','new-recipe-fat'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderRecipesList();
+  showToast('Receta guardada');
+}
+
+function deleteRecipe(id) {
+  if (!confirm('¿Eliminar esta receta?')) return;
+  saveRecipesLS(getRecipes().filter(r => r.id !== id));
+  renderRecipesList();
+}
+
+// ── GRÁFICA PESO CORPORAL ──────────────────────────────────────
+function buildWeightChart() {
+  const entries = [];
+  for (let i = 29; i >= 0; i--) {
+    const ds = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const w = getBw(ds);
+    if (w > 0) entries.push({ ds, w });
+  }
+  if (entries.length < 2) return '';
+
+  const weights = entries.map(e => e.w);
+  const maxW = Math.max(...weights), minW = Math.min(...weights);
+  const range = maxW - minW || 0.5;
+  const W = 300, H = 64, pad = 10;
+  const xStep = (W - pad * 2) / (entries.length - 1 || 1);
+
+  const pts = entries.map((e, i) => {
+    const x = pad + i * xStep;
+    const y = H - pad - ((e.w - minW) / range) * (H - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  const last = entries[entries.length - 1];
+  const first = entries[0];
+  const trend = last.w - first.w;
+  const col = trend <= 0 ? '#16a34a' : '#f59e0b';
+  const trendStr = `${trend > 0 ? '+' : ''}${trend.toFixed(1)} kg`;
+
+  const lx = (pad + (entries.length - 1) * xStep).toFixed(1);
+  const ly = (H - pad - ((last.w - minW) / range) * (H - pad * 2)).toFixed(1);
+  const fx = pad.toFixed(1);
+  const fy = (H - pad - ((first.w - minW) / range) * (H - pad * 2)).toFixed(1);
+
+  return `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">EVOLUCIÓN 30 DÍAS</span>
+        <span style="font-size:11px;color:${col};font-weight:700">${trendStr}</span>
+      </div>
+      <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;display:block">
+        <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${fx}" cy="${fy}" r="3" fill="${col}" opacity="0.5"/>
+        <circle cx="${lx}" cy="${ly}" r="3.5" fill="${col}"/>
+        <text x="${lx}" y="${parseFloat(ly) - 7}" text-anchor="middle" font-size="9" fill="${col}" font-family="Inter,sans-serif" font-weight="700">${last.w} kg</text>
+      </svg>
+    </div>`;
+}
+
 function renderDestacadoCard() {
   const el = document.getElementById('destacado-card');
   if (!el) return;
@@ -1794,7 +2063,9 @@ function subscribeToGroupDoc() {
   state._groupUnsub = db.collection('groups').doc(g.id).onSnapshot(snap => {
     if (!snap.exists) return;
     state.destacado = snap.data().destacado || null;
+    state.reto = snap.data().reto || null;
     renderDestacadoCard();
+    renderRetoCard();
   }, () => {});
 }
 
@@ -1835,6 +2106,7 @@ function subscribeToProfiles() {
     const iaPanel = document.getElementById('tab-ia');
     if (iaPanel.classList.contains('active')) renderIA();
     renderDestacadoCard();
+    renderRetoCard();
 
   }, err => {
     console.error('Firestore error:', err);
@@ -3947,6 +4219,7 @@ function renderNutricion() {
         <div style="display:flex;justify-content:space-between;font-size:12px">
           <span>🍽 Neto</span><span style="font-weight:700">${netKcal} kcal</span>
         </div>` : ''}
+        ${buildWeightChart()}
       </div>
     </div>
 
