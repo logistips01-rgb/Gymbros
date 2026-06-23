@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v87</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v88</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -847,7 +847,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v87</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v88</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -5314,12 +5314,12 @@ function renderStats() {
 
   const allEx = p.muscles.flatMap(m => m.exercises);
 
-  // Días que ya tienen una gymSession (rutina o sesión libre finalizada)
-  // → para esos días NO contamos ex.sessions y evitar doble conteo
-  const gymSessionDates = new Set(p.gymSessions.map(s => s.date.slice(0,10)));
+  // Solo excluir ex.sessions para días con sesión LIBRE finalizada (sin routineId),
+  // porque ahí los sets están en ambos sitios. Las rutinas NO duplican ex.sessions.
+  const freeSessionDates = new Set(p.gymSessions.filter(s => !s.routineId).map(s => s.date.slice(0,10)));
 
-  // ex.sessions: solo días sin gymSession
-  const freeEx = allEx.flatMap(e => e.sessions.filter(s => !gymSessionDates.has(s.date.slice(0,10))));
+  // ex.sessions: excluir solo días con sesión libre finalizada
+  const freeEx = allEx.flatMap(e => e.sessions.filter(s => !freeSessionDates.has(s.date.slice(0,10))));
   const entrenoDates = freeEx.map(s => s.date.slice(0,10));
   const entrenoSets  = freeEx.reduce((a, s) => a + s.sets.length, 0);
   const entrenoVol   = freeEx.reduce((a, s) => a + s.sets.reduce((c, st) => c + (st.reps||0)*(st.kg||0), 0), 0);
@@ -5766,10 +5766,10 @@ function getProfileStats(p) {
 
   const allEx = p.muscles.flatMap(m => m.exercises);
 
-  // Días con gymSession → no contar ex.sessions para esos días (evita doble conteo)
-  const gymSessionDates = new Set(p.gymSessions.map(s => s.date.slice(0,10)));
+  // Solo excluir ex.sessions para días con sesión LIBRE finalizada (sin routineId)
+  const freeSessionDates = new Set(p.gymSessions.filter(s => !s.routineId).map(s => s.date.slice(0,10)));
 
-  const freeEx      = allEx.flatMap(e => e.sessions.filter(s => !gymSessionDates.has(s.date.slice(0,10))));
+  const freeEx      = allEx.flatMap(e => e.sessions.filter(s => !freeSessionDates.has(s.date.slice(0,10))));
   const entrenoDates = freeEx.map(s => s.date.slice(0,10));
   const entrenoVol   = freeEx.reduce((a, s) => a + s.sets.reduce((c, st) => c + (st.reps||0)*(st.kg||0), 0), 0);
   const entrenoKgs   = freeEx.flatMap(s => s.sets.map(st => st.kg||0));
@@ -5922,7 +5922,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=87', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=88', { updateViaCache: 'none' }).then(reg => {
       // Forzar comprobación inmediata al cargar
       reg.update();
       // Y también cada vez que la app vuelve al foco
