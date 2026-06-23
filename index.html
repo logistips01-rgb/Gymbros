@@ -385,10 +385,11 @@ header {
 .sess-ex-title { font-weight:600; font-size:13px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
 .sess-ex-foot { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
 .day-set-row { display:grid; gap:6px; align-items:center; margin-bottom:6px; }
-.day-set-row.type-normal  { grid-template-columns:22px 1fr 1fr 26px; }
-.day-set-row.type-bodyweight { grid-template-columns:22px 1fr 26px; }
-.day-set-row.type-cardio  { grid-template-columns:22px 1fr 80px 26px; }
+.day-set-row.type-normal  { grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 26px; }
+.day-set-row.type-bodyweight { grid-template-columns:22px minmax(0,1fr) 26px; }
+.day-set-row.type-cardio  { grid-template-columns:22px minmax(0,1fr) 60px 26px; }
 .day-set-num { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; color:#fff; text-align:center; }
+.day-set-row input, .day-set-row select { min-width:0; width:100%; box-sizing:border-box; }
 .day-set-row input { padding:6px 8px; font-size:12px; }
 .unit-label { font-size:11px; color:var(--muted); white-space:nowrap; }
 .day-set-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:14px; padding:0; }
@@ -648,7 +649,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v76</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v77</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -800,7 +801,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v76</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v77</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3136,9 +3137,9 @@ function renderActiveSession() {
       <button class="btn btn-accent" style="flex:1;font-size:15px" onclick="finishSession()">✅ Finalizar</button>
     </div>`;
 
-  // Restore set rows for any sets already added
+  // Restore set rows with their saved values
   activeSession.exercises.forEach(ex => {
-    ex.sets.forEach((_, i) => _addSessionSetRow(ex.id, i + 1, ex.type));
+    ex.sets.forEach((set, i) => _addSessionSetRow(ex.id, i + 1, ex.type, set));
   });
 }
 
@@ -3189,7 +3190,7 @@ function addSessionSet(exId) {
   startRestTimer();
 }
 
-function _addSessionSetRow(exId, n, type) {
+function _addSessionSetRow(exId, n, type, set = null) {
   const area = document.getElementById(`sess-sets-${exId}`);
   if (!area) return;
   const row = document.createElement('div');
@@ -3199,16 +3200,21 @@ function _addSessionSetRow(exId, n, type) {
   if (type === 'bodyweight') {
     row.innerHTML = `<span class="day-set-num">${n}</span>
       <input type="number" placeholder="Reps" min="1" step="1"> ${delBtn}`;
+    if (set?.reps) row.querySelector('input').value = set.reps;
   } else if (type === 'cardio') {
     row.innerHTML = `<span class="day-set-num">${n}</span>
       <input type="number" placeholder="Dist." min="0" step="0.5">
       <select style="padding:5px 4px;font-size:11px"><option>m</option><option>km</option><option>min</option></select>
       ${delBtn}`;
+    if (set?.value != null) row.querySelectorAll('input')[0].value = set.value;
+    if (set?.unit) { const sel = row.querySelector('select'); if (sel) sel.value = set.unit; }
   } else {
     row.innerHTML = `<span class="day-set-num">${n}</span>
       <input type="number" placeholder="Reps" min="1" step="1">
       <input type="number" placeholder="Kg" min="0" step="0.5">
       ${delBtn}`;
+    if (set?.reps) row.querySelectorAll('input')[0].value = set.reps;
+    if (set?.kg != null) row.querySelectorAll('input')[1].value = set.kg;
   }
   area.appendChild(row);
 }
