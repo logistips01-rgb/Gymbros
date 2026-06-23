@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v83</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v84</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -814,7 +814,10 @@ header {
             <div id="cfg-group" style="font-size:12px;color:var(--muted)"></div>
           </div>
         </div>
-        <button class="btn btn-ghost" style="width:100%" onclick="logout()">↩ Cambiar de usuario</button>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-ghost" style="flex:1" onclick="logout()">↩ Cambiar usuario</button>
+          <button class="btn btn-ghost" style="flex:1" id="cfg-pin-btn" onclick="configurarPin()">🔒 PIN</button>
+        </div>
       </div>
 
       <!-- Grupo -->
@@ -844,7 +847,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v83</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v84</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1238,6 +1241,28 @@ header {
 
 <!-- Botón flotante de ayuda -->
 <button id="help-fab" onclick="openModal('modal-guide')" title="Guía de uso">?</button>
+
+<!-- MODAL: PIN -->
+<div class="modal-overlay" id="modal-pin">
+  <div class="modal" style="max-width:320px;text-align:center">
+    <input type="hidden" id="pin-mode" value="enter">
+    <div style="font-size:22px;margin-bottom:6px">🔒</div>
+    <h3 style="margin-bottom:18px" id="pin-modal-title">Introduce tu PIN</h3>
+    <div id="pin-dots" style="display:flex;justify-content:center;gap:14px;margin-bottom:10px">
+      <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--border);transition:all .15s"></span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--border);transition:all .15s"></span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--border);transition:all .15s"></span>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--border);transition:all .15s"></span>
+    </div>
+    <div id="pin-error" style="font-size:12px;color:#ef4444;min-height:18px;margin-bottom:10px"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto 14px">
+      ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(d => d === '' ? '<div></div>' :
+        `<button onclick="${d==='⌫'?'pinBackspace()':'pinPress('+d+')'}" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">${d}</button>`
+      ).join('')}
+    </div>
+    <button class="btn btn-ghost btn-sm" style="width:100%" onclick="closeModal('modal-pin');_pinValue='';_pinSetStep=1">Cancelar</button>
+  </div>
+</div>
 
 <!-- MODAL: Guía de uso -->
 <div class="modal-overlay" id="modal-guide" style="align-items:flex-start;padding:0">
@@ -1718,15 +1743,22 @@ async function renderAdminUsers() {
       totalUsers += profiles.length;
       const genColors = ['var(--accent)','#4ade80','#60a5fa','#f59e0b'];
       const color = genColors[(g.generation||1)-1] || 'var(--muted)';
-      const names = profiles.map(p => p.name || '?').join(', ') || '—';
+      const profileRows = profiles.map(p => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px;flex:1">${p.name || '?'}</span>
+          <span style="font-size:11px;color:${p.pinHash ? '#4ade80' : 'var(--muted)'}">
+            ${p.pinHash ? '🔒 PIN' : '🔓 Sin PIN'}
+          </span>
+          ${p.pinHash ? `<button onclick="adminResetPin('${g.id}','${p.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;color:var(--muted)">Reset</button>` : ''}
+        </div>`).join('');
       html += `
         <div style="background:var(--card);border-radius:10px;padding:12px 14px;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-size:11px;background:${color};color:#000;border-radius:4px;padding:1px 6px;font-weight:700">G${g.generation||1}</span>
             <span style="font-weight:700;font-size:14px">${g.name || g.id}</span>
             <span style="margin-left:auto;font-size:12px;color:var(--muted)">${profiles.length} usuario${profiles.length!==1?'s':''}</span>
           </div>
-          <div style="font-size:12px;color:var(--muted)">${names}</div>
+          ${profileRows || '<div style="font-size:12px;color:var(--muted)">Sin usuarios</div>'}
         </div>`;
     });
 
@@ -2283,6 +2315,149 @@ async function createProfile() {
   }
 }
 
+// ── PIN SYSTEM ────────────────────────────────────────────────
+async function hashPin(pin, profileId) {
+  const data = new TextEncoder().encode(pin + profileId);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+let _pinTarget = null; // profileId waiting for PIN
+
+async function loginAs(id) {
+  const p = state.profiles.find(pr => pr.id === id);
+  if (p?.pinHash) {
+    _pinTarget = id;
+    openPinModal('enter');
+  } else {
+    _doLogin(id);
+  }
+}
+
+function _doLogin(id) {
+  state.currentUser = id;
+  setCU(id);
+  showMain();
+}
+
+function openPinModal(mode) {
+  document.getElementById('pin-modal-title').textContent =
+    mode === 'enter' ? 'Introduce tu PIN' :
+    mode === 'set'   ? 'Crear PIN (4 dígitos)' : 'Nuevo PIN (4 dígitos)';
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-dots').innerHTML = '<span></span><span></span><span></span><span></span>';
+  document.getElementById('pin-mode').value = mode;
+  _pinValue = '';
+  openModal('modal-pin');
+}
+
+let _pinValue = '';
+let _pinSetStep = 1;
+let _pinFirst = '';
+
+function pinPress(digit) {
+  if (_pinValue.length >= 4) return;
+  _pinValue += digit;
+  _updatePinDots();
+  if (_pinValue.length === 4) setTimeout(_pinSubmit, 150);
+}
+
+function pinBackspace() {
+  _pinValue = _pinValue.slice(0, -1);
+  _updatePinDots();
+}
+
+function _updatePinDots() {
+  const dots = document.querySelectorAll('#pin-dots span');
+  dots.forEach((d, i) => {
+    d.style.background = i < _pinValue.length ? 'var(--accent)' : 'var(--border)';
+    d.style.transform = i < _pinValue.length ? 'scale(1.2)' : 'scale(1)';
+  });
+}
+
+async function _pinSubmit() {
+  const mode = document.getElementById('pin-mode').value;
+  const errEl = document.getElementById('pin-error');
+
+  if (mode === 'enter') {
+    const p = state.profiles.find(pr => pr.id === _pinTarget);
+    if (!p) return;
+    const h = await hashPin(_pinValue, p.id);
+    if (h === p.pinHash) {
+      closeModal('modal-pin');
+      _doLogin(_pinTarget);
+    } else {
+      errEl.textContent = 'PIN incorrecto';
+      _pinValue = '';
+      _updatePinDots();
+    }
+
+  } else if (mode === 'set') {
+    if (_pinSetStep === 1) {
+      _pinFirst = _pinValue;
+      _pinValue = '';
+      _updatePinDots();
+      _pinSetStep = 2;
+      document.getElementById('pin-modal-title').textContent = 'Repite el PIN';
+    } else {
+      if (_pinValue !== _pinFirst) {
+        errEl.textContent = 'Los PINs no coinciden';
+        _pinValue = ''; _pinFirst = ''; _pinSetStep = 1;
+        _updatePinDots();
+        document.getElementById('pin-modal-title').textContent = 'Crear PIN (4 dígitos)';
+      } else {
+        const p = profile();
+        if (!p) return;
+        const h = await hashPin(_pinValue, p.id);
+        p.pinHash = h;
+        saveCurrentProfile();
+        closeModal('modal-pin');
+        _pinSetStep = 1;
+        showToast('PIN activado 🔒');
+      }
+    }
+
+  } else if (mode === 'remove') {
+    const p = profile();
+    if (!p) return;
+    const h = await hashPin(_pinValue, p.id);
+    if (h === p.pinHash) {
+      delete p.pinHash;
+      saveCurrentProfile();
+      closeModal('modal-pin');
+      showToast('PIN eliminado');
+    } else {
+      errEl.textContent = 'PIN incorrecto';
+      _pinValue = '';
+      _updatePinDots();
+    }
+  }
+}
+
+function configurarPin() {
+  const p = profile();
+  if (!p) return;
+  if (p.pinHash) {
+    // Has PIN — offer change or remove
+    const action = confirm('¿Qué quieres hacer con tu PIN?\n\nAceptar → Cambiar PIN\nCancelar → Eliminar PIN');
+    if (action) { _pinSetStep = 1; openPinModal('set'); }
+    else { _pinSetStep = 1; openPinModal('remove'); }
+  } else {
+    _pinSetStep = 1;
+    openPinModal('set');
+  }
+}
+
+async function adminResetPin(groupId, profileId) {
+  if (!confirm('¿Eliminar el PIN de este perfil?')) return;
+  await db.collection('groups').doc(groupId).collection('profiles').doc(profileId)
+    .update({ pinHash: firebase.firestore.FieldValue.delete() });
+  const local = state.profiles.find(pr => pr.id === profileId);
+  if (local) delete local.pinHash;
+  showToast('PIN reseteado');
+  renderAdminUsers();
+}
+
 function loginAs(id) {
   state.currentUser = id;
   setCU(id);
@@ -2368,6 +2543,10 @@ function renderConfig() {
   // Backup status
   const bkpEl = document.getElementById('cfg-backup-ts');
   if (bkpEl && p) bkpEl.textContent = getBackupAge(p.id);
+
+  // PIN button label
+  const pinBtn = document.getElementById('cfg-pin-btn');
+  if (pinBtn && p) pinBtn.textContent = p.pinHash ? '🔓 Cambiar PIN' : '🔒 Crear PIN';
 }
 
 // ── MUSCLE GROUPS ─────────────────────────────────────────────
