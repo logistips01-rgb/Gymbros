@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v84</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v85</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -847,7 +847,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v84</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v85</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1256,9 +1256,18 @@ header {
     </div>
     <div id="pin-error" style="font-size:12px;color:#ef4444;min-height:18px;margin-bottom:10px"></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto 14px">
-      ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(d => d === '' ? '<div></div>' :
-        `<button onclick="${d==='⌫'?'pinBackspace()':'pinPress('+d+')'}" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">${d}</button>`
-      ).join('')}
+      <button onclick="pinPress(1)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">1</button>
+      <button onclick="pinPress(2)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">2</button>
+      <button onclick="pinPress(3)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">3</button>
+      <button onclick="pinPress(4)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">4</button>
+      <button onclick="pinPress(5)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">5</button>
+      <button onclick="pinPress(6)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">6</button>
+      <button onclick="pinPress(7)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">7</button>
+      <button onclick="pinPress(8)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">8</button>
+      <button onclick="pinPress(9)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">9</button>
+      <div></div>
+      <button onclick="pinPress(0)" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">0</button>
+      <button onclick="pinBackspace()" style="padding:14px;font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer">⌫</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="width:100%" onclick="closeModal('modal-pin');_pinValue='';_pinSetStep=1">Cancelar</button>
   </div>
