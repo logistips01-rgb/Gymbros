@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v82</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v83</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -844,10 +844,14 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v82</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v83</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+            <button class="btn btn-ghost" style="flex:1" onclick="manualBackup()">☁️ Backup ahora</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);text-align:center">Último backup: <span id="cfg-backup-ts">—</span></div>
           <button class="btn btn-ghost" style="width:100%" onclick="forceSwUpdate()">🔄 Forzar actualización</button>
         </div>
       </div>
@@ -1960,7 +1964,7 @@ function renderRetoCard() {
 // ── RECETAS GUARDADAS ──────────────────────────────────────────
 function _recipesKey() { return `gymbros_recipes_${profile()?.id}`; }
 function getRecipes() { try { return JSON.parse(localStorage.getItem(_recipesKey()) || '[]'); } catch { return []; } }
-function saveRecipesLS(arr) { if (_recipesKey().includes('undefined')) return; localStorage.setItem(_recipesKey(), JSON.stringify(arr)); }
+function saveRecipesLS(arr) { if (_recipesKey().includes('undefined')) return; localStorage.setItem(_recipesKey(), JSON.stringify(arr)); scheduleBackup(); }
 
 function openRecipes() {
   renderRecipesList();
@@ -2162,7 +2166,11 @@ function subscribeToProfiles() {
     if (firstLoad) {
       firstLoad = false;
       document.getElementById('loading').style.display = 'none';
-      // Restore session
+      // Restore private data from Firestore backup if localStorage is missing it
+      state.profiles.forEach(p => {
+        const restored = restorePrivateData(p);
+        if (restored) console.info('Private data restored from Firestore backup for', p.name);
+      });
       const cu = getCU();
       if (cu && state.profiles.find(p => p.id === cu)) {
         state.currentUser = cu;
@@ -2356,6 +2364,10 @@ function renderConfig() {
   if (adminSec) adminSec.style.display = isGen1 ? '' : 'none';
 
   loadNetworkStats();
+
+  // Backup status
+  const bkpEl = document.getElementById('cfg-backup-ts');
+  if (bkpEl && p) bkpEl.textContent = getBackupAge(p.id);
 }
 
 // ── MUSCLE GROUPS ─────────────────────────────────────────────
@@ -2845,7 +2857,83 @@ function _nutriKey() { return `gymbros_nutri_${profile()?.id}`; }
 function loadNutri() {
   try { return JSON.parse(localStorage.getItem(_nutriKey())) || {}; } catch { return {}; }
 }
-function saveNutri(n) { localStorage.setItem(_nutriKey(), JSON.stringify(n)); }
+// ── PRIVATE DATA BACKUP ──────────────────────────────────────
+let _backupTimer = null;
+
+function _collectPrivateBackup() {
+  const pid = profile()?.id;
+  if (!pid) return null;
+  let nutri = null;
+  try { nutri = JSON.parse(localStorage.getItem(`gymbros_nutri_${pid}`)); } catch {}
+  const bw = {}, steps = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k?.startsWith(`gymbros_bw_${pid}_`)) bw[k.slice(`gymbros_bw_${pid}_`.length)] = parseFloat(localStorage.getItem(k));
+    if (k?.startsWith(`gymbros_steps_${pid}_`)) steps[k.slice(`gymbros_steps_${pid}_`.length)] = parseInt(localStorage.getItem(k));
+  }
+  let recipes = [];
+  try { recipes = JSON.parse(localStorage.getItem(`gymbros_recipes_${pid}`) || '[]'); } catch {}
+  return { nutri, bw, steps, recipes, ts: Date.now() };
+}
+
+async function backupPrivateData() {
+  const p = profile();
+  if (!p) return;
+  const bkp = _collectPrivateBackup();
+  if (!bkp) return;
+  try {
+    await profilesRef().doc(p.id).update({ _priv: bkp });
+    localStorage.setItem(`gymbros_bkp_ts_${p.id}`, Date.now());
+  } catch(e) { console.warn('backup error', e); }
+}
+
+function scheduleBackup() {
+  if (_backupTimer) clearTimeout(_backupTimer);
+  _backupTimer = setTimeout(backupPrivateData, 3000);
+}
+
+function restorePrivateData(profileDoc) {
+  const pid = profileDoc.id;
+  const bkp = profileDoc._priv;
+  if (!bkp) return false;
+  let restored = false;
+  const nutriKey = `gymbros_nutri_${pid}`;
+  if (!localStorage.getItem(nutriKey) && bkp.nutri) {
+    localStorage.setItem(nutriKey, JSON.stringify(bkp.nutri)); restored = true;
+  }
+  if (bkp.bw) Object.entries(bkp.bw).forEach(([date, w]) => {
+    const k = `gymbros_bw_${pid}_${date}`;
+    if (!localStorage.getItem(k)) { localStorage.setItem(k, w); restored = true; }
+  });
+  if (bkp.steps) Object.entries(bkp.steps).forEach(([date, s]) => {
+    const k = `gymbros_steps_${pid}_${date}`;
+    if (!localStorage.getItem(k)) { localStorage.setItem(k, s); restored = true; }
+  });
+  const recipesKey = `gymbros_recipes_${pid}`;
+  if (!localStorage.getItem(recipesKey) && bkp.recipes?.length) {
+    localStorage.setItem(recipesKey, JSON.stringify(bkp.recipes)); restored = true;
+  }
+  return restored;
+}
+
+async function manualBackup() {
+  showToast('Guardando backup…');
+  await backupPrivateData();
+  showToast('Backup guardado en la nube ☁️');
+}
+
+function getBackupAge(profileId) {
+  const ts = parseInt(localStorage.getItem(`gymbros_bkp_ts_${profileId}`));
+  if (!ts) return 'Nunca';
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  return `Hace ${Math.floor(hrs/24)} día${Math.floor(hrs/24)!==1?'s':''}`;
+}
+
+function saveNutri(n) { localStorage.setItem(_nutriKey(), JSON.stringify(n)); scheduleBackup(); }
 function ensureNutrition(n) {
   if (!n.goals) n.goals = { kcal: 2200, protein: 160, carbs: 250, fat: 65 };
   if (!n.physique) n.physique = { sex: 'm', age: 0, height: 0, activity: 1.55, goalType: 'maintain' };
@@ -3666,6 +3754,7 @@ function getBw(date) { return parseFloat(localStorage.getItem(_bwKey(date))) || 
 function saveBw(w, date) {
   w > 0 ? localStorage.setItem(_bwKey(date), w)
          : localStorage.removeItem(_bwKey(date));
+  scheduleBackup();
 }
 function saveBwToday(val) {
   const w = parseFloat(val) || 0;
@@ -3748,6 +3837,7 @@ function getSteps(date) { return parseInt(localStorage.getItem(_stepsKey(date)))
 function saveSteps(steps, date) {
   steps > 0 ? localStorage.setItem(_stepsKey(date), steps)
              : localStorage.removeItem(_stepsKey(date));
+  scheduleBackup();
 }
 function saveStepsToday(val) {
   const steps = parseInt(val) || 0;
