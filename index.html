@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v88</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v89</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -847,7 +847,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v88</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v89</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -856,6 +856,10 @@ header {
           </div>
           <div style="font-size:11px;color:var(--muted);text-align:center">Último backup: <span id="cfg-backup-ts">—</span></div>
           <button class="btn btn-ghost" style="width:100%" onclick="forceSwUpdate()">🔄 Forzar actualización</button>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;color:var(--muted)">🔔 Notificaciones</span>
+            <button id="cfg-notif-btn" class="btn btn-ghost" style="font-size:12px;padding:4px 12px" onclick="toggleNotifications()">—</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2496,6 +2500,69 @@ async function delProfile(id) {
   }
 }
 
+// ── NOTIFICACIONES ────────────────────────────────────────────
+async function toggleNotifications() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted' && localStorage.getItem('gymbros_notif') === '1') {
+    localStorage.removeItem('gymbros_notif');
+    showToast('Notificaciones desactivadas');
+    renderConfig();
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    localStorage.setItem('gymbros_notif', '1');
+    showToast('Notificaciones activadas ✓');
+    new Notification('GymBros 💪', { body: '¡Recibirás avisos cuando tus bros entrenen o tu racha esté en peligro!', icon: '/Gymbros/icons/icon-192.png' });
+  } else {
+    showToast('Permiso denegado. Actívalas en ajustes del navegador.');
+  }
+  renderConfig();
+}
+
+function _sendNotif(title, body) {
+  if (Notification.permission !== 'granted') return;
+  if (localStorage.getItem('gymbros_notif') !== '1') return;
+  new Notification(title, { body, icon: '/Gymbros/icons/icon-192.png', badge: '/Gymbros/icons/icon-192.png' });
+}
+
+function checkAndNotify() {
+  if (Notification.permission !== 'granted') return;
+  if (localStorage.getItem('gymbros_notif') !== '1') return;
+
+  const p = profile();
+  if (!p) return;
+
+  const today     = new Date().toISOString().slice(0, 10);
+  const yesterday = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); })();
+  const notifKey  = `gymbros_notif_shown_${p.id}_${today}`;
+  if (sessionStorage.getItem(notifKey)) return;
+  sessionStorage.setItem(notifKey, '1');
+
+  const dates      = getAllSessionDates(p);
+  const trainedToday = dates.includes(today);
+  const streak     = getStreak(p);
+
+  // 🔥 Racha en peligro: entrenaste ayer, tienes racha ≥ 2, pero no hoy
+  if (!trainedToday && dates.includes(yesterday) && streak >= 2) {
+    setTimeout(() => _sendNotif('🔥 ¡Racha en peligro!', `Llevas ${streak} días seguidos. ¡No la rompas hoy!`), 3000);
+    return;
+  }
+
+  // 💪 Bros entrenaron hoy, tú no
+  if (!trainedToday) {
+    const brosHoy = state.profiles.filter(bro => {
+      if (bro.id === p.id) return false;
+      ensureRoutines(bro);
+      return getAllSessionDates(bro).includes(today);
+    });
+    if (brosHoy.length) {
+      const nombres = brosHoy.map(b => b.name).join(' y ');
+      setTimeout(() => _sendNotif('💪 Tus bros ya están en ello', `${nombres} ya ${brosHoy.length === 1 ? 'ha' : 'han'} entrenado hoy. ¿Y tú?`), 3000);
+    }
+  }
+}
+
 function showMain() {
   const p = profile();
   if (!p) { showScreen('login'); renderLogin(); return; }
@@ -2509,6 +2576,7 @@ function showMain() {
   switchTab('entrenos');
   showMuscleGrid();
   showMotivationalBanner();
+  checkAndNotify();
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -2556,6 +2624,22 @@ function renderConfig() {
   // PIN button label
   const pinBtn = document.getElementById('cfg-pin-btn');
   if (pinBtn && p) pinBtn.textContent = p.pinHash ? '🔓 Cambiar PIN' : '🔒 Crear PIN';
+
+  // Notifications button
+  const notifBtn = document.getElementById('cfg-notif-btn');
+  if (notifBtn) {
+    if (!('Notification' in window)) {
+      notifBtn.textContent = 'No soportado';
+      notifBtn.disabled = true;
+    } else if (Notification.permission === 'denied') {
+      notifBtn.textContent = 'Bloqueadas';
+      notifBtn.disabled = true;
+    } else if (Notification.permission === 'granted' && localStorage.getItem('gymbros_notif') === '1') {
+      notifBtn.textContent = 'Activadas ✓';
+    } else {
+      notifBtn.textContent = 'Activar';
+    }
+  }
 }
 
 // ── MUSCLE GROUPS ─────────────────────────────────────────────
@@ -5922,7 +6006,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=88', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=89', { updateViaCache: 'none' }).then(reg => {
       // Forzar comprobación inmediata al cargar
       reg.update();
       // Y también cada vez que la app vuelve al foco
