@@ -665,7 +665,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v79</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v80</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -817,7 +817,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v79</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v80</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1209,12 +1209,12 @@ header {
 
 <!-- MODAL: Guía de uso -->
 <div class="modal-overlay" id="modal-guide" style="align-items:flex-start;padding:0">
-  <div class="modal" style="max-width:100%;width:100%;min-height:100dvh;border-radius:0;margin:0;display:flex;flex-direction:column">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+  <div class="modal" style="max-width:100%;width:100%;height:100dvh;border-radius:0;margin:0;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">
       <h3 style="margin:0">📖 Guía de GymBros</h3>
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-guide')">✕ Cerrar</button>
     </div>
-    <div style="flex:1;overflow-y:auto">
+    <div style="flex:1;overflow-y:auto;min-height:0">
 
       <details class="guide-section">
         <summary>🏋️ Grupos musculares y ejercicios</summary>
@@ -3148,7 +3148,7 @@ function renderActiveSession() {
       </div>
       <button class="btn btn-ghost btn-sm" onclick="cancelSession()">✕ Descartar</button>
     </div>
-    <div id="rest-timer-bar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px"></div>
+    <div id="rest-timer-bar" style="display:none"></div>
     ${exBlocks}
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn btn-ghost" style="flex:1" onclick="saveSessionProgress()">💾 Guardar progreso</button>
@@ -3176,25 +3176,27 @@ function startRestTimer() {
 }
 function clearRestTimer() {
   if (_restTimer) { clearInterval(_restTimer); _restTimer = null; }
-  const bar = document.getElementById('rest-timer-bar');
-  if (bar) bar.style.display = 'none';
+  const float = document.getElementById('rest-timer-float');
+  if (float) float.style.display = 'none';
 }
 function _updateRestBar(s) {
-  const bar = document.getElementById('rest-timer-bar');
-  if (!bar) return;
-  bar.style.display = '';
+  const float = document.getElementById('rest-timer-float');
+  const inner = document.getElementById('rest-timer-float-inner');
+  if (!float || !inner) return;
+  float.style.display = '';
   const mins = Math.floor(s / 60), secs = s % 60;
   const pct = Math.round((s / _restDuration) * 100);
-  bar.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <span style="font-size:13px;font-weight:700">⏱ ${mins}:${String(secs).padStart(2,'0')} <span style="font-weight:400;font-size:11px;color:var(--muted)">descansando</span></span>
-      <div style="display:flex;gap:6px;align-items:center">
-        ${[60,90,120].map(d=>`<button onclick="_restDuration=${d};startRestTimer()" style="font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:${d===_restDuration?'var(--accent)':'var(--surface)'};color:${d===_restDuration?'#000':'var(--text)'}">${d}s</button>`).join('')}
-        <button onclick="clearRestTimer()" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface)">✕</button>
+  const accent = s <= 10 ? '#ef4444' : 'var(--accent)';
+  inner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:${accent}">⏱ ${mins}:${String(secs).padStart(2,'0')}</span>
+      <div style="display:flex;gap:5px;align-items:center">
+        ${[60,90,120].map(d=>`<button onclick="_restDuration=${d};startRestTimer()" style="font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:${d===_restDuration?'var(--accent)':'var(--surface)'};color:${d===_restDuration?'#000':'var(--text)'}">${d}s</button>`).join('')}
+        <button onclick="clearRestTimer()" style="font-size:13px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface)">✕</button>
       </div>
     </div>
-    <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
-      <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;transition:width 1s linear"></div>
+    <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${accent};border-radius:3px;transition:width 1s linear"></div>
     </div>`;
 }
 
@@ -5551,5 +5553,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- Rest timer floating chip -->
+<div id="rest-timer-float" style="display:none;position:fixed;bottom:70px;left:12px;right:12px;z-index:150;pointer-events:none">
+  <div id="rest-timer-float-inner" style="background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto"></div>
+</div>
 </body>
 </html>
