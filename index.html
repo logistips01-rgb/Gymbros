@@ -580,6 +580,33 @@ header {
 </head>
 <body>
 
+<!-- PWA install banner -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;padding:12px;background:var(--surface);border-top:1px solid var(--accent);box-shadow:0 -4px 24px rgba(0,0,0,0.4)">
+  <div id="pwa-banner-android" style="display:none;align-items:center;gap:12px">
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:14px">Instalar GymBros</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Añádela a tu pantalla de inicio para acceso rápido</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="pwaDismiss()" style="flex-shrink:0">Ahora no</button>
+    <button class="btn btn-accent btn-sm" onclick="pwaInstall()" style="flex-shrink:0">Instalar</button>
+  </div>
+  <div id="pwa-banner-ios" style="display:none;flex-direction:column;gap:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-weight:700;font-size:14px">Instalar GymBros en tu iPhone</div>
+      <button onclick="pwaDismiss()" style="background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6">
+      Pulsa <strong style="color:var(--text)">􀈂 Compartir</strong> en Safari → <strong style="color:var(--text)">"Añadir a pantalla de inicio"</strong>
+    </div>
+    <div style="display:flex;gap:10px;font-size:22px;padding:4px 0">
+      <span>1️⃣</span><span style="font-size:13px;color:var(--muted);align-self:center">Toca el icono de compartir (cuadrado con flecha arriba)</span>
+    </div>
+    <div style="display:flex;gap:10px;font-size:22px">
+      <span>2️⃣</span><span style="font-size:13px;color:var(--muted);align-self:center">Desplázate hasta "Añadir a pantalla de inicio" y pulsa</span>
+    </div>
+  </div>
+</div>
+
 <!-- ── LOADING ── -->
 <div id="loading">
   <div class="logo-spin">GYM<span>BROS</span></div>
@@ -665,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v81</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v82</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -817,7 +844,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v81</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v82</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -5534,6 +5561,54 @@ if (!_grp) {
 } else {
   subscribeToProfiles();
 }
+
+// ── PWA INSTALL ───────────────────────────────────────────────
+let _pwaPrompt = null;
+const _pwaDismissKey = 'gymbros_pwa_dismissed';
+
+function _isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function _isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  if (!sessionStorage.getItem(_pwaDismissKey)) _showPwaBanner('android');
+});
+
+function _showPwaBanner(type) {
+  const banner = document.getElementById('pwa-banner');
+  const android = document.getElementById('pwa-banner-android');
+  const ios = document.getElementById('pwa-banner-ios');
+  if (!banner) return;
+  android.style.display = type === 'android' ? 'flex' : 'none';
+  ios.style.display    = type === 'ios'     ? 'flex' : 'none';
+  banner.style.display = '';
+}
+
+async function pwaInstall() {
+  if (!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  const { outcome } = await _pwaPrompt.userChoice;
+  _pwaPrompt = null;
+  document.getElementById('pwa-banner').style.display = 'none';
+  if (outcome === 'accepted') showToast('¡GymBros instalada! 🎉');
+}
+
+function pwaDismiss() {
+  sessionStorage.setItem(_pwaDismissKey, '1');
+  document.getElementById('pwa-banner').style.display = 'none';
+}
+
+// iOS: mostrar si es Safari en iOS y no está instalada
+window.addEventListener('load', () => {
+  if (_isIos() && !_isInStandaloneMode() && !sessionStorage.getItem(_pwaDismissKey)) {
+    setTimeout(() => _showPwaBanner('ios'), 3000);
+  }
+});
 
 async function forceSwUpdate() {
   if (!('serviceWorker' in navigator)) { showToast('SW no disponible'); return; }
