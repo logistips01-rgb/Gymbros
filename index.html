@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v86</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v87</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -847,7 +847,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v86</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v87</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -5312,24 +5312,31 @@ function renderStats() {
   const p = profile();
   ensureRoutines(p);
 
-  // Entrenos libres
-  const allEx       = p.muscles.flatMap(m => m.exercises);
-  const entrenoDates = allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
-  const entrenoSets  = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
-  const entrenoVol   = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, st) => c + (st.reps||0)*(st.kg||0), 0), 0), 0);
-  const entrenoKgs   = allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(st => st.kg||0)));
+  const allEx = p.muscles.flatMap(m => m.exercises);
 
-  // Rutinas (gymSessions)
-  const rutinaDates  = p.gymSessions.map(s => s.date.slice(0,10));
-  const rutinaAllSets= p.gymSessions.flatMap(s => s.exercises.flatMap(e => (e.sets||[]).map(st => ({...st, type: e.type||'normal'}))));
-  const rutinaVol    = rutinaAllSets.filter(s => s.type === 'normal').reduce((a, s) => a + (s.reps||0)*(s.kg||0), 0);
-  const rutinaKgs    = rutinaAllSets.filter(s => s.type === 'normal').map(s => s.kg||0);
+  // Días que ya tienen una gymSession (rutina o sesión libre finalizada)
+  // → para esos días NO contamos ex.sessions y evitar doble conteo
+  const gymSessionDates = new Set(p.gymSessions.map(s => s.date.slice(0,10)));
 
-  // Combinados
+  // ex.sessions: solo días sin gymSession
+  const freeEx = allEx.flatMap(e => e.sessions.filter(s => !gymSessionDates.has(s.date.slice(0,10))));
+  const entrenoDates = freeEx.map(s => s.date.slice(0,10));
+  const entrenoSets  = freeEx.reduce((a, s) => a + s.sets.length, 0);
+  const entrenoVol   = freeEx.reduce((a, s) => a + s.sets.reduce((c, st) => c + (st.reps||0)*(st.kg||0), 0), 0);
+  const entrenoKgs   = freeEx.flatMap(s => s.sets.map(st => st.kg||0));
+
+  // gymSessions (rutinas + sesiones libres finalizadas)
+  const rutinaDates   = p.gymSessions.map(s => s.date.slice(0,10));
+  const rutinaAllSets = p.gymSessions.flatMap(s => s.exercises.flatMap(e => (e.sets||[]).map(st => ({...st, type: e.type||'normal'}))));
+  const rutinaVol     = rutinaAllSets.filter(s => s.type === 'normal').reduce((a, s) => a + (s.reps||0)*(s.kg||0), 0);
+  const rutinaKgs     = rutinaAllSets.filter(s => s.type === 'normal').map(s => s.kg||0);
+
+  // Combinados sin doble conteo
   const allDates  = new Set([...entrenoDates, ...rutinaDates]);
   const totalSets = entrenoSets + rutinaAllSets.length;
   const totalVol  = Math.round(entrenoVol + rutinaVol);
   const bestKg    = Math.max(0, ...[...entrenoKgs, ...rutinaKgs]);
+  const rutinas   = p.gymSessions.filter(s => s.routineId).length;
 
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-card"><div class="stat-v">${p.muscles.length}</div><div class="stat-l">Grupos</div></div>
@@ -5338,16 +5345,19 @@ function renderStats() {
     <div class="stat-card"><div class="stat-v">${totalSets}</div><div class="stat-l">Series</div></div>
     <div class="stat-card"><div class="stat-v">${totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'t' : totalVol+'kg'}</div><div class="stat-l">Volumen total</div></div>
     <div class="stat-card"><div class="stat-v">${bestKg > 0 ? bestKg+'kg' : '—'}</div><div class="stat-l">Mayor peso</div></div>
-    <div class="stat-card"><div class="stat-v">${p.gymSessions.length}</div><div class="stat-l">Sesiones rutina</div></div>
+    <div class="stat-card"><div class="stat-v">${rutinas}</div><div class="stat-l">Rutinas hechas</div></div>
     <div class="stat-card"><div class="stat-v">${getStreak(p) > 0 ? '🔥'+getStreak(p) : '—'}</div><div class="stat-l">Racha días</div></div>
     ${(()=>{ const r=getProfileBest1RM(p); return r.rm>0?`<div class="stat-card" style="grid-column:span 2"><div class="stat-v">${r.rm}kg</div><div class="stat-l">1RM est. · ${r.ex}</div></div>`:''; })()}`;
 
-  // Muscle groups bar chart (entrenos libres)
-  const entries = p.muscles.map(m => ({
-    name: `${m.icon} ${m.name}`,
-    sessions: new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size,
-    exCount: m.exercises.length
-  })).sort((a, b) => b.sessions - a.sessions);
+  // Muscle groups bar chart — unique training days per muscle (any source)
+  const entries = p.muscles.map(m => {
+    const freeDates = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10))));
+    const gymDates  = new Set(p.gymSessions.flatMap(s =>
+      s.exercises.filter(e => m.exercises.some(me => me.name === e.name)).map(e => s.date.slice(0,10))
+    ));
+    const days = new Set([...freeDates, ...gymDates]).size;
+    return { name: `${m.icon} ${m.name}`, sessions: days, exCount: m.exercises.length };
+  }).sort((a, b) => b.sessions - a.sessions);
   const maxS = entries.length ? Math.max(1, ...entries.map(e => e.sessions)) : 1;
 
   // Rutinas usage
@@ -5754,14 +5764,17 @@ function checkNewRecords(sess, previousSessions) {
 function getProfileStats(p) {
   ensureRoutines(p);
 
-  // Entrenos tab data
   const allEx = p.muscles.flatMap(m => m.exercises);
-  const entrenoDates  = allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
-  const entrenoVol    = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.reduce((c, set) => c + (set.reps||0)*(set.kg||0), 0), 0), 0);
-  const entrenoKgs    = allEx.flatMap(e => e.sessions.flatMap(s => s.sets.map(set => set.kg||0)));
-  const entrenoSets   = allEx.reduce((a, e) => a + e.sessions.reduce((b, s) => b + s.sets.length, 0), 0);
 
-  // Rutinas gymSessions data
+  // Días con gymSession → no contar ex.sessions para esos días (evita doble conteo)
+  const gymSessionDates = new Set(p.gymSessions.map(s => s.date.slice(0,10)));
+
+  const freeEx      = allEx.flatMap(e => e.sessions.filter(s => !gymSessionDates.has(s.date.slice(0,10))));
+  const entrenoDates = freeEx.map(s => s.date.slice(0,10));
+  const entrenoVol   = freeEx.reduce((a, s) => a + s.sets.reduce((c, st) => c + (st.reps||0)*(st.kg||0), 0), 0);
+  const entrenoKgs   = freeEx.flatMap(s => s.sets.map(st => st.kg||0));
+  const entrenoSets  = freeEx.reduce((a, s) => a + s.sets.length, 0);
+
   const rutinaDates   = p.gymSessions.map(s => s.date.slice(0,10));
   const rutinaAllSets = p.gymSessions.flatMap(s => s.exercises.flatMap(e => (e.sets || []).map(st => ({ ...st, type: e.type || 'normal' }))));
   const rutinaVol     = rutinaAllSets.filter(s => s.type === 'normal').reduce((a, s) => a + (s.reps || 0) * (s.kg || 0), 0);
@@ -5909,7 +5922,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=86', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=87', { updateViaCache: 'none' }).then(reg => {
       // Forzar comprobación inmediata al cargar
       reg.update();
       // Y también cada vez que la app vuelve al foco
