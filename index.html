@@ -364,36 +364,6 @@ header {
 .mstat-label span:last-child { color:#fff; font-weight:600; }
 
 /* ── RANKINGS ── */
-.ranking-grid { display:flex; flex-direction:column; gap:14px; }
-.ranking-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; }
-.ranking-section h3 {
-  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px;
-  letter-spacing:1px; text-transform:uppercase; color:var(--muted);
-  margin-bottom:16px; display:flex; align-items:center; gap:8px;
-}
-.ranking-section h3 span { color:var(--text); }
-.rank-row {
-  display:flex; align-items:center; gap:12px; padding:10px 0;
-  border-bottom:1px solid var(--border);
-}
-.rank-row:last-child { border-bottom:none; }
-.rank-pos { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:22px; width:28px; text-align:center; flex-shrink:0; }
-.rank-pos.gold { color:#fbbf24; }
-.rank-pos.silver { color:#94a3b8; }
-.rank-pos.bronze { color:#cd7f32; }
-.rank-av {
-  width:34px; height:34px; border-radius:50%; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:15px; color:#fff;
-}
-.rank-info { flex:1; min-width:0; }
-.rank-name { font-weight:700; font-size:14px; }
-.rank-sub { font-size:11px; color:var(--muted); margin-top:1px; }
-.rank-bar-wrap { margin-top:5px; }
-.rank-bar-bg { height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; }
-.rank-bar-fill { height:100%; border-radius:3px; transition:width .8s cubic-bezier(.4,0,.2,1); }
-.rank-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:20px; color:#fff; text-align:right; flex-shrink:0; }
-.rank-val small { font-size:11px; font-weight:400; color:var(--muted); display:block; }
 
 /* ── RUTINAS ── */
 .routines-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
@@ -453,18 +423,6 @@ header {
 .bro-session-row:last-child { border-bottom:none; }
 .bro-routine-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .bro-routine-row:last-child { border-bottom:none; }
-
-/* Exercise rankings */
-.ex-rank-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
-.ex-rank-section h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-.ex-rank-section h4 span { color:var(--text); }
-.ex-rank-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
-.ex-rank-row:last-child { border-bottom:none; }
-.ex-rank-pos { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:15px; width:22px; text-align:center; flex-shrink:0; }
-.ex-rank-av { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:11px; color:#fff; flex-shrink:0; }
-.ex-rank-name { font-weight:600; font-size:12px; flex:1; }
-.ex-rank-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:16px; color:#fff; flex-shrink:0; }
-.ex-rankings-grid { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
 
 /* ── IA TAB ── */
 .ia-setup-card {
@@ -556,6 +514,37 @@ header {
 .kirk-stag-card { background:#2a1f00; border:1px solid #ca8a04; border-radius:10px; padding:10px 12px; margin:6px 0 4px; font-size:12.5px; }
 .kirk-stag-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:600; color:#fbbf24; margin-bottom:5px; }
 .kirk-stag-body { color:#fef3c7; line-height:1.55; }
+/* Motivational banner */
+.motiv-banner { display:flex; align-items:flex-start; gap:10px; background:var(--surface); border:1px solid var(--accent); border-radius:12px; padding:11px 13px; margin-bottom:12px; animation:fadeIn .4s; }
+.motiv-banner-text { flex:1; font-size:13px; line-height:1.5; font-weight:500; }
+.motiv-banner-close { background:none; border:none; color:var(--muted); font-size:16px; line-height:1; cursor:pointer; padding:0; flex-shrink:0; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+/* Logros */
+.logros-profile-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; }
+.logros-profile-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.logros-av { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:16px; color:#fff; flex-shrink:0; }
+.logros-name { font-weight:700; font-size:15px; flex:1; }
+.logros-count { font-size:11px; color:var(--muted); }
+.logros-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.logro-badge { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 4px; border-radius:10px; background:var(--bg); border:1px solid var(--border); text-align:center; transition:all .2s; }
+.logro-badge.unlocked { background:var(--accent-dim); border-color:var(--accent); }
+.logro-badge.tier2.unlocked { background:#1e1b4b; border-color:#818cf8; }
+.logro-badge.tier3.unlocked { background:#2a1f00; border-color:#f59e0b; }
+.logro-icon { font-size:22px; line-height:1; }
+.logro-badge:not(.unlocked) .logro-icon { filter:grayscale(1); opacity:.35; }
+.logro-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--muted); line-height:1.2; }
+.logro-badge.unlocked .logro-label { color:var(--text); }
+/* Exercise battle (kept) */
+.ex-rank-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
+.ex-rank-section h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.ex-rank-section h4 span { color:var(--text); }
+.ex-rank-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
+.ex-rank-row:last-child { border-bottom:none; }
+.ex-rank-pos { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:15px; width:22px; text-align:center; flex-shrink:0; }
+.ex-rank-av { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:11px; color:#fff; flex-shrink:0; }
+.ex-rank-name { font-weight:600; font-size:12px; flex:1; }
+.ex-rank-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:16px; color:#fff; flex-shrink:0; }
+.ex-rankings-grid { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
 .ia-weekly-card { background:var(--accent-dim); border:1px solid var(--accent); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:13px; line-height:1.6; }
 
 /* ── TOAST ── */
@@ -659,7 +648,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v75</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v76</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -674,7 +663,7 @@ header {
       <button class="tab-btn active" onclick="switchTab('entrenos')">🏋️ Entreno</button>
       <button class="tab-btn" onclick="switchTab('rutinas')">📅 Rutinas</button>
       <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
-      <button class="tab-btn" onclick="switchTab('rankings')">🏆 Rankings</button>
+      <button class="tab-btn" onclick="switchTab('rankings')">🏆 Logros</button>
       <button class="tab-btn" onclick="switchTab('ia')">🤖 IA</button>
       <button class="tab-btn" onclick="switchTab('nutri')">🥗 Nutri</button>
       <button class="tab-btn" onclick="switchTab('config')">⚙️ Config</button>
@@ -683,6 +672,8 @@ header {
     <!-- ENTRENOS -->
     <div class="tab-panel active" id="tab-entrenos">
       <!-- Banner sesión libre activa -->
+      <div id="motiv-banner" style="display:none"></div>
+
       <div id="free-session-bar" style="display:none;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
           <div>
@@ -756,10 +747,10 @@ header {
     <!-- RANKINGS -->
     <div class="tab-panel" id="tab-rankings">
       <div class="sec-header">
-        <span class="sec-title">Rankings globales</span>
+        <span class="sec-title">Logros del grupo</span>
         <div class="live-badge" style="font-size:10px"><div class="live-dot"></div>Tiempo real</div>
       </div>
-      <div class="ranking-grid" id="ranking-grid"></div>
+      <div id="ranking-grid"></div>
     </div>
 
     <!-- NUTRI -->
@@ -809,7 +800,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v75</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v76</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2278,6 +2269,7 @@ function showMain() {
   recoverSession();
   switchTab('entrenos');
   showMuscleGrid();
+  showMotivationalBanner();
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -4970,24 +4962,6 @@ ${buildWorkoutContext()}`;
 }
 
 // ── STATS ──────────────────────────────────────────────────────
-function getStreak(p) {
-  ensureRoutines(p);
-  const allDates = new Set([
-    ...p.gymSessions.map(s => s.date.slice(0,10)),
-    ...p.muscles.flatMap(m => m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10))))
-  ]);
-  let streak = 0;
-  const today = new Date();
-  // Allow today or yesterday as start (don't break streak if not trained yet today)
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    const ds = d.toISOString().slice(0,10);
-    if (allDates.has(ds)) { streak++; }
-    else if (i === 0) { continue; } // haven't trained today yet, check yesterday
-    else { break; }
-  }
-  return streak;
-}
 
 function getMuscleWarnings(p) {
   const today = new Date();
@@ -5086,6 +5060,199 @@ function estimate1RM(kg, reps) {
   return Math.round(kg * (1 + reps / 30));
 }
 
+// ── STREAK & LOGROS ──────────────────────────────────────────
+function getAllSessionDates(p) {
+  ensureRoutines(p);
+  const allEx = p.muscles.flatMap(m => m.exercises);
+  return [...new Set([
+    ...allEx.flatMap(e => e.sessions.map(s => s.date.slice(0,10))),
+    ...(p.gymSessions || []).map(s => s.date.slice(0,10))
+  ])].sort();
+}
+
+function getStreak(p) {
+  const dates = getAllSessionDates(p).reverse();
+  if (!dates.length) return 0;
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate()-1); return d.toISOString().slice(0,10); })();
+  if (dates[0] !== today && dates[0] !== yesterday) return 0;
+  let streak = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i-1]);
+    prev.setUTCDate(prev.getUTCDate()-1);
+    if (dates[i] === prev.toISOString().slice(0,10)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function getLogroStats(p) {
+  ensureRoutines(p);
+  const allEx = p.muscles.flatMap(m => m.exercises);
+  const dates = getAllSessionDates(p);
+
+  const allTypes = [
+    ...allEx.map(e => e.type || 'normal'),
+    ...(p.gymSessions || []).flatMap(s => s.exercises.map(e => e.type || 'normal'))
+  ];
+
+  const weekCounts = {};
+  dates.forEach(d => {
+    const dt = new Date(d), day = dt.getUTCDay() || 7;
+    const mon = new Date(dt); mon.setUTCDate(dt.getUTCDate()-day+1);
+    const k = mon.toISOString().slice(0,10);
+    weekCounts[k] = (weekCounts[k]||0)+1;
+  });
+  const monthCounts = {};
+  dates.forEach(d => { const m=d.slice(0,7); monthCounts[m]=(monthCounts[m]||0)+1; });
+
+  return {
+    sessions: dates.length,
+    streak: getStreak(p),
+    musclesCount: p.muscles.filter(m => m.exercises.some(e => e.sessions.length>0)).length,
+    hasNormal:     allTypes.includes('normal'),
+    hasBodyweight: allTypes.includes('bodyweight'),
+    hasCardio:     allTypes.includes('cardio'),
+    bestWeek:  Math.max(0, ...Object.values(weekCounts)),
+    bestMonth: Math.max(0, ...Object.values(monthCounts)),
+    vol: getProfileStats(p).vol,
+    days: dates.length
+  };
+}
+
+const LOGROS = [
+  { id:'primera',   icon:'🎯', name:'Primera vez',    desc:'1ª sesión registrada',                  tier:1, check:s=>s.sessions>=1 },
+  { id:'x5',        icon:'5️⃣',  name:'5 sesiones',     desc:'5 sesiones completadas',                tier:1, check:s=>s.sessions>=5 },
+  { id:'x10',       icon:'🔟',  name:'10 sesiones',    desc:'10 sesiones completadas',               tier:1, check:s=>s.sessions>=10 },
+  { id:'x25',       icon:'💥',  name:'Veterano',       desc:'25 sesiones completadas',               tier:2, check:s=>s.sessions>=25 },
+  { id:'x50',       icon:'🏆',  name:'Élite',          desc:'50 sesiones completadas',               tier:2, check:s=>s.sessions>=50 },
+  { id:'x100',      icon:'💯',  name:'Centenario',     desc:'100 sesiones completadas',              tier:3, check:s=>s.sessions>=100 },
+  { id:'racha3',    icon:'🔥',  name:'En racha',       desc:'3 días seguidos entrenando',            tier:1, check:s=>s.streak>=3 },
+  { id:'racha7',    icon:'🌟',  name:'Semana de fuego','desc':'7 días seguidos entrenando',           tier:2, check:s=>s.streak>=7 },
+  { id:'musculos3', icon:'🦾',  name:'Variado',        desc:'3 grupos musculares',                   tier:1, check:s=>s.musclesCount>=3 },
+  { id:'musculos5', icon:'🦿',  name:'Completo',       desc:'5 grupos musculares',                   tier:2, check:s=>s.musclesCount>=5 },
+  { id:'todo',      icon:'🏊',  name:'Todoterreno',    desc:'Fuerza + calistenia + cardio',          tier:2, check:s=>s.hasNormal&&s.hasBodyweight&&s.hasCardio },
+  { id:'semana5',   icon:'📅',  name:'Semana perfecta','desc':'5 días en una misma semana',           tier:2, check:s=>s.bestWeek>=5 },
+  { id:'mes10',     icon:'📆',  name:'Constante',      desc:'10 sesiones en un mes',                 tier:2, check:s=>s.bestMonth>=10 },
+  { id:'vol10k',    icon:'📦',  name:'10 toneladas',   desc:'10.000 kg de volumen total',            tier:2, check:s=>s.vol>=10000 },
+  { id:'vol100k',   icon:'🚀',  name:'100 toneladas',  desc:'100.000 kg de volumen total',           tier:3, check:s=>s.vol>=100000 },
+  { id:'dias30',    icon:'🗓️',  name:'30 días activos', desc:'30 días distintos entrenando',         tier:3, check:s=>s.days>=30 },
+];
+
+function renderRankings() {
+  const container = document.getElementById('ranking-grid');
+  if (!container) return;
+
+  if (!state.profiles.length) {
+    container.innerHTML = `<div class="empty-state"><div class="ei">🏆</div><h3>Sin compañeros</h3><p>Únete a un grupo para ver logros compartidos.</p></div>`;
+    return;
+  }
+
+  const profileCards = state.profiles.map((p, idx) => {
+    const color = colorFor(idx);
+    const ls = getLogroStats(p);
+    const unlocked = LOGROS.filter(l => l.check(ls));
+    const badges = LOGROS.map(l => {
+      const ok = l.check(ls);
+      const tierCls = l.tier === 3 ? 'tier3' : l.tier === 2 ? 'tier2' : '';
+      return `<div class="logro-badge ${ok ? 'unlocked '+tierCls : ''}" title="${l.desc}">
+        <div class="logro-icon">${l.icon}</div>
+        <div class="logro-label">${l.name}</div>
+      </div>`;
+    }).join('');
+    return `<div class="logros-profile-card">
+      <div class="logros-profile-head">
+        <div class="logros-av" style="background:${color}">${p.name[0].toUpperCase()}</div>
+        <div class="logros-name">${p.name}</div>
+        <div class="logros-count">${unlocked.length}/${LOGROS.length} logros</div>
+      </div>
+      <div class="logros-grid">${badges}</div>
+    </div>`;
+  }).join('');
+
+  const exRankings = getExerciseRankings();
+  let exSection = '';
+  if (exRankings.length) {
+    const medals = ['🥇','🥈','🥉'];
+    const exHtml = exRankings.map(ex => {
+      const sorted = Object.values(ex.byProfile).sort((a,b) => b.best - a.best);
+      const maxVal = sorted[0].best || 1;
+      const rows = sorted.map((e,i) => `
+        <div class="ex-rank-row">
+          <div class="ex-rank-pos">${medals[i]||(i+1)+'º'}</div>
+          <div class="ex-rank-av" style="background:${e.color}">${e.name[0].toUpperCase()}</div>
+          <div class="ex-rank-name">${e.name}
+            <div style="margin-top:3px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+              <div style="height:100%;border-radius:2px;background:${e.color};width:${maxVal>0?Math.round((e.best/maxVal)*100):0}%;transition:width .6s"></div>
+            </div>
+          </div>
+          <div class="ex-rank-val">${ex.type==='normal'?e.best+'kg':ex.type==='bodyweight'?e.best+'r':e.best+(ex.unit||'m')}</div>
+        </div>`).join('');
+      const icon = ex.type==='normal'?'🏋️':ex.type==='bodyweight'?'💪':'🏊';
+      return `<div class="ex-rank-section"><h4>${icon} <span>${ex.displayName}</span></h4>${rows}</div>`;
+    }).join('');
+    exSection = `<div style="margin-top:6px">
+      <div class="sec-header" style="margin-bottom:10px"><span class="sec-title" style="font-size:13px">⚔️ Batalla por ejercicio</span></div>
+      <div class="ex-rankings-grid">${exHtml}</div>
+    </div>`;
+  }
+
+  container.innerHTML = profileCards + exSection;
+}
+
+// ── MOTIVATIONAL BANNER ──────────────────────────────────────
+function showMotivationalBanner() {
+  const p = profile();
+  if (!p) return;
+  const banner = document.getElementById('motiv-banner');
+  if (!banner) return;
+
+  const todayKey = `motiv_shown_${p.id}_${new Date().toISOString().slice(0,10)}`;
+  if (sessionStorage.getItem(todayKey)) return;
+  sessionStorage.setItem(todayKey, '1');
+
+  const dates = getAllSessionDates(p);
+  const streak = getStreak(p);
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate()-1); return d.toISOString().slice(0,10); })();
+
+  let msg = '';
+
+  if (streak >= 7) {
+    msg = `🌟 ¡${streak} días seguidos! Eres una máquina, ${p.name.split(' ')[0]}. No pares ahora.`;
+  } else if (streak >= 3) {
+    msg = `🔥 ¡${streak} días en racha! Cada día que entrenas te alejas un poco más del que eras.`;
+  } else if (dates[dates.length-1] === today) {
+    msg = `💪 Ya estás en modo beast hoy. Que no te gane nadie del grupo.`;
+  } else if (dates[dates.length-1] === yesterday) {
+    msg = `⚡ Ayer la rompiste. ¿A por otro hoy?`;
+  } else if (dates.length > 0) {
+    const lastDate = dates[dates.length-1];
+    const diffDays = Math.round((new Date(today) - new Date(lastDate)) / 86400000);
+    if (diffDays === 2) {
+      msg = `📅 Llevas 2 días sin entrenar. Tu cuerpo ya te está esperando.`;
+    } else if (diffDays <= 5) {
+      msg = `⏳ ${diffDays} días sin aparecer. Cada día que pasa es más duro volver, ¡dale!`;
+    } else {
+      msg = `🚨 Hace ${diffDays} días que no entrenas. El descanso mola, pero ya es hora de volver.`;
+    }
+  } else {
+    msg = `🎯 Bienvenido a GymBros. Registra tu primera sesión y empieza a construir tu historial.`;
+  }
+
+  banner.innerHTML = `<div class="motiv-banner">
+    <div class="motiv-banner-text">${msg}</div>
+    <button class="motiv-banner-close" onclick="document.getElementById('motiv-banner').style.display='none'">✕</button>
+  </div>`;
+  banner.style.display = 'block';
+
+  setTimeout(() => {
+    banner.style.transition = 'opacity .5s';
+    banner.style.opacity = '0';
+    setTimeout(() => { banner.style.display = 'none'; banner.style.opacity = '1'; banner.style.transition = ''; }, 500);
+  }, 6000);
+}
+
 function getProfileBest1RM(p) {
   ensureRoutines(p);
   let best = 0, bestEx = '';
@@ -5144,72 +5311,6 @@ function getProfileStats(p) {
   return { sessions, vol, bestKg, days, totalSets, bestRM };
 }
 
-function renderRankings() {
-  const container = document.getElementById('ranking-grid');
-  if (state.profiles.length < 2) {
-    container.innerHTML = `<div class="empty-state"><div class="ei">🏆</div><h3>Faltan compañeros</h3><p>Necesitas al menos 2 perfiles<br>para ver los rankings.</p></div>`;
-    return;
-  }
-  const data = state.profiles.map((p, idx) => ({ ...p, idx, color: colorFor(idx), stats: getProfileStats(p) }));
-  const sections = [
-    { icon: '💥', title: 'Volumen total',   key: 'vol',     fmt: v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg', sub: d => `${d.stats.sessions} sesiones` },
-    { icon: '🗓️', title: 'Días activos',    key: 'days',    fmt: v => v + ' días', sub: d => `${d.stats.totalSets} series` },
-    { icon: '🏋️', title: 'Mayor peso',      key: 'bestKg',  fmt: v => v > 0 ? v+'kg' : '—', sub: d => `${d.stats.sessions} sesiones` },
-    { icon: '💪', title: '1RM estimado',    key: 'bestRM',  fmt: v => v > 0 ? v+'kg' : '—', sub: d => { const r=getProfileBest1RM(d); return r.ex||'sin datos'; } },
-    { icon: '🔁', title: 'Días entrenados', key: 'sessions', fmt: v => v + ' días', sub: d => `${d.stats.totalSets} series` }
-  ];
-  const medals = ['🥇', '🥈', '🥉'];
-  const posClass = ['gold', 'silver', 'bronze', ''];
-
-  container.innerHTML = sections.map(sec => {
-    const sorted = [...data].sort((a, b) => b.stats[sec.key] - a.stats[sec.key]);
-    const maxVal = sorted[0].stats[sec.key] || 1;
-    const rows = sorted.map((d, i) => `
-      <div class="rank-row">
-        <div class="rank-pos ${posClass[i] || ''}">${medals[i] || (i+1)+'º'}</div>
-        <div class="rank-av" style="background:${d.color}">${d.name[0].toUpperCase()}</div>
-        <div class="rank-info">
-          <div class="rank-name">${d.name}</div>
-          <div class="rank-sub">${sec.sub(d)}</div>
-          <div class="rank-bar-wrap">
-            <div class="rank-bar-bg">
-              <div class="rank-bar-fill" style="background:${d.color};width:${maxVal > 0 ? Math.round((d.stats[sec.key]/maxVal)*100) : 0}%"></div>
-            </div>
-          </div>
-        </div>
-        <div class="rank-val">${sec.fmt(d.stats[sec.key])}</div>
-      </div>`).join('');
-    return `<div class="ranking-section"><h3>${sec.icon} <span>${sec.title}</span></h3>${rows}</div>`;
-  }).join('');
-
-  // Exercise rankings
-  const exRankings = getExerciseRankings();
-  if (exRankings.length) {
-    const medals = ['🥇', '🥈', '🥉'];
-    const exHtml = exRankings.map(ex => {
-      const sorted = Object.values(ex.byProfile).sort((a, b) => b.best - a.best);
-      const maxVal = sorted[0].best || 1;
-      const rows = sorted.map((e, i) => `
-        <div class="ex-rank-row">
-          <div class="ex-rank-pos">${medals[i] || (i+1)+'º'}</div>
-          <div class="ex-rank-av" style="background:${e.color}">${e.name[0].toUpperCase()}</div>
-          <div class="ex-rank-name">${e.name}
-            <div style="margin-top:3px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
-              <div style="height:100%;border-radius:2px;background:${e.color};width:${maxVal > 0 ? Math.round((e.best/maxVal)*100) : 0}%;transition:width .6s"></div>
-            </div>
-          </div>
-          <div class="ex-rank-val">${ex.type==='normal' ? e.best+'kg' : ex.type==='bodyweight' ? e.best+'r' : e.best+(ex.unit||'m')}</div>
-        </div>`).join('');
-      const icon = ex.type === 'normal' ? '🏋️' : ex.type === 'bodyweight' ? '💪' : '🏊';
-      return `<div class="ex-rank-section"><h4>${icon} <span>${ex.displayName}</span></h4>${rows}</div>`;
-    }).join('');
-    container.innerHTML += `
-      <div class="ranking-section">
-        <h3>⚔️ <span>Batalla por ejercicio</span></h3>
-        <div class="ex-rankings-grid">${exHtml}</div>
-      </div>`;
-  }
-}
 
 function getExerciseRankings() {
   const exMap = {};
