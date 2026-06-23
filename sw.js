@@ -1,4 +1,4 @@
-const CACHE = 'gymbros-v80';
+const CACHE = 'gymbros-v81';
 const SHELL = [
   '/Gymbros/',
   '/Gymbros/index.html',
@@ -21,6 +21,10 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {

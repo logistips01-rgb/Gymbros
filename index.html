@@ -665,7 +665,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v80</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v81</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -817,10 +817,11 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v80</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v81</span>
         </div>
-        <div style="margin-top:10px">
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
+          <button class="btn btn-ghost" style="width:100%" onclick="forceSwUpdate()">🔄 Forzar actualización</button>
         </div>
       </div>
     </div>
@@ -5534,10 +5535,31 @@ if (!_grp) {
   subscribeToProfiles();
 }
 
+async function forceSwUpdate() {
+  if (!('serviceWorker' in navigator)) { showToast('SW no disponible'); return; }
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) { showToast('Sin SW registrado'); return; }
+    showToast('Buscando actualización…');
+    await reg.update();
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else if (reg.installing) {
+      reg.installing.addEventListener('statechange', e => {
+        if (e.target.state === 'installed') e.target.postMessage({ type: 'SKIP_WAITING' });
+      });
+    } else {
+      showToast('Ya tienes la última versión ✓');
+    }
+  } catch(e) { showToast('Error al actualizar'); }
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      // Comprobar actualizaciones cada vez que la app vuelve al foco
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+      // Forzar comprobación inmediata al cargar
+      reg.update();
+      // Y también cada vez que la app vuelve al foco
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') reg.update();
       });
