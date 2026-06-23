@@ -535,6 +535,22 @@ header {
 .logro-badge:not(.unlocked) .logro-icon { filter:grayscale(1); opacity:.35; }
 .logro-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--muted); line-height:1.2; }
 .logro-badge.unlocked .logro-label { color:var(--text); }
+/* Rankings */
+.rnk-group-label { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin:16px 0 8px; }
+.rnk-grid { display:flex; flex-direction:column; gap:10px; }
+.rnk-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+.rnk-title { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; letter-spacing:.5px; color:var(--muted); margin-bottom:12px; }
+.rnk-title span { color:var(--text); }
+.rnk-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.rnk-row:last-child { border-bottom:none; }
+.rnk-pos { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:18px; width:26px; text-align:center; flex-shrink:0; }
+.rnk-av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:13px; color:#fff; flex-shrink:0; }
+.rnk-info { flex:1; min-width:0; }
+.rnk-name { font-weight:700; font-size:13px; }
+.rnk-sub { font-size:10px; color:var(--muted); margin-top:1px; }
+.rnk-bar-bg { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-top:5px; }
+.rnk-bar-fill { height:100%; border-radius:2px; transition:width .7s cubic-bezier(.4,0,.2,1); }
+.rnk-val { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:17px; color:#fff; flex-shrink:0; text-align:right; }
 /* Exercise battle (kept) */
 .ex-rank-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
 .ex-rank-section h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
@@ -649,7 +665,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v77</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v78</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -801,7 +817,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v77</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v78</span>
         </div>
         <div style="margin-top:10px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -5145,6 +5161,95 @@ const LOGROS = [
   { id:'dias30',    icon:'🗓️',  name:'30 días activos', desc:'30 días distintos entrenando',         tier:3, check:s=>s.days>=30 },
 ];
 
+function getRankingData() {
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const lastMonth = (() => { const d = new Date(); d.setUTCMonth(d.getUTCMonth()-1); return d.toISOString().slice(0,7); })();
+
+  return state.profiles.map((p, idx) => {
+    ensureRoutines(p);
+    const color = colorFor(idx);
+    const allEx = p.muscles.flatMap(m => m.exercises);
+
+    // Fuerza: kg×reps volume, normal exercises only
+    let fuerza = 0;
+    allEx.filter(e => (e.type||'normal') === 'normal').forEach(e =>
+      e.sessions.forEach(s => s.sets.forEach(st => fuerza += (st.reps||0)*(st.kg||0))));
+    (p.gymSessions||[]).forEach(gs => gs.exercises.filter(e => (e.type||'normal') === 'normal').forEach(e =>
+      (e.sets||[]).forEach(st => fuerza += (st.reps||0)*(st.kg||0))));
+    fuerza = Math.round(fuerza);
+
+    // Calistenia: total reps, bodyweight only
+    let calistenia = 0;
+    allEx.filter(e => e.type === 'bodyweight').forEach(e =>
+      e.sessions.forEach(s => s.sets.forEach(st => calistenia += st.reps||0)));
+    (p.gymSessions||[]).forEach(gs => gs.exercises.filter(e => e.type === 'bodyweight').forEach(e =>
+      (e.sets||[]).forEach(st => calistenia += st.reps||0)));
+
+    // Cardio: km (m→km, skip min)
+    let cardio = 0;
+    const sumCardio = sets => sets.forEach(st => {
+      if (st.unit === 'km') cardio += st.value||0;
+      else if (st.unit === 'm') cardio += (st.value||0)/1000;
+    });
+    allEx.filter(e => e.type === 'cardio').forEach(e => e.sessions.forEach(s => sumCardio(s.sets)));
+    (p.gymSessions||[]).forEach(gs => gs.exercises.filter(e => e.type === 'cardio').forEach(e => sumCardio(e.sets||[])));
+    cardio = Math.round(cardio*10)/10;
+
+    // Racha actual
+    const streak = getStreak(p);
+
+    // Sesiones este mes (unique days)
+    const mesActivo = getAllSessionDates(p).filter(d => d.slice(0,7) === thisMonth).length;
+
+    // Progresión: mejor mejora % en peso respecto al mes anterior
+    let mejoraPct = 0, mejoraEx = '';
+    const exMap = {};
+    allEx.filter(e => (e.type||'normal') === 'normal').forEach(e => {
+      const key = e.name.toLowerCase().trim();
+      if (!exMap[key]) exMap[key] = { name: e.name, thisMax: 0, lastMax: 0 };
+      e.sessions.forEach(s => {
+        const m = s.date.slice(0,7);
+        const maxKg = Math.max(0, ...(s.sets||[]).map(st => st.kg||0));
+        if (m === thisMonth && maxKg > exMap[key].thisMax) exMap[key].thisMax = maxKg;
+        if (m === lastMonth && maxKg > exMap[key].lastMax) exMap[key].lastMax = maxKg;
+      });
+    });
+    Object.values(exMap).forEach(ex => {
+      if (ex.lastMax > 0 && ex.thisMax > ex.lastMax) {
+        const pct = Math.round(((ex.thisMax - ex.lastMax) / ex.lastMax) * 100);
+        if (pct > mejoraPct) { mejoraPct = pct; mejoraEx = ex.name; }
+      }
+    });
+
+    return { p, idx, color, fuerza, calistenia, cardio, streak, mesActivo, mejoraPct, mejoraEx };
+  });
+}
+
+function buildRankSection(icon, title, data, key, fmtVal, fmtSub) {
+  const sorted = [...data].filter(d => d[key] > 0).sort((a,b) => b[key] - a[key]);
+  if (sorted.length < 2) return '';
+  const medals = ['🥇','🥈','🥉'];
+  const maxVal = sorted[0][key] || 1;
+  const rows = sorted.map((d,i) => `
+    <div class="rnk-row">
+      <div class="rnk-pos">${medals[i]||(i+1)+'º'}</div>
+      <div class="rnk-av" style="background:${d.color}">${d.p.name[0].toUpperCase()}</div>
+      <div class="rnk-info">
+        <div class="rnk-name">${d.p.name}</div>
+        <div class="rnk-sub">${fmtSub(d)}</div>
+        <div class="rnk-bar-bg"><div class="rnk-bar-fill" style="background:${d.color};width:${Math.round((d[key]/maxVal)*100)}%"></div></div>
+      </div>
+      <div class="rnk-val">${fmtVal(d)}</div>
+    </div>`).join('');
+  return `<div class="rnk-card"><div class="rnk-title">${icon} ${title}</div>${rows}</div>`;
+}
+
+function fmtVol(v) {
+  if (v >= 1000000) return (v/1000000).toFixed(1)+'Mt';
+  if (v >= 1000) return (v/1000).toFixed(1)+'t';
+  return v+'kg';
+}
+
 function renderRankings() {
   const container = document.getElementById('ranking-grid');
   if (!container) return;
@@ -5154,6 +5259,7 @@ function renderRankings() {
     return;
   }
 
+  // ── Logros ──
   const profileCards = state.profiles.map((p, idx) => {
     const color = colorFor(idx);
     const ls = getLogroStats(p);
@@ -5176,6 +5282,45 @@ function renderRankings() {
     </div>`;
   }).join('');
 
+  // ── Rankings ──
+  const rd = getRankingData();
+
+  const consistencia =
+    buildRankSection('🗓️', 'Sesiones este mes', rd, 'mesActivo',
+      d => d.mesActivo + (d.mesActivo===1?' día':' días'),
+      d => `Racha actual: ${d.streak} día${d.streak!==1?'s':''}`) +
+    buildRankSection('🔥', 'Racha activa', rd, 'streak',
+      d => d.streak + (d.streak===1?' día':' días'),
+      d => `${d.mesActivo} sesiones este mes`);
+
+  const disciplinas =
+    buildRankSection('💪', 'Fuerza — volumen total', rd, 'fuerza',
+      d => fmtVol(d.fuerza),
+      d => 'Solo ejercicios con peso') +
+    buildRankSection('🤸 ', 'Calistenia — reps totales', rd, 'calistenia',
+      d => d.calistenia.toLocaleString('es') + ' reps',
+      d => 'Solo peso corporal') +
+    buildRankSection('🏃', 'Cardio — km acumulados', rd, 'cardio',
+      d => d.cardio + ' km',
+      d => 'Distancias en m/km');
+
+  const progresionRows = [...rd].filter(d => d.mejoraPct > 0).sort((a,b) => b.mejoraPct - a.mejoraPct);
+  const progresion = progresionRows.length >= 2 ? (() => {
+    const medals = ['🥇','🥈','🥉'];
+    const rows = progresionRows.map((d,i) => `
+      <div class="rnk-row">
+        <div class="rnk-pos">${medals[i]||(i+1)+'º'}</div>
+        <div class="rnk-av" style="background:${d.color}">${d.p.name[0].toUpperCase()}</div>
+        <div class="rnk-info">
+          <div class="rnk-name">${d.p.name}</div>
+          <div class="rnk-sub">${d.mejoraEx}</div>
+        </div>
+        <div class="rnk-val" style="color:#4ade80">+${d.mejoraPct}%</div>
+      </div>`).join('');
+    return `<div class="rnk-card"><div class="rnk-title">📈 Progresión del mes</div>${rows}</div>`;
+  })() : '';
+
+  // ── Batalla por ejercicio ──
   const exRankings = getExerciseRankings();
   let exSection = '';
   if (exRankings.length) {
@@ -5197,13 +5342,19 @@ function renderRankings() {
       const icon = ex.type==='normal'?'🏋️':ex.type==='bodyweight'?'💪':'🏊';
       return `<div class="ex-rank-section"><h4>${icon} <span>${ex.displayName}</span></h4>${rows}</div>`;
     }).join('');
-    exSection = `<div style="margin-top:6px">
-      <div class="sec-header" style="margin-bottom:10px"><span class="sec-title" style="font-size:13px">⚔️ Batalla por ejercicio</span></div>
-      <div class="ex-rankings-grid">${exHtml}</div>
-    </div>`;
+    exSection = `<div class="rnk-group-label">⚔️ Batalla por ejercicio</div>
+      <div class="ex-rankings-grid">${exHtml}</div>`;
   }
 
-  container.innerHTML = profileCards + exSection;
+  const rankingBlock = (consistencia || disciplinas || progresion) ? `
+    <div class="rnk-group-label">🏆 Rankings</div>
+    <div class="rnk-grid">${consistencia}${disciplinas}${progresion}</div>` : '';
+
+  container.innerHTML = `
+    <div class="rnk-group-label">🎖️ Logros</div>
+    ${profileCards}
+    ${rankingBlock}
+    ${exSection}`;
 }
 
 // ── MOTIVATIONAL BANNER ──────────────────────────────────────
