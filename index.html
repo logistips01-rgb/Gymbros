@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v93</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v94</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -855,7 +855,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v93</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v94</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1244,6 +1244,7 @@ header {
     <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap">
       <button class="btn btn-sm" id="admin-tab-tree" onclick="switchAdminTab('tree')">🌳 Árbol de grupos</button>
       <button class="btn btn-sm" id="admin-tab-users" onclick="switchAdminTab('users')">👥 Usuarios activos</button>
+      <button class="btn btn-sm" id="admin-tab-groups" onclick="switchAdminTab('groups')">🗂️ Gestión de grupos</button>
       <button class="btn btn-sm" id="admin-tab-destacado" onclick="switchAdminTab('destacado')">⭐ Destacado del mes</button>
       <button class="btn btn-sm" id="admin-tab-reto" onclick="switchAdminTab('reto')">⚔️ Reto del mes</button>
     </div>
@@ -1680,7 +1681,7 @@ function openAdminPanel() {
 
 function switchAdminTab(tab) {
   _adminTab = tab;
-  ['tree','users','destacado','reto'].forEach(t => {
+  ['tree','users','groups','destacado','reto'].forEach(t => {
     const btn = document.getElementById(`admin-tab-${t}`);
     if (btn) btn.className = `btn btn-sm${t === tab ? ' btn-accent' : ' btn-ghost'}`;
   });
@@ -1688,6 +1689,7 @@ function switchAdminTab(tab) {
   body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Cargando…</div>';
   if (tab === 'tree') renderAdminTree();
   if (tab === 'users') renderAdminUsers();
+  if (tab === 'groups') renderAdminGroups();
   if (tab === 'destacado') renderAdminDestacado();
   if (tab === 'reto') renderAdminReto();
 }
@@ -1779,6 +1781,85 @@ async function renderAdminUsers() {
       ${html}`;
   } catch(e) {
     body.innerHTML = `<div style="color:#f87171;text-align:center;padding:40px">Error: ${e.message}</div>`;
+  }
+}
+
+async function renderAdminGroups() {
+  const body = document.getElementById('admin-panel-body');
+  try {
+    const snap = await db.collection('groups').get();
+    const groups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    groups.sort((a, b) => (a.generation||1) - (b.generation||1));
+
+    const profileCounts = await Promise.all(
+      groups.map(g => db.collection('groups').doc(g.id).collection('profiles').get().then(s => s.size))
+    );
+
+    const genColors = ['var(--accent)','#4ade80','#60a5fa','#f59e0b'];
+    const myGrp = getGroup();
+    let html = groups.map((g, i) => {
+      const color = genColors[(g.generation||1)-1] || 'var(--muted)';
+      const isOwn = g.id === myGrp?.id;
+      return `
+        <div style="background:var(--card);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:11px;background:${color};color:#000;border-radius:4px;padding:1px 6px;font-weight:700">G${g.generation||1}</span>
+            <span style="font-weight:700;font-size:14px;flex:1">${g.name || g.id}</span>
+            <span style="font-size:11px;color:var(--muted);letter-spacing:2px">${g.code || g.id}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--muted)">${profileCounts[i]} perfil${profileCounts[i]!==1?'es':''}</span>
+            ${profileCounts[i] > 0 ? `
+              <button onclick="adminClearProfiles('${g.id}','${g.name||g.id}')"
+                style="margin-left:auto;font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);cursor:pointer;color:#ef4444">
+                🗑️ Limpiar perfiles
+              </button>` : ''}
+            ${!isOwn ? `
+              <button onclick="adminDeleteGroup('${g.id}','${g.name||g.id}')"
+                style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);cursor:pointer;color:#ef4444">
+                ✕ Eliminar grupo
+              </button>` : `<span style="font-size:11px;color:var(--muted);margin-left:auto">Tu grupo</span>`}
+          </div>
+        </div>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px">
+        ⚠️ Las acciones aquí son irreversibles. Limpiar perfiles elimina todos los usuarios de un grupo. Eliminar grupo borra el grupo y sus perfiles de Firestore.
+      </div>
+      ${html || '<div style="color:var(--muted);text-align:center;padding:40px">Sin grupos</div>'}`;
+  } catch(e) {
+    body.innerHTML = `<div style="color:#f87171;text-align:center;padding:40px">Error: ${e.message}</div>`;
+  }
+}
+
+async function adminClearProfiles(groupId, groupName) {
+  if (!confirm(`¿Eliminar TODOS los perfiles de "${groupName}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    const snap = await db.collection('groups').doc(groupId).collection('profiles').get();
+    if (snap.empty) { showToast('El grupo ya no tiene perfiles'); renderAdminGroups(); return; }
+    const batch = db.batch();
+    snap.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    showToast(`Perfiles de "${groupName}" eliminados ✓`);
+    renderAdminGroups();
+  } catch(e) {
+    showToast('Error: ' + (e.message || e));
+  }
+}
+
+async function adminDeleteGroup(groupId, groupName) {
+  if (!confirm(`¿Eliminar el grupo "${groupName}" y todos sus perfiles? Esta acción no se puede deshacer.`)) return;
+  try {
+    const snap = await db.collection('groups').doc(groupId).collection('profiles').get();
+    const batch = db.batch();
+    snap.docs.forEach(doc => batch.delete(doc.ref));
+    batch.delete(db.collection('groups').doc(groupId));
+    await batch.commit();
+    showToast(`Grupo "${groupName}" eliminado ✓`);
+    renderAdminGroups();
+  } catch(e) {
+    showToast('Error: ' + (e.message || e));
   }
 }
 
@@ -6053,7 +6134,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=93', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=94', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
