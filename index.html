@@ -614,6 +614,36 @@ header {
   <p>Conectando…</p>
 </div>
 
+<!-- ── RETO LANDING ── -->
+<div id="screen-reto" class="screen" style="display:none;justify-content:center;align-items:center;min-height:100vh;padding:24px;background:var(--bg)">
+  <div style="max-width:360px;width:100%;text-align:center">
+    <div class="logo-big" style="margin-bottom:4px">GYM<span>BROS</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:28px;letter-spacing:1px">RETO PERSONAL</div>
+    <div id="reto-landing-card" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px">
+      <div style="font-size:40px;margin-bottom:12px">💪</div>
+      <div id="reto-landing-creator" style="font-size:13px;color:var(--muted);margin-bottom:4px"></div>
+      <div id="reto-landing-exercise" style="font-size:26px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--accent);letter-spacing:1px;margin-bottom:6px"></div>
+      <div id="reto-landing-datetime" style="font-size:14px;color:var(--fg);font-weight:600;margin-bottom:12px"></div>
+      <div id="reto-landing-msg" style="font-size:13px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:16px"></div>
+      <div id="reto-landing-acceptors" style="font-size:12px;color:var(--muted);margin-bottom:4px"></div>
+    </div>
+    <div id="reto-landing-actions">
+      <div class="field" style="margin-bottom:10px">
+        <input type="text" id="reto-accept-name" placeholder="Tu nombre" maxlength="30"
+          style="width:100%;text-align:center;font-size:16px;font-weight:600">
+      </div>
+      <button class="btn btn-accent" style="width:100%;margin-bottom:10px;font-size:16px" onclick="acceptReto()">✅ Aceptar el reto</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="showScreen('group')">Abrir GymBros</button>
+    </div>
+    <div id="reto-landing-accepted" style="display:none;margin-top:8px">
+      <div style="font-size:32px;margin-bottom:8px">🔥</div>
+      <div style="font-size:18px;font-weight:700;color:#4ade80;margin-bottom:6px">¡Reto aceptado!</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Ya estás en la lista. ¡A por ello!</div>
+      <button class="btn btn-ghost" style="width:100%" onclick="showScreen('group')">Abrir GymBros</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── GROUP SCREEN ── -->
 <div id="screen-group" class="screen">
   <div class="logo-big">GYM<span>BROS</span></div>
@@ -700,7 +730,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v96</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v97</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -749,6 +779,7 @@ header {
           <div style="display:flex;gap:6px">
             <button class="btn btn-ghost btn-sm" id="btn-start-free" onclick="startFreeSession()">▶ Iniciar</button>
             <button class="btn btn-ghost btn-sm" onclick="openCreateRoutineFromEntrenos()">📅 Nueva rutina</button>
+            <button class="btn btn-ghost btn-sm" onclick="openRetoModal()">🥊 Reto</button>
             <button class="btn btn-accent btn-sm" onclick="openModal('modal-muscle')">+ Grupo</button>
           </div>
         </div>
@@ -856,7 +887,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v96</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v97</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1241,6 +1272,35 @@ header {
       <button class="btn btn-ghost" onclick="closeModal('modal-routine')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveRoutineModal()">Guardar rutina</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Crear Reto -->
+<div class="modal-overlay" id="modal-reto">
+  <div class="modal" style="max-width:400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h3 style="margin:0">💪 Lanzar reto</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-reto')">✕</button>
+    </div>
+    <div class="field">
+      <label>Ejercicio</label>
+      <input type="text" id="reto-ex" placeholder="Ej: Flexiones, Sentadillas…" maxlength="40" style="width:100%">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="reto-date" style="width:100%">
+      </div>
+      <div class="field">
+        <label>Hora</label>
+        <input type="time" id="reto-time" style="width:100%">
+      </div>
+    </div>
+    <div class="field">
+      <label>Mensaje (opcional)</label>
+      <input type="text" id="reto-msg" placeholder="Ej: ¿Te atreves?" maxlength="80" style="width:100%">
+    </div>
+    <button class="btn btn-accent" style="width:100%;margin-top:4px" onclick="createAndShareReto()">📨 Crear y compartir por WhatsApp</button>
   </div>
 </div>
 
@@ -2681,6 +2741,112 @@ function switchTab(tab) {
   if (tab === 'nutri')    renderNutricion();
   if (tab === 'config')   renderConfig();
   if (tab === 'entrenos') { updateFreeSessionBar(); renderVolGoalCard(); }
+}
+
+// ── RETO PERSONAL ─────────────────────────────────────────────
+let _currentRetoId = null;
+
+function openRetoModal() {
+  // Pre-fill tomorrow's date
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('reto-date').value = tomorrow.toISOString().slice(0, 10);
+  document.getElementById('reto-time').value = '06:00';
+  document.getElementById('reto-ex').value = '';
+  document.getElementById('reto-msg').value = '';
+  openModal('modal-reto');
+}
+
+async function createAndShareReto() {
+  const exercise = document.getElementById('reto-ex').value.trim();
+  const date     = document.getElementById('reto-date').value;
+  const time     = document.getElementById('reto-time').value;
+  const message  = document.getElementById('reto-msg').value.trim();
+  if (!exercise) { showToast('Pon el ejercicio del reto'); return; }
+  if (!date)     { showToast('Elige una fecha'); return; }
+
+  const p = profile();
+  const g = getGroup();
+  if (!p || !g) return;
+
+  const id = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const datetime = date + (time ? 'T' + time : 'T00:00');
+
+  try {
+    await db.collection('retos').doc(id).set({
+      id, exercise, datetime, message,
+      creatorName: p.name,
+      creatorGroupId: g.id,
+      creatorProfileId: p.id,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      acceptors: []
+    });
+
+    closeModal('modal-reto');
+
+    const dateStr = new Date(datetime).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const timeStr = time ? ` a las ${time}` : '';
+    const url = `https://logistips01-rgb.github.io/Gymbros?reto=${id}`;
+    const msg = encodeURIComponent(
+      `💪 ${p.name} te lanza un reto en GymBros!\n\n🏋️ *${exercise}*\n📅 ${dateStr}${timeStr}${message ? '\n\n"' + message + '"' : ''}\n\n👉 ${url}`
+    );
+    window.open(`whatsapp://send?text=${msg}`, '_blank');
+    showToast('Reto creado ✓');
+  } catch(e) {
+    showToast('Error al crear el reto');
+    console.error(e);
+  }
+}
+
+async function loadRetoLanding(retoId) {
+  _currentRetoId = retoId;
+  showScreen('reto');
+  try {
+    const snap = await db.collection('retos').doc(retoId).get();
+    if (!snap.exists) {
+      document.getElementById('reto-landing-card').innerHTML =
+        '<div style="color:var(--muted);font-size:14px">Este reto no existe o ha expirado.</div>';
+      document.getElementById('reto-landing-actions').style.display = 'none';
+      return;
+    }
+    const r = snap.data();
+    const dt = new Date(r.datetime);
+    const dateStr = dt.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const timeStr = r.datetime.includes('T') && r.datetime.slice(11,16) !== '00:00'
+      ? ' a las ' + r.datetime.slice(11, 16) : '';
+
+    document.getElementById('reto-landing-creator').textContent = `${r.creatorName} te lanza un reto`;
+    document.getElementById('reto-landing-exercise').textContent = r.exercise;
+    document.getElementById('reto-landing-datetime').textContent = dateStr + timeStr;
+    document.getElementById('reto-landing-msg').textContent = r.message ? `"${r.message}"` : '';
+    document.getElementById('reto-landing-msg').style.display = r.message ? '' : 'none';
+
+    const acceptors = r.acceptors || [];
+    document.getElementById('reto-landing-acceptors').textContent = acceptors.length
+      ? `✅ ${acceptors.map(a => a.name).join(', ')} ${acceptors.length === 1 ? 'ya ha aceptado' : 'ya han aceptado'}`
+      : 'Sé el primero en aceptar';
+
+    // Pre-fill name if user is logged in
+    const p = profile();
+    if (p) document.getElementById('reto-accept-name').value = p.name;
+  } catch(e) {
+    showToast('Error al cargar el reto');
+  }
+}
+
+async function acceptReto() {
+  const name = document.getElementById('reto-accept-name').value.trim();
+  if (!name) { showToast('Pon tu nombre'); return; }
+  if (!_currentRetoId) return;
+  try {
+    await db.collection('retos').doc(_currentRetoId).update({
+      acceptors: firebase.firestore.FieldValue.arrayUnion({ name, acceptedAt: new Date().toISOString() })
+    });
+    document.getElementById('reto-landing-actions').style.display = 'none';
+    document.getElementById('reto-landing-accepted').style.display = '';
+  } catch(e) {
+    showToast('Error al aceptar el reto');
+  }
 }
 
 // ── DAILY VOLUME GOAL ─────────────────────────────────────────
@@ -6092,6 +6258,12 @@ function showToast(msg) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
+const _retoId = new URL(location.href).searchParams.get('reto');
+if (_retoId) {
+  document.getElementById('loading').style.display = 'none';
+  loadRetoLanding(_retoId);
+} else {
+
 const _grp = getGroup();
 if (!_grp) {
   document.getElementById('loading').style.display = 'none';
@@ -6135,6 +6307,8 @@ if (!_grp) {
     subscribeToProfiles();
   });
 }
+
+} // end reto else
 
 // ── PWA INSTALL ───────────────────────────────────────────────
 let _pwaPrompt = null;
@@ -6205,7 +6379,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=96', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=97', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
