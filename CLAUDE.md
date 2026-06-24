@@ -111,18 +111,22 @@
 ## Modelo de monetización (implementar cuando la red llegue a 100 grupos activos)
 
 ### Principios
-- Los primeros 100 grupos son **fundadores** — gratis para siempre
-- A partir del grupo 101, crear un grupo nuevo tiene coste de **5€/año** (1€/miembro, máx. 5 miembros)
+- Los primeros 100 grupos son **fundadores** — gratis el primer año
+- Al renovar (año 2+), todos pagan igual: **5€/año** (1€/miembro, máx. 5 miembros)
+- A partir del grupo 101, cualquier grupo nuevo paga desde el primer día (sea del Gen que sea)
+- Objetivo: llegar a 100 grupos antes de que acabe el año gratuito
 - Anunciar el modelo desde ya para que la gente entienda el incentivo de invitar
+- Con ~200 grupos pagando: ~1.000€/año brutos → 100€ plataforma (se autofinancia) + 900€ circulan por la red
 
-### Reparto del pago (5€/año por grupo nuevo)
+### Reparto del pago (5€/año por grupo)
 - **10% plataforma** → 0,50€ (cubre Firebase, dominio, Stripe fees, desarrollo)
 - **45% grupo padre** → 2,25€ (quien invitó directamente)
-- **45% cadena ascendente** → 2,25€ repartido entre el resto de niveles hasta Gen 1
-  - Si la cadena tiene 3 niveles arriba: 0,75€ cada uno
-  - Si tiene 2 niveles: 1,125€ cada uno
-  - Si tiene 1 nivel: 2,25€ íntegro a ese nivel
-- Nota: el propietario (Gen 1 de la red principal) participa en el 45% de cadena de todos los grupos descendientes, además del 10% de plataforma
+- **45% cadena ascendente** → 2,25€ repartido a partes iguales entre los niveles restantes hasta Gen 1
+  - Cadena de 3 niveles (ej. Gen 5 → Gen 4 padre + Gen 3 + Gen 2 + Gen 1): 0,75€ cada uno
+  - Cadena de 2 niveles: 1,125€ cada uno
+  - Cadena de 1 nivel: 2,25€ íntegro
+  - Si no hay cadena ascendente (Gen 2 paga): el 45% queda íntegro para plataforma
+- Nota: Gen 1 de la red principal participa en el 45% de cadena de TODOS los grupos descendientes + 10% de plataforma
 
 ### Incentivo viral
 - Invitar 2 grupos → recuperas tu cuota anual (2 × 50% × 5€ = 5€)
