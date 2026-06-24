@@ -692,7 +692,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v89</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v90</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -847,7 +847,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v89</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v90</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2655,16 +2655,21 @@ function renderMuscleGrid() {
   const p = profile();
   const grid = document.getElementById('muscle-grid-view');
   grid.innerHTML = '';
+  const warnings = getMuscleWarnings(p);
+  const warnMap = new Map(warnings.map(w => [w.id, w.daysAgo]));
   p.muscles.forEach(m => {
     const days = new Set(m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size;
     const maxS = Math.max(1, ...p.muscles.map(mm => new Set(mm.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)))).size));
     const pct = Math.round((days / maxS) * 100);
+    const daysAgo = warnMap.get(m.id);
     const card = document.createElement('div');
     card.className = 'muscle-card';
+    if (daysAgo) card.style.borderColor = 'rgba(239,68,68,0.5)';
     const mono = m.name.slice(0,2).toUpperCase();
     card.innerHTML = `
       <div class="mc-watermark">${mono}</div>
       <div class="mc-badge">${mono}</div>
+      ${daysAgo ? `<div style="position:absolute;top:6px;right:6px;font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-radius:4px;padding:1px 5px;font-weight:700">+${daysAgo}d</div>` : ''}
       <div class="mc-name">${m.name}</div>
       <div class="mc-count">${m.exercises.length} ej. · ${days} día${days!==1?'s':''}</div>
       <div class="mc-bar" style="width:${pct}%"></div>`;
@@ -3030,6 +3035,20 @@ function saveSession(exId) {
   // Save to per-exercise history (for progression charts)
   ex.sessions.push({ id: Date.now().toString(), date: new Date().toISOString(), sets });
   autoRetoContrib(ex, type, sets);
+
+  // PR check for free exercises (compare against all prior ex.sessions)
+  if ((type || 'normal') === 'normal') {
+    const newBest1RM = Math.max(0, ...sets.map(s => estimate1RM(s.kg || 0, s.reps || 0)));
+    if (newBest1RM > 0) {
+      const priorBest = Math.max(0, ...ex.sessions.slice(0, -1).flatMap(s =>
+        (s.sets || []).map(st => estimate1RM(st.kg || 0, st.reps || 0))
+      ));
+      if (newBest1RM > priorBest) {
+        setTimeout(() => showToast(`🏆 ¡NUEVO RÉCORD! ${ex.name}: ${newBest1RM}kg (1RM est.)`), 600);
+      }
+    }
+  }
+
   saveCurrentProfile();
 
   // If a free session is active, accumulate into it too
@@ -5382,12 +5401,17 @@ ${buildWorkoutContext()}`;
 function getMuscleWarnings(p) {
   const today = new Date();
   const warnings = [];
+  const muscleNames = new Set(p.muscles.flatMap(m => m.exercises.map(e => e.name)));
   p.muscles.forEach(m => {
-    const allDates = m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
+    const exDates  = m.exercises.flatMap(e => e.sessions.map(s => s.date.slice(0,10)));
+    const gymDates = (p.gymSessions || []).flatMap(s =>
+      s.exercises.filter(e => m.exercises.some(me => me.name === e.name)).map(() => s.date.slice(0,10))
+    );
+    const allDates = [...exDates, ...gymDates];
     if (!allDates.length) return;
     const lastDate = allDates.sort().reverse()[0];
     const daysAgo = Math.floor((today - new Date(lastDate)) / 86400000);
-    if (daysAgo >= 10) warnings.push({ name: `${m.icon} ${m.name}`, daysAgo });
+    if (daysAgo >= 10) warnings.push({ name: `${m.icon} ${m.name}`, daysAgo, id: m.id });
   });
   return warnings.sort((a,b) => b.daysAgo - a.daysAgo);
 }
@@ -6006,7 +6030,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=89', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=90', { updateViaCache: 'none' }).then(reg => {
       // Forzar comprobación inmediata al cargar
       reg.update();
       // Y también cada vez que la app vuelve al foco
