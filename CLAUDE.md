@@ -116,12 +116,13 @@
 - Anunciar el modelo desde ya para que la gente entienda el incentivo de invitar
 
 ### Reparto del pago (5€/año por grupo nuevo)
-- **50%** → grupo que invitó directamente (padre inmediato en el árbol)
-- **50%** → repartido entre el resto de la cadena ascendente (abuelo, bisabuelo… hasta Gen 1)
-  - Si la cadena tiene 3 niveles arriba: ~16,7% cada uno
-  - Si tiene 2 niveles: 25% cada uno
-  - Si tiene 1 nivel: el 50% íntegro a ese nivel
-- Plataforma (propietario) no se queda margen directo — el incentivo es el crecimiento de red
+- **10% plataforma** → 0,50€ (cubre Firebase, dominio, Stripe fees, desarrollo)
+- **45% grupo padre** → 2,25€ (quien invitó directamente)
+- **45% cadena ascendente** → 2,25€ repartido entre el resto de niveles hasta Gen 1
+  - Si la cadena tiene 3 niveles arriba: 0,75€ cada uno
+  - Si tiene 2 niveles: 1,125€ cada uno
+  - Si tiene 1 nivel: 2,25€ íntegro a ese nivel
+- Nota: el propietario (Gen 1 de la red principal) participa en el 45% de cadena de todos los grupos descendientes, además del 10% de plataforma
 
 ### Incentivo viral
 - Invitar 2 grupos → recuperas tu cuota anual (2 × 50% × 5€ = 5€)
