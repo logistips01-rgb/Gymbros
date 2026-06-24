@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v94</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v95</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -855,7 +855,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v94</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v95</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1809,7 +1809,7 @@ async function renderAdminGroups() {
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">
             <span style="font-size:12px;color:var(--muted)">${profileCounts[i]} perfil${profileCounts[i]!==1?'es':''}</span>
-            ${profileCounts[i] > 0 ? `
+            ${profileCounts[i] > 0 && !isOwn ? `
               <button onclick="adminClearProfiles('${g.id}','${g.name||g.id}')"
                 style="margin-left:auto;font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);cursor:pointer;color:#ef4444">
                 🗑️ Limpiar perfiles
@@ -6134,7 +6134,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=94', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=95', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
