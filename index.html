@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v92</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v93</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -855,7 +855,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v92</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v93</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1588,21 +1588,10 @@ async function createGroupAction() {
       open: true
     });
     setGroup({ id: code, name, code, generation });
-    // Show code to user before proceeding
     document.getElementById('grp-created-code').textContent = code;
     document.getElementById('grp-created-name').textContent = name;
     document.getElementById('grp-panel-create').style.display = 'none';
     document.getElementById('grp-panel-created').style.display = '';
-    // Migrate old data if exists
-    try {
-      const oldSnap = await db.collection('profiles').get();
-      if (!oldSnap.empty) {
-        const batch = db.batch();
-        oldSnap.docs.forEach(doc => batch.set(profilesRef().doc(doc.id), doc.data()));
-        await batch.commit();
-        showToast('Datos anteriores migrados ✓');
-      }
-    } catch(e) {}
   } catch(e) {
     console.error('createGroup error:', e);
     showToast('Error al crear el grupo: ' + (e.code || e.message || e)); btn.disabled = false; btn.textContent = 'Crear grupo';
@@ -5976,7 +5965,23 @@ if (!_grp) {
   }
   showScreen('group');
 } else {
-  subscribeToProfiles();
+  // Verify the stored group still exists in Firestore before loading the app
+  // (prevents stale localStorage from a deleted group or someone else's session)
+  db.collection('groups').doc(_grp.id).get().then(snap => {
+    if (snap.exists) {
+      subscribeToProfiles();
+    } else {
+      // Group no longer exists — clear stale state and show group screen
+      setGroup(null);
+      setCU(null);
+      document.getElementById('loading').style.display = 'none';
+      showGroupTab('join');
+      showScreen('group');
+    }
+  }).catch(() => {
+    // Network error — proceed optimistically
+    subscribeToProfiles();
+  });
 }
 
 // ── PWA INSTALL ───────────────────────────────────────────────
@@ -6048,7 +6053,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=92', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=93', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
