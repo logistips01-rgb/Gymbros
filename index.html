@@ -730,7 +730,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v97</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v98</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -779,12 +779,21 @@ header {
           <div style="display:flex;gap:6px">
             <button class="btn btn-ghost btn-sm" id="btn-start-free" onclick="startFreeSession()">▶ Iniciar</button>
             <button class="btn btn-ghost btn-sm" onclick="openCreateRoutineFromEntrenos()">📅 Nueva rutina</button>
-            <button class="btn btn-ghost btn-sm" onclick="openRetoModal()">🥊 Reto</button>
+            <button class="btn btn-ghost btn-sm" onclick="openRetoModal()">🥊 Nuevo reto</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleMisRetos()">📋 Mis retos</button>
             <button class="btn btn-accent btn-sm" onclick="openModal('modal-muscle')">+ Grupo</button>
           </div>
         </div>
         <div class="muscle-grid-view" id="muscle-grid-view"></div>
       </div>
+      <div id="mis-retos-section" style="margin-top:16px;display:none">
+        <div class="sec-header" style="margin-bottom:8px">
+          <span class="sec-title">Mis retos enviados</span>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mis-retos-section').style.display='none'">✕</button>
+        </div>
+        <div id="mis-retos-list"></div>
+      </div>
+
       <div id="view-exercises" style="display:none">
         <div class="breadcrumb">
           <span class="bc-link" onclick="showMuscleGrid()">Grupos</span>
@@ -887,7 +896,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v97</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v98</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2846,6 +2855,47 @@ async function acceptReto() {
     document.getElementById('reto-landing-accepted').style.display = '';
   } catch(e) {
     showToast('Error al aceptar el reto');
+  }
+}
+
+// ── MIS RETOS HISTORY ─────────────────────────────────────────
+async function toggleMisRetos() {
+  const sec = document.getElementById('mis-retos-section');
+  if (sec.style.display !== 'none') { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  const list = document.getElementById('mis-retos-list');
+  const p = profile();
+  if (!p) return;
+  list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Cargando…</div>';
+  try {
+    const snap = await db.collection('retos')
+      .where('creatorProfileId', '==', p.id)
+      .get();
+    if (snap.empty) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Aún no has enviado ningún reto.</div>';
+      return;
+    }
+    const docs = snap.docs.sort((a, b) => (b.data().createdAt || '').localeCompare(a.data().createdAt || '')).slice(0, 20);
+    list.innerHTML = docs.map(doc => {
+      const r = doc.data();
+      const acceptors = r.acceptors || [];
+      const dt = r.datetime ? new Date(r.datetime) : null;
+      const dateStr = dt ? dt.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }) : '';
+      const timeStr = dt ? ` · ${dt.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}` : '';
+      const acceptorTxt = acceptors.length
+        ? `<div style="margin-top:6px;font-size:12px;color:var(--accent)">✅ ${acceptors.map(a => a.name).join(', ')}</div>`
+        : `<div style="margin-top:6px;font-size:12px;color:var(--muted)">Nadie ha aceptado aún</div>`;
+      const link = `https://logistips01-rgb.github.io/Gymbros?reto=${doc.id}`;
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
+        <div style="font-size:18px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--accent);letter-spacing:1px">${r.exercise}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${dateStr}${timeStr}</div>
+        ${r.message ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:4px">"${r.message}"</div>` : ''}
+        ${acceptorTxt}
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="navigator.share ? navigator.share({url:'${link}',title:'Reto GymBros'}) : (navigator.clipboard.writeText('${link}'), showToast('Link copiado'))">🔗 Compartir de nuevo</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Error al cargar retos.</div>';
   }
 }
 
@@ -6379,7 +6429,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=97', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=98', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
