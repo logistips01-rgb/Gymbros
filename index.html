@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v95</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v96</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -741,6 +741,7 @@ header {
 
       <div id="destacado-card" style="margin-bottom:12px"></div>
       <div id="reto-card" style="margin-bottom:12px"></div>
+      <div id="vol-goal-card" style="margin-bottom:12px"></div>
 
       <div id="view-muscles">
         <div class="sec-header">
@@ -855,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v95</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v96</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -867,6 +868,15 @@ header {
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span style="font-size:13px;color:var(--muted)">🔔 Notificaciones</span>
             <button id="cfg-notif-btn" class="btn btn-ghost" style="font-size:12px;padding:4px 12px" onclick="toggleNotifications()">—</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+            <span style="font-size:13px;color:var(--muted)">🎯 Objetivo vol./día</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="cfg-vol-goal" min="0" step="100" placeholder="0"
+                style="width:80px;text-align:right;font-size:13px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--fg)"
+                onchange="saveVolGoal(this.value)">
+              <span style="font-size:12px;color:var(--muted)">kg</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2655,6 +2665,7 @@ function showMain() {
   showMuscleGrid();
   showMotivationalBanner();
   checkAndNotify();
+  renderVolGoalCard();
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -2669,7 +2680,63 @@ function switchTab(tab) {
   if (tab === 'ia')       renderIA();
   if (tab === 'nutri')    renderNutricion();
   if (tab === 'config')   renderConfig();
-  if (tab === 'entrenos') updateFreeSessionBar();
+  if (tab === 'entrenos') { updateFreeSessionBar(); renderVolGoalCard(); }
+}
+
+// ── DAILY VOLUME GOAL ─────────────────────────────────────────
+function getVolGoalKey() { const p = profile(); return p ? `gymbros_vol_goal_${p.id}` : null; }
+function getVolGoal() { const k = getVolGoalKey(); return k ? (parseInt(localStorage.getItem(k)) || 0) : 0; }
+function saveVolGoal(val) {
+  const k = getVolGoalKey();
+  if (!k) return;
+  const v = parseInt(val) || 0;
+  if (v > 0) localStorage.setItem(k, v); else localStorage.removeItem(k);
+  renderVolGoalCard();
+}
+
+function getTodayVol() {
+  const p = profile();
+  if (!p) return 0;
+  ensureRoutines(p);
+  const today = new Date().toISOString().slice(0, 10);
+  // Volume from finalized sessions today (routines + free sessions)
+  const gymVol = (p.gymSessions || [])
+    .filter(s => s.date.slice(0, 10) === today)
+    .flatMap(s => s.exercises.flatMap(e => (e.sets || []).map(st => ({ ...st, type: e.type || 'normal' }))))
+    .filter(st => st.type === 'normal')
+    .reduce((a, st) => a + (st.reps || 0) * (st.kg || 0), 0);
+  // Volume from active free session (not yet finalized)
+  let activeVol = 0;
+  if (activeSession) {
+    activeVol = activeSession.exercises
+      .flatMap(e => (e.sets || []).filter(st => st.done).map(st => ({ ...st, type: e.type || 'normal' })))
+      .filter(st => st.type === 'normal')
+      .reduce((a, st) => a + (st.reps || 0) * (st.kg || 0), 0);
+  }
+  return Math.round(gymVol + activeVol);
+}
+
+function renderVolGoalCard() {
+  const el = document.getElementById('vol-goal-card');
+  if (!el) return;
+  const goal = getVolGoal();
+  const today = getTodayVol();
+  if (!goal) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const pct = Math.min(100, Math.round((today / goal) * 100));
+  const done = today >= goal;
+  const color = done ? '#4ade80' : 'var(--accent)';
+  el.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:700">🎯 Volumen hoy</span>
+        <span style="font-size:13px;font-weight:700;color:${color}">${today >= 1000 ? (today/1000).toFixed(1)+'t' : today+'kg'} / ${goal >= 1000 ? (goal/1000).toFixed(1)+'t' : goal+'kg'}</span>
+      </div>
+      <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;transition:width .4s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;text-align:right">${done ? '✅ ¡Objetivo superado!' : `${pct}% completado`}</div>
+    </div>`;
 }
 
 function renderConfig() {
@@ -2702,6 +2769,10 @@ function renderConfig() {
   // PIN button label
   const pinBtn = document.getElementById('cfg-pin-btn');
   if (pinBtn && p) pinBtn.textContent = p.pinHash ? '🔓 Cambiar PIN' : '🔒 Crear PIN';
+
+  // Volume goal input
+  const volGoalEl = document.getElementById('cfg-vol-goal');
+  if (volGoalEl) volGoalEl.value = getVolGoal() || '';
 
   // Notifications button
   const notifBtn = document.getElementById('cfg-notif-btn');
@@ -6134,7 +6205,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=95', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=96', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
