@@ -621,11 +621,15 @@ header {
   <div class="login-box" style="max-width:360px">
     <div style="display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <button id="grp-tab-create" class="grp-tab active" onclick="showGroupTab('create')">Crear grupo</button>
-      <button id="grp-tab-join"   class="grp-tab"        onclick="showGroupTab('join')">Unirme</button>
+      <button id="grp-tab-join"   class="grp-tab"        onclick="showGroupTab('join')">Unirme a un grupo</button>
     </div>
 
     <!-- Panel: Crear -->
     <div id="grp-panel-create">
+      <div id="grp-invite-notice" style="display:none;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">
+        Crearás un grupo <strong style="color:var(--fg)">nuevo e independiente</strong>, vinculado a <span id="grp-invite-group-name" style="color:var(--accent);font-weight:700"></span>.<br>
+        Si prefieres entrar directamente en ese grupo, usa el tab <strong style="color:var(--fg)">"Unirme a un grupo"</strong> (necesitarás la contraseña).
+      </div>
       <div class="field">
         <label>Nombre del grupo</label>
         <input type="text" id="grp-create-name" placeholder="Ej: Los GymBros" maxlength="30" style="width:100%">
@@ -655,6 +659,10 @@ header {
 
     <!-- Panel: Unirse -->
     <div id="grp-panel-join" style="display:none">
+      <div id="grp-join-invite-banner" style="display:none;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">
+        Vas a unirte al grupo <strong id="grp-join-invite-name" style="color:var(--accent)"></strong>.<br>
+        Introduce la contraseña que te dijo quien te invitó.
+      </div>
       <div class="field">
         <label>Código del grupo</label>
         <input type="text" id="grp-join-code" placeholder="Ej: GYM4K7" maxlength="6" style="width:100%;text-transform:uppercase;letter-spacing:3px;font-size:18px;font-weight:700;text-align:center"
@@ -692,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v91</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v92</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -847,7 +855,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v91</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v92</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1631,7 +1639,7 @@ function shareGroupInvite() {
   const g = getGroup();
   if (!g) return;
   const url = `https://logistips01-rgb.github.io/Gymbros?invite=${g.code}`;
-  const msg = encodeURIComponent(`🏋️ ¡Únete a GymBros!\nCrea tu propio grupo de entrenamiento:\n${url}\n\nUsa el código *${g.code}* al registrarte.`);
+  const msg = encodeURIComponent(`🏋️ ¡Te invito a GymBros!\nAbre el enlace y elige:\n• Unirte directamente a mi grupo (te digo la contraseña)\n• O crear tu propio grupo independiente\n\n👉 ${url}`);
   window.open(`whatsapp://send?text=${msg}`, '_blank');
 }
 
@@ -5948,9 +5956,19 @@ if (!_grp) {
   document.getElementById('loading').style.display = 'none';
   const _invCode = new URL(location.href).searchParams.get('invite') || '';
   if (_invCode) {
-    // Tiene invitación: puede crear su propio grupo o unirse a uno existente
+    // Tiene invitación: puede crear su propio grupo o unirse al grupo del invitador
     document.getElementById('grp-join-code').value = _invCode.toUpperCase();
     showGroupTab('create');
+    // Fetch inviter group name to show contextual info in both tabs
+    db.collection('groups').doc(_invCode.toUpperCase()).get().then(snap => {
+      if (!snap.exists) return;
+      const inviterName = snap.data().name || _invCode.toUpperCase();
+      document.getElementById('grp-invite-notice').style.display = '';
+      document.getElementById('grp-invite-group-name').textContent = inviterName;
+      document.getElementById('grp-join-invite-banner').style.display = '';
+      document.getElementById('grp-join-invite-name').textContent = inviterName;
+      document.getElementById('grp-tab-join').textContent = `Unirme a "${inviterName}"`;
+    }).catch(() => {});
   } else {
     // Sin invitación: solo puede unirse, no crear
     document.getElementById('grp-tab-create').style.display = 'none';
@@ -6030,7 +6048,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=91', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=92', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
