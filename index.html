@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.2</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.3</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.2</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.3</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2775,26 +2775,42 @@ function openTodayVolModal() {
   const today = new Date().toISOString().slice(0, 10);
   const sessions = (p.gymSessions || []).filter(s => s.date.slice(0, 10) === today);
 
-  // Build muscle lookup: exName -> { muscleName, muscleIcon }
   const muscleByEx = {};
   (p.muscles || []).forEach(m => m.exercises.forEach(e => { muscleByEx[e.name] = { name: m.name, icon: m.icon || '💪' }; }));
 
   const fmt = v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg';
+  const fmtKm = v => v >= 1 ? v.toFixed(2).replace(/\.?0+$/,'')+'km' : Math.round(v*1000)+'m';
 
-  // Aggregate by muscle group
+  // Aggregate kg by muscle group (normal exercises only)
   const byMuscle = {};
   sessions.forEach(s => s.exercises.forEach(e => {
-    const vol = (e.sets || []).filter(st => (e.type||'normal') === 'normal').reduce((a, st) => a + (st.reps||0)*(st.kg||0), 0);
+    if ((e.type||'normal') !== 'normal') return;
+    const vol = (e.sets || []).reduce((a, st) => a + (st.reps||0)*(st.kg||0), 0);
     if (!vol) return;
     const m = muscleByEx[e.name] || { name: 'Otros', icon: '🏋️' };
     if (!byMuscle[m.name]) byMuscle[m.name] = { icon: m.icon, vol: 0 };
     byMuscle[m.name].vol += vol;
   }));
 
-  const muscleRows = Object.entries(byMuscle).sort((a, b) => b[1].vol - a[1].vol);
-  const totalVol = muscleRows.reduce((a, [, v]) => a + v.vol, 0);
+  // Aggregate km by cardio exercise
+  const byCardio = {};
+  sessions.forEach(s => s.exercises.forEach(e => {
+    if (e.type !== 'cardio') return;
+    const km = (e.sets || []).reduce((a, st) => {
+      if (st.unit === 'km') return a + (st.value||0);
+      if (st.unit === 'm')  return a + (st.value||0) / 1000;
+      return a;
+    }, 0);
+    if (!km) return;
+    if (!byCardio[e.name]) byCardio[e.name] = 0;
+    byCardio[e.name] += km;
+  }));
 
-  // Build HTML
+  const muscleRows = Object.entries(byMuscle).sort((a, b) => b[1].vol - a[1].vol);
+  const cardioRows = Object.entries(byCardio).sort((a, b) => b[1] - a[1]);
+  const totalVol = muscleRows.reduce((a, [, v]) => a + v.vol, 0);
+  const totalKm  = cardioRows.reduce((a, [, v]) => a + v, 0);
+
   const muscleHTML = muscleRows.length ? `
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por grupo muscular</div>
@@ -2814,14 +2830,31 @@ function openTodayVolModal() {
       }).join('')}
     </div>` : '';
 
+  const cardioHTML = cardioRows.length ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🏃 Cardio</div>
+      ${cardioRows.map(([name, km]) => `
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
+          <span>🏊 ${name}</span><span style="font-weight:700;color:var(--accent)">${fmtKm(km)}</span>
+        </div>`).join('')}
+    </div>` : '';
+
   const sessionsHTML = sessions.map(s => {
     const exItems = s.exercises.filter(e => (e.sets||[]).length > 0).map(e => {
       const sets = e.sets || [];
-      const best = Math.max(0, ...sets.map(st => st.kg || 0));
-      const vol = sets.filter(st => (e.type||'normal') === 'normal').reduce((a, st) => a + (st.reps||0)*(st.kg||0), 0);
+      let detail = `${sets.length} series`;
+      if (e.type === 'cardio') {
+        const km = sets.reduce((a, st) => a + (st.unit==='km' ? (st.value||0) : st.unit==='m' ? (st.value||0)/1000 : 0), 0);
+        if (km) detail += ' · ' + fmtKm(km);
+      } else {
+        const best = Math.max(0, ...sets.map(st => st.kg || 0));
+        const vol = sets.reduce((a, st) => a + (st.reps||0)*(st.kg||0), 0);
+        if (best > 0) detail += ' · ' + best + 'kg max';
+        if (vol > 0)  detail += ' · ' + fmt(Math.round(vol));
+      }
       return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
         <span>${typeIcon(e.type)} ${e.name}</span>
-        <span style="color:var(--muted);text-align:right">${sets.length} series${best > 0 ? ' · ' + best + 'kg max' : ''}${vol > 0 ? ' · ' + fmt(Math.round(vol)) : ''}</span>
+        <span style="color:var(--muted);text-align:right">${detail}</span>
       </div>`;
     }).join('');
     return `<div style="margin-bottom:12px">
@@ -2830,23 +2863,38 @@ function openTodayVolModal() {
     </div>`;
   }).join('');
 
+  const headerParts = [];
+  if (totalVol) headerParts.push(fmt(Math.round(totalVol)));
+  if (totalKm)  headerParts.push(fmtKm(totalKm));
+  const totalSeries = sessions.reduce((a,s)=>a+s.exercises.reduce((b,e)=>b+(e.sets||[]).length,0),0);
+
   document.getElementById('today-vol-content').innerHTML =
     `<div style="text-align:center;margin-bottom:14px">
-      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--accent)">${fmt(Math.round(totalVol))}</div>
-      <div style="font-size:12px;color:var(--muted)">${sessions.length} sesión${sessions.length!==1?'es':''} · ${sessions.reduce((a,s)=>a+s.exercises.reduce((b,e)=>b+(e.sets||[]).length,0),0)} series totales</div>
+      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--accent)">${headerParts.join(' + ') || '0kg'}</div>
+      <div style="font-size:12px;color:var(--muted)">${sessions.length} sesión${sessions.length!==1?'es':''} · ${totalSeries} series totales</div>
     </div>
-    ${muscleHTML}
+    ${muscleHTML}${cardioHTML}
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ejercicios</div>
     ${sessionsHTML}`;
 
-  // Build WhatsApp text
+  // WhatsApp text
   const dateStr = new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
   const muscleLines = muscleRows.map(([name, {icon, vol}]) => `  ${icon} ${name}: ${fmt(Math.round(vol))}`).join('\n');
+  const cardioLines = cardioRows.map(([name, km]) => `  🏃 ${name}: ${fmtKm(km)}`).join('\n');
   const exLines = sessions.flatMap(s => s.exercises.filter(e=>(e.sets||[]).length>0).map(e => {
+    if (e.type === 'cardio') {
+      const km = (e.sets||[]).reduce((a,st)=>a+(st.unit==='km'?st.value||0:st.unit==='m'?(st.value||0)/1000:0),0);
+      return `  • ${e.name}: ${fmtKm(km)}`;
+    }
     const best = Math.max(0,...(e.sets||[]).map(st=>st.kg||0));
     return `  • ${e.name}: ${(e.sets||[]).length} series${best>0?' ('+best+'kg max)':''}`;
   })).join('\n');
-  _todayVolText = `💪 *${p.name}* — ${dateStr}\n📦 Volumen total: *${fmt(Math.round(totalVol))}*\n\n*Por grupo:*\n${muscleLines}\n\n*Ejercicios:*\n${exLines}\n\n#GymBros 🏋️`;
+  const volPart  = totalVol ? `📦 Volumen: *${fmt(Math.round(totalVol))}*` : '';
+  const cardioPart = totalKm ? `🏃 Cardio: *${fmtKm(totalKm)}*` : '';
+  const summary = [volPart, cardioPart].filter(Boolean).join(' · ');
+  const muscleSec = muscleLines ? `\n\n*Por grupo:*\n${muscleLines}` : '';
+  const cardioSec = cardioLines ? `\n\n*Cardio:*\n${cardioLines}` : '';
+  _todayVolText = `💪 *${p.name}* — ${dateStr}\n${summary}${muscleSec}${cardioSec}\n\n*Ejercicios:*\n${exLines}\n\n#GymBros 🏋️`;
 
   openModal('modal-today-vol');
 }
@@ -6330,7 +6378,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=102', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=103', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
