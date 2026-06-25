@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.1</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.2</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.1</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.2</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1118,6 +1118,21 @@ header {
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-nutri-goals')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveNutriGoals()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Volumen hoy (desglose) -->
+<div class="modal-overlay" id="modal-today-vol">
+  <div class="modal" style="max-width:420px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">💪 Entreno de hoy</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-today-vol')">✕</button>
+    </div>
+    <div id="today-vol-content" style="max-height:65vh;overflow-y:auto"></div>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-accent" style="width:100%" onclick="shareTodayVol()">📋 Copiar para WhatsApp</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="closeModal('modal-today-vol')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2722,16 +2737,16 @@ function renderVolGoalCard() {
   const goal = getVolGoal();
   const today = getTodayVol();
   el.style.display = '';
+  const fmt = v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg';
   if (!goal) {
-    // Sin objetivo: mostrar volumen del día sin barra de progreso
     if (!today) { el.style.display = 'none'; return; }
     el.innerHTML = `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer" onclick="openTodayVolModal()">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;font-weight:700">💪 Volumen hoy</span>
-          <span style="font-size:15px;font-weight:700;color:var(--accent)">${today >= 1000 ? (today/1000).toFixed(1)+'t' : today+'kg'}</span>
+          <span style="font-size:15px;font-weight:700;color:var(--accent)">${fmt(today)} <span style="font-size:11px;color:var(--muted)">›</span></span>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">Configura un objetivo en ajustes para ver el progreso</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Toca para ver el desglose y compartir</div>
       </div>`;
     return;
   }
@@ -2739,16 +2754,106 @@ function renderVolGoalCard() {
   const done = today >= goal;
   const color = done ? '#4ade80' : 'var(--accent)';
   el.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer" onclick="openTodayVolModal()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <span style="font-size:13px;font-weight:700">🎯 Volumen hoy</span>
-        <span style="font-size:13px;font-weight:700;color:${color}">${today >= 1000 ? (today/1000).toFixed(1)+'t' : today+'kg'} / ${goal >= 1000 ? (goal/1000).toFixed(1)+'t' : goal+'kg'}</span>
+        <span style="font-size:13px;font-weight:700;color:${color}">${fmt(today)} / ${fmt(goal)} <span style="font-size:11px;color:var(--muted)">›</span></span>
       </div>
       <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;transition:width .4s"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:5px;text-align:right">${done ? '✅ ¡Objetivo superado!' : `${pct}% completado`}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;text-align:right">${done ? '✅ ¡Objetivo superado!' : `${pct}% completado · toca para desglose`}</div>
     </div>`;
+}
+
+let _todayVolText = '';
+
+function openTodayVolModal() {
+  const p = profile();
+  if (!p) return;
+  ensureRoutines(p);
+  const today = new Date().toISOString().slice(0, 10);
+  const sessions = (p.gymSessions || []).filter(s => s.date.slice(0, 10) === today);
+
+  // Build muscle lookup: exName -> { muscleName, muscleIcon }
+  const muscleByEx = {};
+  (p.muscles || []).forEach(m => m.exercises.forEach(e => { muscleByEx[e.name] = { name: m.name, icon: m.icon || '💪' }; }));
+
+  const fmt = v => v >= 1000 ? (v/1000).toFixed(1)+'t' : v+'kg';
+
+  // Aggregate by muscle group
+  const byMuscle = {};
+  sessions.forEach(s => s.exercises.forEach(e => {
+    const vol = (e.sets || []).filter(st => (e.type||'normal') === 'normal').reduce((a, st) => a + (st.reps||0)*(st.kg||0), 0);
+    if (!vol) return;
+    const m = muscleByEx[e.name] || { name: 'Otros', icon: '🏋️' };
+    if (!byMuscle[m.name]) byMuscle[m.name] = { icon: m.icon, vol: 0 };
+    byMuscle[m.name].vol += vol;
+  }));
+
+  const muscleRows = Object.entries(byMuscle).sort((a, b) => b[1].vol - a[1].vol);
+  const totalVol = muscleRows.reduce((a, [, v]) => a + v.vol, 0);
+
+  // Build HTML
+  const muscleHTML = muscleRows.length ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por grupo muscular</div>
+      ${muscleRows.map(([name, {icon, vol}]) => {
+        const pct = Math.round((vol / totalVol) * 100);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:14px;width:22px;text-align:center">${icon}</span>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+              <span>${name}</span><span style="font-weight:700;color:var(--accent)">${fmt(Math.round(vol))}</span>
+            </div>
+            <div style="background:var(--border);border-radius:99px;height:5px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:99px"></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const sessionsHTML = sessions.map(s => {
+    const exItems = s.exercises.filter(e => (e.sets||[]).length > 0).map(e => {
+      const sets = e.sets || [];
+      const best = Math.max(0, ...sets.map(st => st.kg || 0));
+      const vol = sets.filter(st => (e.type||'normal') === 'normal').reduce((a, st) => a + (st.reps||0)*(st.kg||0), 0);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
+        <span>${typeIcon(e.type)} ${e.name}</span>
+        <span style="color:var(--muted);text-align:right">${sets.length} series${best > 0 ? ' · ' + best + 'kg max' : ''}${vol > 0 ? ' · ' + fmt(Math.round(vol)) : ''}</span>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px">${s.routineName}</div>
+      ${exItems}
+    </div>`;
+  }).join('');
+
+  document.getElementById('today-vol-content').innerHTML =
+    `<div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--accent)">${fmt(Math.round(totalVol))}</div>
+      <div style="font-size:12px;color:var(--muted)">${sessions.length} sesión${sessions.length!==1?'es':''} · ${sessions.reduce((a,s)=>a+s.exercises.reduce((b,e)=>b+(e.sets||[]).length,0),0)} series totales</div>
+    </div>
+    ${muscleHTML}
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ejercicios</div>
+    ${sessionsHTML}`;
+
+  // Build WhatsApp text
+  const dateStr = new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+  const muscleLines = muscleRows.map(([name, {icon, vol}]) => `  ${icon} ${name}: ${fmt(Math.round(vol))}`).join('\n');
+  const exLines = sessions.flatMap(s => s.exercises.filter(e=>(e.sets||[]).length>0).map(e => {
+    const best = Math.max(0,...(e.sets||[]).map(st=>st.kg||0));
+    return `  • ${e.name}: ${(e.sets||[]).length} series${best>0?' ('+best+'kg max)':''}`;
+  })).join('\n');
+  _todayVolText = `💪 *${p.name}* — ${dateStr}\n📦 Volumen total: *${fmt(Math.round(totalVol))}*\n\n*Por grupo:*\n${muscleLines}\n\n*Ejercicios:*\n${exLines}\n\n#GymBros 🏋️`;
+
+  openModal('modal-today-vol');
+}
+
+function shareTodayVol() {
+  if (!_todayVolText) return;
+  navigator.clipboard?.writeText(_todayVolText).then(() => showToast('¡Copiado! Pégalo en WhatsApp 📱'));
 }
 
 function renderConfig() {
@@ -6225,7 +6330,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=101', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=102', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
