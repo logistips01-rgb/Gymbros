@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.3</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.4</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.3</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.4</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -5920,10 +5920,14 @@ function getRankingData() {
     const color = colorFor(idx);
     const allEx = p.muscles.flatMap(m => m.exercises);
 
+    // Dates with a finalized free session — ex.sessions on these dates are already in gymSessions
+    const freeSessionDates = new Set((p.gymSessions||[]).filter(s => !s.routineId).map(s => s.date.slice(0,10)));
+
     // Fuerza: kg×reps volume, normal exercises only
     let fuerza = 0;
     allEx.filter(e => (e.type||'normal') === 'normal').forEach(e =>
-      e.sessions.forEach(s => s.sets.forEach(st => fuerza += (st.reps||0)*(st.kg||0))));
+      e.sessions.filter(s => !freeSessionDates.has(s.date.slice(0,10))).forEach(s =>
+        s.sets.forEach(st => fuerza += (st.reps||0)*(st.kg||0))));
     (p.gymSessions||[]).forEach(gs => gs.exercises.filter(e => (e.type||'normal') === 'normal').forEach(e =>
       (e.sets||[]).forEach(st => fuerza += (st.reps||0)*(st.kg||0))));
     fuerza = Math.round(fuerza);
@@ -5931,7 +5935,8 @@ function getRankingData() {
     // Calistenia: total reps, bodyweight only
     let calistenia = 0;
     allEx.filter(e => e.type === 'bodyweight').forEach(e =>
-      e.sessions.forEach(s => s.sets.forEach(st => calistenia += st.reps||0)));
+      e.sessions.filter(s => !freeSessionDates.has(s.date.slice(0,10))).forEach(s =>
+        s.sets.forEach(st => calistenia += st.reps||0)));
     (p.gymSessions||[]).forEach(gs => gs.exercises.filter(e => e.type === 'bodyweight').forEach(e =>
       (e.sets||[]).forEach(st => calistenia += st.reps||0)));
 
@@ -5941,7 +5946,8 @@ function getRankingData() {
       if (st.unit === 'km') cardio += st.value||0;
       else if (st.unit === 'm') cardio += (st.value||0)/1000;
     });
-    allEx.filter(e => e.type === 'cardio').forEach(e => e.sessions.forEach(s => sumCardio(s.sets)));
+    allEx.filter(e => e.type === 'cardio').forEach(e =>
+      e.sessions.filter(s => !freeSessionDates.has(s.date.slice(0,10))).forEach(s => sumCardio(s.sets)));
     (p.gymSessions||[]).forEach(gs => gs.exercises.filter(e => e.type === 'cardio').forEach(e => sumCardio(e.sets||[])));
     cardio = Math.round(cardio*10)/10;
 
@@ -6378,7 +6384,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=103', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=104', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
