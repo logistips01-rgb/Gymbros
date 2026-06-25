@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.0</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.1</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.0</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.1</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2721,8 +2721,20 @@ function renderVolGoalCard() {
   if (!el) return;
   const goal = getVolGoal();
   const today = getTodayVol();
-  if (!goal) { el.style.display = 'none'; return; }
   el.style.display = '';
+  if (!goal) {
+    // Sin objetivo: mostrar volumen del día sin barra de progreso
+    if (!today) { el.style.display = 'none'; return; }
+    el.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:700">💪 Volumen hoy</span>
+          <span style="font-size:15px;font-weight:700;color:var(--accent)">${today >= 1000 ? (today/1000).toFixed(1)+'t' : today+'kg'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Configura un objetivo en ajustes para ver el progreso</div>
+      </div>`;
+    return;
+  }
   const pct = Math.min(100, Math.round((today / goal) * 100));
   const done = today >= goal;
   const color = done ? '#4ade80' : 'var(--accent)';
@@ -3509,7 +3521,7 @@ let modalExercises   = []; // [{id,name,type}] while editing in modal
 
 function saveSessionAsRoutine() {
   if (!_lastSessionForRoutine) return;
-  closeModal('modal-session-summary');
+  _routineFromSession = true;
   editingRoutineId = null;
   modalExercises = _lastSessionForRoutine.exercises
     .filter(e => (e.sets||[]).length > 0)
@@ -3519,6 +3531,7 @@ function saveSessionAsRoutine() {
   document.getElementById('new-ex-name-inp').value  = '';
   renderModalExList();
   renderExPickerList('');
+  closeModal('modal-session-summary');
   openModal('modal-routine');
   setTimeout(() => document.getElementById('routine-name-inp').focus(), 100);
 }
@@ -3638,7 +3651,13 @@ function saveRoutineModal() {
   }
   saveCurrentProfile();
   closeModal('modal-routine');
-  renderRutinas();
+  if (_routineFromSession) {
+    _routineFromSession = false;
+    showToast('Rutina guardada ✓ (los pesos quedan en tu historial)');
+    openModal('modal-session-summary');
+  } else {
+    renderRutinas();
+  }
 }
 
 function deleteRoutine(routineId) {
@@ -3862,6 +3881,7 @@ function finishSession() {
 
 let _lastSessionSummary = '';
 let _lastSessionForRoutine = null;
+let _routineFromSession = false;
 
 function showSessionSummary(sess) {
   const totalSets = sess.exercises.reduce((a,e)=>a+(e.sets||[]).length,0);
@@ -6205,7 +6225,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=100', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=101', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
