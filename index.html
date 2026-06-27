@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.4</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.5</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.4</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.5</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4010,6 +4010,10 @@ function finishSession() {
   collectSessionSets();
   const totalSets = activeSession.exercises.reduce((a, e) => a + e.sets.length, 0);
   if (totalSets === 0) { showToast('Añade al menos una serie'); return; }
+  // Contabilizar reto del mes para rutinas (el entreno libre ya lo hace por serie al guardarla)
+  if (activeSession.routineId) {
+    activeSession.exercises.forEach(ex => autoRetoContrib(ex, ex.type || 'normal', ex.sets || []));
+  }
   const p = profile();
   ensureRoutines(p);
   p.gymSessions.push({
@@ -6384,7 +6388,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=104', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=105', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
