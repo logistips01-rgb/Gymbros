@@ -458,9 +458,11 @@ header {
 .modal-overlay {
   display:none; position:fixed; inset:0;
   background:rgba(7,15,30,0.75); backdrop-filter:blur(6px);
-  z-index:200; align-items:center; justify-content:center; padding:20px;
+  z-index:200; align-items:flex-start; justify-content:center; padding:20px;
+  overflow-y:auto;
 }
 .modal-overlay.open { display:flex; }
+.modal { max-height:none; }
 .modal {
   background:var(--surface); border:1px solid var(--border);
   border-radius:16px; padding:26px; width:100%; max-width:400px;
@@ -700,7 +702,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.8</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.9</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +858,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.8</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.9</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4071,11 +4073,52 @@ function showSessionSummary(sess) {
 function renderTestometro(totalSets, totalVol, duration) {
   const el = document.getElementById('testometro');
   if (!el) return;
-  const MAX_KG = 10000; // 10T = topes
+  const MAX_KG = 10000;
   const pct = Math.min(100, Math.round((totalVol / MAX_KG) * 100));
   const volStr = totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'T' : totalVol+'kg';
   const color = pct >= 100 ? '#ff3d00' : pct >= 70 ? '#ff6d00' : pct >= 40 ? '#ff9800' : '#ffc107';
   const label = pct >= 100 ? '🔴 TOPES' : pct >= 70 ? '🟠 Alto' : pct >= 40 ? '🟡 Bien' : '🟢 Subiendo';
+
+  const msgs = {
+    topes: [
+      '¡Pepito, ya verás cómo luces en la playita! 🏖️',
+      'Con esto en las venas hasta el vecino te pide consejo 💪',
+      '10 toneladas. Eso no es un entreno, es una declaración de intenciones 🔥',
+      'La camiseta ya no te cabe y eso es un problema que acepto 😤',
+      'Hoy has movido más hierro que una fundición. Respect 🏭',
+      '¿Playita? Tú directamente vas a tapar el sol a los demás ☀️',
+      'Testosterona por las nubes. El gimnasio ya no es suficiente para ti 🚀',
+      'Así se hace, animal. Ya puedes ir reservando tumbonas 🏖️',
+    ],
+    alto: [
+      'Buen trabajo. La playa te espera con los brazos abiertos 🌊',
+      'Los kilos se notan, la camiseta también. Sigue así 💪',
+      'Nivel alto. En verano los demás preguntarán qué haces 😏',
+      'Entreno serio. La testosterona está contenta hoy 🧪',
+      'Top tier. No todo el mundo llega aquí, tú sí 🔝',
+      'Casi en modo bestia. Un par de sesiones más y llegas 🔜',
+    ],
+    bien: [
+      'Solid. No es 10T pero el cuerpo ha notado que has venido 💪',
+      'Bien hecho. Poco a poco se llega a la playita 🏖️',
+      'Entreno cumplido. La constancia hace al campeón ✅',
+      'Vas por el buen camino, sigue sumando 📈',
+      'No está mal. Mañana más y mejor 💯',
+      'El hierro no miente, y tú has movido lo tuyo hoy 🏋️',
+    ],
+    subiendo: [
+      'Calentando motores. Eso es, empieza el motor 🔧',
+      'Algo es algo. El sofá no cuenta kilos 😄',
+      'La testosterona aún está despertando, dale más 🌅',
+      'Buen comienzo, pero sabes que puedes más 👀',
+      'Ya estás en movimiento, que es lo que importa 🚶',
+    ],
+  };
+
+  const day = new Date().getDate() + new Date().getMonth() * 31 + totalSets;
+  const pick = arr => arr[day % arr.length];
+  const msg = pct >= 100 ? pick(msgs.topes) : pct >= 70 ? pick(msgs.alto) : pct >= 40 ? pick(msgs.bien) : pick(msgs.subiendo);
+
   el.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -4086,10 +4129,9 @@ function renderTestometro(totalSets, totalVol, duration) {
         <div id="testo-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#ffc107,${color});border-radius:99px;transition:width 1.2s cubic-bezier(.4,0,.2,1)"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px">
-        <span>0</span>
-        <span style="font-weight:700;color:${color}">${volStr} / 10T</span>
-        <span>10T</span>
+        <span>0</span><span style="font-weight:700;color:${color}">${volStr} / 10T</span><span>10T</span>
       </div>
+      <div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:8px;text-align:center">${msg}</div>
     </div>`;
   setTimeout(() => { const b = document.getElementById('testo-bar'); if (b) b.style.width = pct + '%'; }, 80);
 }
@@ -6416,7 +6458,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=108', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=109', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
