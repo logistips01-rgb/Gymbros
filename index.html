@@ -700,7 +700,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.5</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.6</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -856,7 +856,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.5</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.6</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -1148,6 +1148,7 @@ header {
       </div>
     </div>
     <div id="session-summary-content"></div>
+    <div id="testometro" style="margin-top:12px"></div>
     <div id="kirk-session-comment" style="margin-top:10px"></div>
     <div class="modal-actions" style="flex-direction:column;gap:8px">
       <button class="btn btn-accent" style="width:100%" onclick="copySessionSummary()">📋 Copiar para WhatsApp</button>
@@ -4063,7 +4064,50 @@ function showSessionSummary(sess) {
   const btnSave = document.getElementById('btn-save-as-routine');
   if (btnSave) btnSave.style.display = sess.routineName === 'Entreno libre' ? '' : 'none';
   openModal('modal-session-summary');
+  renderTestometro(totalSets, totalVol, duration);
   kirkSessionComment(sess, totalSets, totalVol, duration);
+}
+
+function renderTestometro(totalSets, totalVol, duration) {
+  const el = document.getElementById('testometro');
+  if (!el) return;
+  // Score: biased high (always motivating), influenced by workout data
+  const volScore  = Math.min(30, Math.round(totalVol / 200));   // max 30pts @ 6000kg
+  const setScore  = Math.min(20, Math.round(totalSets / 2));    // max 20pts @ 40 sets
+  const durScore  = Math.min(15, Math.round(duration / 4));     // max 15pts @ 60min
+  const base      = 52;                                          // guaranteed floor
+  const noise     = Math.floor(Math.abs(Math.sin(totalVol + totalSets) * 13)); // determinista
+  const pct       = Math.min(100, base + volScore + setScore + durScore + noise);
+
+  const levels = [
+    { min: 95, label: 'MODO BESTIA',      emoji: '🦁', color: '#ff3d00' },
+    { min: 85, label: 'Alto rendimiento', emoji: '⚡', color: '#ff6d00' },
+    { min: 75, label: 'En zona',          emoji: '🔥', color: '#ff9800' },
+    { min: 65, label: 'Activado',         emoji: '💪', color: '#ffc107' },
+    { min:  0, label: 'Calentando',       emoji: '🌡️', color: '#4caf50' },
+  ];
+  const lvl = levels.find(l => pct >= l.min);
+
+  el.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">🧪 Testómetro</span>
+        <span style="font-size:13px;font-weight:700;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span>
+      </div>
+      <div style="background:var(--border);border-radius:99px;height:10px;overflow:hidden;position:relative">
+        <div id="testo-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff9800,${lvl.color});border-radius:99px;transition:width 1.2s cubic-bezier(.4,0,.2,1)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px">
+        <span>Sedentario</span>
+        <span style="font-weight:700;color:${lvl.color}">${pct}%</span>
+        <span>Modo bestia</span>
+      </div>
+    </div>`;
+  // Animate after paint
+  setTimeout(() => {
+    const bar = document.getElementById('testo-bar');
+    if (bar) bar.style.width = pct + '%';
+  }, 80);
 }
 
 async function kirkSessionComment(sess, totalSets, totalVol, duration) {
@@ -6388,7 +6432,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=105', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=106', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
