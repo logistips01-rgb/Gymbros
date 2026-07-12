@@ -469,9 +469,10 @@ header {
   animation:slideUp .2s ease; box-shadow:0 24px 80px rgba(0,0,0,0.5);
 }
 @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
-@keyframes testo-shake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-6px) rotate(-1deg)} 30%{transform:translateX(6px) rotate(1deg)} 45%{transform:translateX(-5px)} 60%{transform:translateX(5px)} 75%{transform:translateX(-3px)} 90%{transform:translateX(3px)} }
-@keyframes testo-flash { 0%,100%{opacity:1} 20%,60%{opacity:0.2} 40%,80%{opacity:1} }
-@keyframes testo-particle { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
+@keyframes testo-shake { 0%,100%{transform:translateX(0) rotate(0)} 10%{transform:translateX(-10px) rotate(-2deg)} 20%{transform:translateX(10px) rotate(2deg)} 30%{transform:translateX(-10px) rotate(-1deg)} 40%{transform:translateX(10px) rotate(1deg)} 50%{transform:translateX(-8px)} 60%{transform:translateX(8px)} 70%{transform:translateX(-5px)} 80%{transform:translateX(5px)} 90%{transform:translateX(-2px)} }
+@keyframes testo-flash { 0%,100%{opacity:1;filter:brightness(1)} 10%,30%,50%,70%{opacity:0.1;filter:brightness(3)} 20%,40%,60%,80%{opacity:1;filter:brightness(1)} }
+@keyframes testo-particle { 0%{transform:translate(0,0) scale(1.5);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
+@keyframes testo-screen { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-4px,4px)} 40%{transform:translate(4px,-4px)} 60%{transform:translate(-4px,0)} 80%{transform:translate(4px,4px)} }
 .modal h3 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:20px; margin-bottom:18px; }
 .field { margin-bottom:12px; }
 .field label { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
@@ -705,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.1</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.2</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -861,7 +862,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.1</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.2</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4076,7 +4077,7 @@ function showSessionSummary(sess) {
 function renderTestometro(totalSets, totalVol, duration) {
   const el = document.getElementById('testometro');
   if (!el) return;
-  const MAX_KG = 1000; // TEMP: 1T para probar explosión
+  const MAX_KG = 10000;
   const pct = Math.min(100, Math.round((totalVol / MAX_KG) * 100));
   const volStr = totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'T' : totalVol+'kg';
   const color = pct >= 100 ? '#ff3d00' : pct >= 70 ? '#ff6d00' : pct >= 40 ? '#ff9800' : '#ffc107';
@@ -4141,27 +4142,41 @@ function renderTestometro(totalSets, totalVol, duration) {
     const b = document.getElementById('testo-bar');
     if (b) b.style.width = pct + '%';
     if (pct >= 100) {
-      // Explode after bar fills
       setTimeout(() => {
         const card = document.getElementById('testo-card');
         if (!card) return;
-        card.style.animation = 'testo-shake .6s ease, testo-flash .6s ease';
+        // Shake + flash card
+        card.style.animation = 'testo-shake 1s ease, testo-flash 1s ease';
         card.style.borderColor = '#ff3d00';
-        card.style.boxShadow = '0 0 24px rgba(255,61,0,.5)';
-        // Particle emojis
-        const emojis = ['💥','🔥','⚡','💪','🦁','🔴'];
+        card.style.boxShadow = '0 0 40px rgba(255,61,0,.8), 0 0 80px rgba(255,61,0,.4)';
+        // Shake whole modal overlay
+        const overlay = document.getElementById('modal-session-summary');
+        if (overlay) { overlay.style.animation = 'testo-screen .5s ease 3'; setTimeout(()=>overlay.style.animation='', 1600); }
+        // 30 particles across 3 waves
+        const pool = ['💥','🔥','⚡','💪','🦁','🔴','😤','🏆','💯','🌋'];
         const rect = card.getBoundingClientRect();
-        emojis.forEach((em, i) => {
-          const el2 = document.createElement('div');
-          const angle = (i / emojis.length) * 360;
-          const dist = 60 + Math.random() * 40;
-          const tx = Math.round(Math.cos(angle * Math.PI/180) * dist) + 'px';
-          const ty = Math.round(Math.sin(angle * Math.PI/180) * dist) + 'px';
-          el2.style.cssText = `position:fixed;left:${rect.left+rect.width/2}px;top:${rect.top+rect.height/2}px;font-size:22px;pointer-events:none;z-index:9999;--tx:${tx};--ty:${ty};animation:testo-particle .8s ease forwards;animation-delay:${i*60}ms`;
-          el2.textContent = em;
-          document.body.appendChild(el2);
-          setTimeout(() => el2.remove(), 1200);
-        });
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        for (let w = 0; w < 3; w++) {
+          setTimeout(() => {
+            for (let i = 0; i < 10; i++) {
+              const p = document.createElement('div');
+              const angle = (i / 10) * 360 + w * 12;
+              const dist = 80 + Math.random() * 120;
+              const tx = Math.round(Math.cos(angle * Math.PI/180) * dist) + 'px';
+              const ty = Math.round(Math.sin(angle * Math.PI/180) * dist) + 'px';
+              const em = pool[(i + w * 3) % pool.length];
+              const size = 20 + Math.round(Math.random() * 16);
+              const dur = 0.7 + Math.random() * 0.4;
+              p.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;font-size:${size}px;pointer-events:none;z-index:9999;--tx:${tx};--ty:${ty};animation:testo-particle ${dur}s ease forwards`;
+              p.textContent = em;
+              document.body.appendChild(p);
+              setTimeout(() => p.remove(), dur * 1000 + 100);
+            }
+          }, w * 250);
+        }
+        // Vibrate if supported
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
       }, 1300);
     }
   }, 80);
@@ -6489,7 +6504,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=111', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=112', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
