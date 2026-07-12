@@ -469,6 +469,9 @@ header {
   animation:slideUp .2s ease; box-shadow:0 24px 80px rgba(0,0,0,0.5);
 }
 @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes testo-shake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-6px) rotate(-1deg)} 30%{transform:translateX(6px) rotate(1deg)} 45%{transform:translateX(-5px)} 60%{transform:translateX(5px)} 75%{transform:translateX(-3px)} 90%{transform:translateX(3px)} }
+@keyframes testo-flash { 0%,100%{opacity:1} 20%,60%{opacity:0.2} 40%,80%{opacity:1} }
+@keyframes testo-particle { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
 .modal h3 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:20px; margin-bottom:18px; }
 .field { margin-bottom:12px; }
 .field label { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
@@ -702,7 +705,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v1.9</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.0</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -858,7 +861,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v1.9</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.0</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4133,7 +4136,35 @@ function renderTestometro(totalSets, totalVol, duration) {
       </div>
       <div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:8px;text-align:center">${msg}</div>
     </div>`;
-  setTimeout(() => { const b = document.getElementById('testo-bar'); if (b) b.style.width = pct + '%'; }, 80);
+  document.getElementById('testometro').querySelector('div').id = 'testo-card';
+  setTimeout(() => {
+    const b = document.getElementById('testo-bar');
+    if (b) b.style.width = pct + '%';
+    if (pct >= 100) {
+      // Explode after bar fills
+      setTimeout(() => {
+        const card = document.getElementById('testo-card');
+        if (!card) return;
+        card.style.animation = 'testo-shake .6s ease, testo-flash .6s ease';
+        card.style.borderColor = '#ff3d00';
+        card.style.boxShadow = '0 0 24px rgba(255,61,0,.5)';
+        // Particle emojis
+        const emojis = ['💥','🔥','⚡','💪','🦁','🔴'];
+        const rect = card.getBoundingClientRect();
+        emojis.forEach((em, i) => {
+          const el2 = document.createElement('div');
+          const angle = (i / emojis.length) * 360;
+          const dist = 60 + Math.random() * 40;
+          const tx = Math.round(Math.cos(angle * Math.PI/180) * dist) + 'px';
+          const ty = Math.round(Math.sin(angle * Math.PI/180) * dist) + 'px';
+          el2.style.cssText = `position:fixed;left:${rect.left+rect.width/2}px;top:${rect.top+rect.height/2}px;font-size:22px;pointer-events:none;z-index:9999;--tx:${tx};--ty:${ty};animation:testo-particle .8s ease forwards;animation-delay:${i*60}ms`;
+          el2.textContent = em;
+          document.body.appendChild(el2);
+          setTimeout(() => el2.remove(), 1200);
+        });
+      }, 1300);
+    }
+  }, 80);
 }
 
 async function kirkSessionComment(sess, totalSets, totalVol, duration) {
@@ -6458,7 +6489,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=109', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=110', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
