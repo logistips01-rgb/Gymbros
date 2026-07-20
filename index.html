@@ -4093,6 +4093,9 @@ function renderTestometro(totalSets, totalVol, duration) {
       '¿Playita? Tú directamente vas a tapar el sol a los demás ☀️',
       'Testosterona por las nubes. El gimnasio ya no es suficiente para ti 🚀',
       'Así se hace, animal. Ya puedes ir reservando tumbonas 🏖️',
+      'España vapuleó a Argentina y tú vapuleas el gym. Campeones del mundo y del hierro 🏆🇪🇸',
+      'Lo que le hicimos a Argentina en el Mundial te lo has hecho tú al gym hoy. Sin piedad 😤🇪🇸',
+      'Messi tiene un mundial menos que tú tienes toneladas hoy. Piénsalo 🐐❌🏆',
     ],
     alto: [
       'Buen trabajo. La playa te espera con los brazos abiertos 🌊',
@@ -4101,6 +4104,7 @@ function renderTestometro(totalSets, totalVol, duration) {
       'Entreno serio. La testosterona está contenta hoy 🧪',
       'Top tier. No todo el mundo llega aquí, tú sí 🔝',
       'Casi en modo bestia. Un par de sesiones más y llegas 🔜',
+      'Como la selección española: contundente, sin excusas y con clase 🇪🇸💪',
     ],
     bien: [
       'Solid. No es 10T pero el cuerpo ha notado que has venido 💪',
@@ -4109,6 +4113,7 @@ function renderTestometro(totalSets, totalVol, duration) {
       'Vas por el buen camino, sigue sumando 📈',
       'No está mal. Mañana más y mejor 💯',
       'El hierro no miente, y tú has movido lo tuyo hoy 🏋️',
+      'España no ganó el Mundial de un día para otro. La constancia es la clave 🇪🇸🔑',
     ],
     subiendo: [
       'Calentando motores. Eso es, empieza el motor 🔧',
@@ -6504,7 +6509,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=113', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=114', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
