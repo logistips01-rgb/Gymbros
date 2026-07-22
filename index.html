@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.2</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.3</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -862,7 +862,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.2</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.3</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3883,6 +3883,16 @@ function renderActiveSession() {
       </div>
       <button class="btn btn-ghost btn-sm" onclick="cancelSession()">✕ Descartar</button>
     </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">⚡ Volumen acumulado</span>
+        <span id="session-vol-label" style="font-size:12px;font-weight:700;color:var(--accent)">0 kg</span>
+      </div>
+      <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden">
+        <div id="session-vol-bar-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#ffc107,var(--accent));border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px"><span>0</span><span>10T</span></div>
+    </div>
     <div id="rest-timer-bar" style="display:none"></div>
     ${exBlocks}
     <div style="display:flex;gap:8px;margin-top:6px">
@@ -3894,6 +3904,7 @@ function renderActiveSession() {
   activeSession.exercises.forEach(ex => {
     ex.sets.forEach((set, i) => _addSessionSetRow(ex.id, i + 1, ex.type, set));
   });
+  setTimeout(updateSessionVolBar, 100);
 }
 
 function startRestTimer() {
@@ -3935,6 +3946,52 @@ function _updateRestBar(s) {
     </div>`;
 }
 
+function calcSessionVol() {
+  let total = 0;
+  if (!activeSession) return 0;
+  activeSession.exercises.forEach(ex => {
+    const area = document.getElementById(`sess-sets-${ex.id}`);
+    if (!area) return;
+    [...area.children].forEach(row => {
+      if (ex.type !== 'normal') return;
+      const inputs = row.querySelectorAll('input');
+      const reps = parseInt(inputs[0]?.value), kg = parseFloat(inputs[1]?.value);
+      if (!isNaN(reps) && reps > 0 && !isNaN(kg) && kg > 0) total += reps * kg;
+    });
+  });
+  return total;
+}
+
+function updateSessionVolBar() {
+  const fill = document.getElementById('session-vol-bar-fill');
+  const label = document.getElementById('session-vol-label');
+  if (!fill || !label) return;
+  const vol = calcSessionVol();
+  const pct = Math.min(100, (vol / 10000) * 100);
+  fill.style.width = pct + '%';
+  fill.style.background = pct >= 100 ? 'linear-gradient(90deg,#ff6d00,#ff3d00)' : pct >= 70 ? 'linear-gradient(90deg,#ff9800,#ff6d00)' : 'linear-gradient(90deg,#ffc107,var(--accent))';
+  label.style.color = pct >= 100 ? '#ff3d00' : pct >= 70 ? '#ff6d00' : 'var(--accent)';
+  label.textContent = vol >= 1000 ? (vol / 1000).toFixed(1) + 'T' : Math.round(vol) + ' kg';
+}
+
+const _setMotivMsgs = [
+  '¡Eso es! 💪','¡Máquina! 🔥','Imparable ⚡','¡Crack! 🦁','Dale más 💥',
+  '¡Bien! 😤','Sin excusas 💯','¡Arriba! 🚀','Nivel bestia 🔝','¡Campeón! 🏆',
+  'Sigue así 🌋','¡Bestia! 😈','Otra más 🎯','¡Brutal! 🔴','No pares 🏅',
+  'España campeona y tú también 🇪🇸🏆','Como la roja, sin piedad 🇪🇸🔥',
+];
+let _setMotivIdx = 0;
+function showSetMotivation() {
+  const msg = _setMotivMsgs[_setMotivIdx % _setMotivMsgs.length];
+  _setMotivIdx++;
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:6px 16px;border-radius:99px;font-size:13px;font-weight:700;z-index:9000;pointer-events:none;opacity:0;transition:opacity .2s,transform .2s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.25)';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)'; });
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(-10px)'; setTimeout(() => el.remove(), 250); }, 1400);
+}
+
 function addSessionSet(exId) {
   const ex = activeSession.exercises.find(e => e.id === exId);
   if (!ex) return;
@@ -3943,6 +4000,8 @@ function addSessionSet(exId) {
   _addSessionSetRow(exId, n, ex.type);
   persistSession();
   startRestTimer();
+  showSetMotivation();
+  setTimeout(updateSessionVolBar, 50);
 }
 
 function _addSessionSetRow(exId, n, type, set = null) {
@@ -3970,6 +4029,7 @@ function _addSessionSetRow(exId, n, type, set = null) {
       ${delBtn}`;
     if (set?.reps) row.querySelectorAll('input')[0].value = set.reps;
     if (set?.kg != null) row.querySelectorAll('input')[1].value = set.kg;
+    row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateSessionVolBar));
   }
   area.appendChild(row);
 }
@@ -6509,7 +6569,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=114', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=115', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
