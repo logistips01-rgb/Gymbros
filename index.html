@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.6</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.7</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -862,7 +862,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.6</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.7</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3073,6 +3073,27 @@ function addExercise() {
   showToast('Ejercicio añadido ✓');
 }
 
+function renameExercise(exId) {
+  const p = profile();
+  const m = p.muscles.find(m => m.id === activeMuscle);
+  if (!m) return;
+  const ex = m.exercises.find(e => e.id === exId);
+  if (!ex) return;
+  const newName = prompt('Nuevo nombre:', ex.name);
+  if (!newName || !newName.trim() || newName.trim() === ex.name) return;
+  const trimmed = newName.trim();
+  const oldName = ex.name;
+  ex.name = trimmed;
+  // Actualizar el nombre también en gymSessions para mantener consistencia
+  (p.gymSessions || []).forEach(gs => {
+    const e = (gs.exercises || []).find(e => e.name === oldName);
+    if (e) e.name = trimmed;
+  });
+  saveCurrentProfile();
+  renderExercises(m);
+  showToast(`Renombrado a "${trimmed}"`);
+}
+
 function delExercise(exId) {
   if (!confirm('¿Eliminar ejercicio y su historial?')) return;
   const p = profile();
@@ -3242,6 +3263,7 @@ function buildExCard(ex) {
       </div>
       <div class="ex-right">
         ${bestBadge}
+        <button class="btn-icon" title="Renombrar" onclick="event.stopPropagation();renameExercise('${ex.id}')">✏️</button>
         <button class="btn-icon" onclick="event.stopPropagation();delExercise('${ex.id}')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
@@ -6587,7 +6609,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=118', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=119', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
