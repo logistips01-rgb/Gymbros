@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.5</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.6</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -862,7 +862,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.5</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.6</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -2990,6 +2990,7 @@ function renderMuscleGrid() {
     card.innerHTML = `
       <div class="mc-watermark">${mono}</div>
       <div class="mc-badge">${mono}</div>
+      <button onclick="event.stopPropagation();deleteMuscleGroup('${m.id}')" style="position:absolute;top:4px;left:4px;background:rgba(239,68,68,0.15);border:none;color:#ef4444;border-radius:50%;width:18px;height:18px;font-size:10px;line-height:18px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0.7" title="Eliminar grupo">✕</button>
       ${daysAgo ? `<div style="position:absolute;top:6px;right:6px;font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border-radius:4px;padding:1px 5px;font-weight:700">+${daysAgo}d</div>` : ''}
       <div class="mc-name">${m.name}</div>
       <div class="mc-count">${m.exercises.length} ej. · ${days} día${days!==1?'s':''}</div>
@@ -3002,6 +3003,19 @@ function renderMuscleGrid() {
   addCard.innerHTML = `<span>＋</span><small>Nuevo grupo</small>`;
   addCard.onclick = () => openModal('modal-muscle');
   grid.appendChild(addCard);
+}
+
+function deleteMuscleGroup(muscleId) {
+  const p = profile();
+  const m = p.muscles.find(m => m.id === muscleId);
+  if (!m) return;
+  const totalSessions = m.exercises.reduce((a, e) => a + e.sessions.length, 0);
+  const warn = totalSessions > 0 ? ` Tiene ${m.exercises.length} ejercicio${m.exercises.length!==1?'s':''} y ${totalSessions} sesión${totalSessions!==1?'es':''} registradas que se perderán.` : '';
+  if (!confirm(`¿Eliminar el grupo "${m.name}"?${warn}`)) return;
+  p.muscles = p.muscles.filter(mu => mu.id !== muscleId);
+  saveCurrentProfile();
+  renderMuscleGrid();
+  showToast(`${m.icon||'💪'} ${m.name} eliminado`);
 }
 
 function addMuscleGroup() {
@@ -6573,7 +6587,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=117', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=118', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
