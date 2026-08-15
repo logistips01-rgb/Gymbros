@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.3</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.4</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -862,7 +862,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.3</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.4</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3974,15 +3974,17 @@ function updateSessionVolBar() {
   label.textContent = vol >= 1000 ? (vol / 1000).toFixed(1) + 'T' : Math.round(vol) + ' kg';
 }
 
-const _setMotivMsgs = [
-  '¡Eso es! 💪','¡Máquina! 🔥','Imparable ⚡','¡Crack! 🦁','Dale más 💥',
-  '¡Bien! 😤','Sin excusas 💯','¡Arriba! 🚀','Nivel bestia 🔝','¡Campeón! 🏆',
-  'Sigue así 🌋','¡Bestia! 😈','Otra más 🎯','¡Brutal! 🔴','No pares 🏅',
-  'España campeona y tú también 🇪🇸🏆','Como la roja, sin piedad 🇪🇸🔥',
+const _setMotivTemplates = [
+  n=>`¡Eso es, ${n}! 💪`, n=>`¡Máquina, ${n}! 🔥`, n=>`Imparable, ${n} ⚡`, n=>`¡Crack, ${n}! 🦁`, n=>`Dale más, ${n} 💥`,
+  n=>`¡Bien, ${n}! 😤`, n=>`Sin excusas, ${n} 💯`, n=>`¡Arriba, ${n}! 🚀`, n=>`Nivel bestia, ${n} 🔝`, n=>`¡Campeón, ${n}! 🏆`,
+  n=>`Sigue así, ${n} 🌋`, n=>`¡Bestia, ${n}! 😈`, n=>`Otra más, ${n} 🎯`, n=>`¡Brutal, ${n}! 🔴`, n=>`No pares, ${n} 🏅`,
+  n=>`España campeona y ${n} también 🇪🇸🏆`, n=>`Como la roja, ${n}, sin piedad 🇪🇸🔥`,
 ];
 let _setMotivIdx = 0;
 function showSetMotivation() {
-  const msg = _setMotivMsgs[_setMotivIdx % _setMotivMsgs.length];
+  const nombre = profile()?.name?.split(' ')[0] || '';
+  const tmpl = _setMotivTemplates[_setMotivIdx % _setMotivTemplates.length];
+  const msg = tmpl(nombre);
   _setMotivIdx++;
   const el = document.createElement('div');
   el.textContent = msg;
@@ -4142,45 +4144,46 @@ function renderTestometro(totalSets, totalVol, duration) {
   const volStr = totalVol >= 1000 ? (totalVol/1000).toFixed(1)+'T' : totalVol+'kg';
   const color = pct >= 100 ? '#ff3d00' : pct >= 70 ? '#ff6d00' : pct >= 40 ? '#ff9800' : '#ffc107';
   const label = pct >= 100 ? '🔴 TOPES' : pct >= 70 ? '🟠 Alto' : pct >= 40 ? '🟡 Bien' : '🟢 Subiendo';
+  const n = profile()?.name?.split(' ')[0] || 'campeón';
 
   const msgs = {
     topes: [
-      '¡Pepito, ya verás cómo luces en la playita! 🏖️',
-      'Con esto en las venas hasta el vecino te pide consejo 💪',
-      '10 toneladas. Eso no es un entreno, es una declaración de intenciones 🔥',
-      'La camiseta ya no te cabe y eso es un problema que acepto 😤',
-      'Hoy has movido más hierro que una fundición. Respect 🏭',
-      '¿Playita? Tú directamente vas a tapar el sol a los demás ☀️',
-      'Testosterona por las nubes. El gimnasio ya no es suficiente para ti 🚀',
-      'Así se hace, animal. Ya puedes ir reservando tumbonas 🏖️',
-      'España vapuleó a Argentina y tú vapuleas el gym. Campeones del mundo y del hierro 🏆🇪🇸',
-      'Lo que le hicimos a Argentina en el Mundial te lo has hecho tú al gym hoy. Sin piedad 😤🇪🇸',
-      'Messi tiene un mundial menos que tú tienes toneladas hoy. Piénsalo 🐐❌🏆',
+      `¡${n}, ya verás cómo luces en la playita! 🏖️`,
+      `Con esto en las venas, ${n}, hasta el vecino te pide consejo 💪`,
+      `10 toneladas, ${n}. Eso no es un entreno, es una declaración de intenciones 🔥`,
+      `La camiseta ya no te cabe, ${n}, y eso es un problema que acepto 😤`,
+      `Hoy has movido más hierro que una fundición, ${n}. Respect 🏭`,
+      `¿Playita, ${n}? Tú directamente vas a tapar el sol a los demás ☀️`,
+      `Testosterona por las nubes, ${n}. El gimnasio ya no es suficiente para ti 🚀`,
+      `Así se hace, ${n}. Ya puedes ir reservando tumbonas 🏖️`,
+      `España vapuleó a Argentina y ${n} vapulea el gym. Campeones del mundo y del hierro 🏆🇪🇸`,
+      `Lo que le hicimos a Argentina en el Mundial te lo has hecho tú al gym, ${n}. Sin piedad 😤🇪🇸`,
+      `Messi tiene un mundial menos que ${n} tiene toneladas hoy. Piénsalo 🐐❌🏆`,
     ],
     alto: [
-      'Buen trabajo. La playa te espera con los brazos abiertos 🌊',
-      'Los kilos se notan, la camiseta también. Sigue así 💪',
-      'Nivel alto. En verano los demás preguntarán qué haces 😏',
-      'Entreno serio. La testosterona está contenta hoy 🧪',
-      'Top tier. No todo el mundo llega aquí, tú sí 🔝',
-      'Casi en modo bestia. Un par de sesiones más y llegas 🔜',
-      'Como la selección española: contundente, sin excusas y con clase 🇪🇸💪',
+      `Buen trabajo, ${n}. La playa te espera con los brazos abiertos 🌊`,
+      `Los kilos se notan, ${n}, la camiseta también. Sigue así 💪`,
+      `Nivel alto, ${n}. En verano los demás preguntarán qué haces 😏`,
+      `Entreno serio, ${n}. La testosterona está contenta hoy 🧪`,
+      `Top tier, ${n}. No todo el mundo llega aquí, tú sí 🔝`,
+      `Casi en modo bestia, ${n}. Un par de sesiones más y llegas 🔜`,
+      `Como la selección española, ${n}: contundente, sin excusas y con clase 🇪🇸💪`,
     ],
     bien: [
-      'Solid. No es 10T pero el cuerpo ha notado que has venido 💪',
-      'Bien hecho. Poco a poco se llega a la playita 🏖️',
-      'Entreno cumplido. La constancia hace al campeón ✅',
-      'Vas por el buen camino, sigue sumando 📈',
-      'No está mal. Mañana más y mejor 💯',
-      'El hierro no miente, y tú has movido lo tuyo hoy 🏋️',
-      'España no ganó el Mundial de un día para otro. La constancia es la clave 🇪🇸🔑',
+      `Solid, ${n}. No es 10T pero el cuerpo ha notado que has venido 💪`,
+      `Bien hecho, ${n}. Poco a poco se llega a la playita 🏖️`,
+      `Entreno cumplido, ${n}. La constancia hace al campeón ✅`,
+      `Vas por el buen camino, ${n}, sigue sumando 📈`,
+      `No está mal, ${n}. Mañana más y mejor 💯`,
+      `El hierro no miente, ${n}, y tú has movido lo tuyo hoy 🏋️`,
+      `España no ganó el Mundial de un día para otro, ${n}. La constancia es la clave 🇪🇸🔑`,
     ],
     subiendo: [
-      'Calentando motores. Eso es, empieza el motor 🔧',
-      'Algo es algo. El sofá no cuenta kilos 😄',
-      'La testosterona aún está despertando, dale más 🌅',
-      'Buen comienzo, pero sabes que puedes más 👀',
-      'Ya estás en movimiento, que es lo que importa 🚶',
+      `Calentando motores, ${n}. Eso es, empieza el motor 🔧`,
+      `Algo es algo, ${n}. El sofá no cuenta kilos 😄`,
+      `La testosterona aún está despertando, ${n}, dale más 🌅`,
+      `Buen comienzo, ${n}, pero sabes que puedes más 👀`,
+      `Ya estás en movimiento, ${n}, que es lo que importa 🚶`,
     ],
   };
 
@@ -6569,7 +6572,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=115', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=116', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
