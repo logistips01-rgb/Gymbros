@@ -6611,7 +6611,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=120', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=121', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
