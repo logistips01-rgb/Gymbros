@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.8</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v2.9</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -865,7 +865,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.8</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v2.9</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3883,11 +3883,13 @@ function startSession(routineId) {
 }
 
 function renderActiveSession() {
+  Object.keys(_exTargetKg).forEach(k => delete _exTargetKg[k]);
   const view = document.getElementById('active-session-view');
   const dateStr = new Date(activeSession.startTime).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
   const exBlocks = activeSession.exercises.map(ex => {
     const lastSets = getLastExReference(ex.name, activeSession.routineId);
     let refHtml = '';
+    let pctChips = '';
     if (lastSets && lastSets.length > 0) {
       const parts = lastSets.map(s =>
         s.kg != null ? `${s.kg}kg×${s.reps}` :
@@ -3895,6 +3897,22 @@ function renderActiveSession() {
         s.value != null ? `${s.value}${s.unit||'m'}` : ''
       ).filter(Boolean);
       refHtml = `<div style="font-size:10px;color:var(--muted);margin:-2px 0 4px;padding-left:2px">📊 Ref: ${parts.join(' · ')}</div>`;
+      if ((ex.type || 'normal') === 'normal') {
+        const lastKg = Math.max(0, ...lastSets.map(s => s.kg || 0));
+        if (lastKg > 0) {
+          const round = kg => Math.round(kg * 2) / 2;
+          const chips = [
+            { pct: -20, label: '-20%' }, { pct: -10, label: '-10%' }, { pct: -5, label: '-5%' },
+            { pct: 0,   label: '='    },
+            { pct: 5,   label: '+5%'  }, { pct: 10, label: '+10%' }, { pct: 20, label: '+20%' },
+          ].map(c => {
+            const kg = round(lastKg * (1 + c.pct / 100));
+            const color = c.pct < 0 ? '#3b82f6' : c.pct === 0 ? 'var(--muted)' : 'var(--accent)';
+            return `<button onclick="setExTarget('${ex.id}',${kg},this)" style="flex-shrink:0;border:1px solid ${color};background:transparent;color:${color};border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s" data-ex-target="${ex.id}">${c.label}<br><span style="font-size:11px">${kg}kg</span></button>`;
+          }).join('');
+          pctChips = `<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none">${chips}</div>`;
+        }
+      }
     }
     return `
     <div class="sess-ex-block">
@@ -3906,6 +3924,7 @@ function renderActiveSession() {
         </div>
       </div>
       ${refHtml}
+      ${pctChips}
       <div id="sess-sets-${ex.id}"></div>
       <div class="sess-ex-foot">
         <button class="add-set-link" onclick="addSessionSet('${ex.id}')">+ Serie</button>
@@ -3982,6 +4001,26 @@ function _updateRestBar(s) {
     <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
       <div style="height:100%;width:${pct}%;background:${accent};border-radius:3px;transition:width 1s linear"></div>
     </div>`;
+}
+
+const _exTargetKg = {};
+function setExTarget(exId, kg, btn) {
+  _exTargetKg[exId] = kg;
+  // Highlight selected chip
+  document.querySelectorAll(`[data-ex-target="${exId}"]`).forEach(b => {
+    b.style.background = 'transparent';
+    b.style.fontWeight = '700';
+    b.style.transform = '';
+  });
+  btn.style.background = btn.style.borderColor;
+  btn.style.color = '#fff';
+  btn.style.transform = 'scale(1.08)';
+  // Pre-fill all existing kg inputs in this exercise
+  const area = document.getElementById(`sess-sets-${exId}`);
+  if (area) [...area.children].forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (inputs[1]) { inputs[1].value = kg; updateSessionVolBar(); }
+  });
 }
 
 function calcSessionVol() {
@@ -4069,6 +4108,7 @@ function _addSessionSetRow(exId, n, type, set = null) {
       ${delBtn}`;
     if (set?.reps) row.querySelectorAll('input')[0].value = set.reps;
     if (set?.kg != null) row.querySelectorAll('input')[1].value = set.kg;
+    else if (!set && _exTargetKg[exId] != null) row.querySelectorAll('input')[1].value = _exTargetKg[exId];
     row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateSessionVolBar));
   }
   area.appendChild(row);
@@ -6611,7 +6651,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=121', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=122', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
