@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v3.1</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v3.2</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -865,7 +865,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v3.1</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v3.2</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -3257,16 +3257,17 @@ function buildExCard(ex) {
 
   let freeChips = '';
   if ((ex.type || 'normal') === 'normal' && ex.sessions.length > 0) {
-    const lastKg = Math.max(0, ...ex.sessions[ex.sessions.length-1].sets.map(s => s.kg || 0));
-    if (lastKg > 0) {
+    const lastSets = ex.sessions[ex.sessions.length-1].sets.filter(s => (s.kg||0) > 0);
+    if (lastSets.length > 0) {
       const round = kg => Math.round(kg * 2) / 2;
+      const refStr = lastSets.map(s => `${s.kg}kg`).join(' · ');
       freeChips = `<div style="margin-bottom:10px">
-        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">⚖️ Peso objetivo (ref: ${lastKg}kg)</div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">⚖️ Aplicar % a cada serie (ref: ${refStr})</div>
         <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none">
           ${[{pct:-20,label:'-20%'},{pct:-10,label:'-10%'},{pct:-5,label:'-5%'},{pct:0,label:'='},{pct:5,label:'+5%'},{pct:10,label:'+10%'},{pct:20,label:'+20%'}].map(c => {
-            const kg = round(lastKg * (1 + c.pct/100));
             const col = c.pct < 0 ? '#3b82f6' : c.pct === 0 ? 'var(--muted)' : 'var(--accent)';
-            return `<button onclick="setFreeExTarget('${ex.id}',${kg},this)" data-free-target="${ex.id}" style="flex-shrink:0;border:1px solid ${col};background:transparent;color:${col};border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;line-height:1.4">${c.label}<br><span style="font-size:11px">${kg}kg</span></button>`;
+            const preview = lastSets.map(s => round(s.kg*(1+c.pct/100))+'kg').join('·');
+            return `<button onclick="setFreeExTarget('${ex.id}',${c.pct},this)" data-free-target="${ex.id}" style="flex-shrink:0;border:1px solid ${col};background:transparent;color:${col};border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;line-height:1.4" title="${preview}">${c.label}</button>`;
           }).join('')}
         </div>
       </div>`;
@@ -3321,7 +3322,7 @@ function typeIcon(type) {
   return type === 'bodyweight' ? '💪' : type === 'cardio' ? '🏊' : '🏋️';
 }
 
-function addSetRow(exId, type) {
+function addSetRow(exId, type, prefillKg) {
   const area = document.getElementById(`sets-${exId}`);
   const n = area.children.length + 1;
   const row = document.createElement('div');
@@ -3348,7 +3349,9 @@ function addSetRow(exId, type) {
       <input type="number" placeholder="Reps" min="1" max="999" step="1">
       <input type="number" placeholder="Kg" min="0" max="999" step="0.5">
       ${delBtn}`;
-    if (_exTargetKg[exId] != null) row.querySelectorAll('input')[1].value = _exTargetKg[exId];
+    const kgInp = row.querySelectorAll('input')[1];
+    if (prefillKg != null) kgInp.value = prefillKg;
+    else if (_exTargetKg[exId] != null) kgInp.value = _exTargetKg[exId];
   }
   area.appendChild(row);
   renumSets(exId);
@@ -3918,17 +3921,17 @@ function renderActiveSession() {
       ).filter(Boolean);
       refHtml = `<div style="font-size:10px;color:var(--muted);margin:-2px 0 4px;padding-left:2px">📊 Ref: ${parts.join(' · ')}</div>`;
       if ((ex.type || 'normal') === 'normal') {
-        const lastKg = Math.max(0, ...lastSets.map(s => s.kg || 0));
-        if (lastKg > 0) {
+        const validSets = lastSets.filter(s => (s.kg||0) > 0);
+        if (validSets.length > 0) {
           const round = kg => Math.round(kg * 2) / 2;
           const chips = [
             { pct: -20, label: '-20%' }, { pct: -10, label: '-10%' }, { pct: -5, label: '-5%' },
             { pct: 0,   label: '='    },
             { pct: 5,   label: '+5%'  }, { pct: 10, label: '+10%' }, { pct: 20, label: '+20%' },
           ].map(c => {
-            const kg = round(lastKg * (1 + c.pct / 100));
             const color = c.pct < 0 ? '#3b82f6' : c.pct === 0 ? 'var(--muted)' : 'var(--accent)';
-            return `<button onclick="setExTarget('${ex.id}',${kg},this)" style="flex-shrink:0;border:1px solid ${color};background:transparent;color:${color};border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s" data-ex-target="${ex.id}">${c.label}<br><span style="font-size:11px">${kg}kg</span></button>`;
+            const preview = validSets.map(s => round(s.kg*(1+c.pct/100))+'kg').join('·');
+            return `<button onclick="setExTarget('${ex.id}',${c.pct},this,${JSON.stringify(validSets.map(s=>s.kg))})" style="flex-shrink:0;border:1px solid ${color};background:transparent;color:${color};border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s" data-ex-target="${ex.id}" title="${preview}">${c.label}</button>`;
           }).join('');
           pctChips = `<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none">${chips}</div>`;
         }
@@ -4024,40 +4027,57 @@ function _updateRestBar(s) {
 }
 
 const _exTargetKg = {};
-function setExTarget(exId, kg, btn) {
-  _exTargetKg[exId] = kg;
-  // Highlight selected chip
+function setExTarget(exId, pct, btn, lastKgs) {
+  const round = kg => Math.round(kg * 2) / 2;
   document.querySelectorAll(`[data-ex-target="${exId}"]`).forEach(b => {
-    b.style.background = 'transparent';
-    b.style.fontWeight = '700';
-    b.style.transform = '';
+    b.style.background = 'transparent'; b.style.transform = '';
   });
   btn.style.background = btn.style.borderColor;
   btn.style.color = '#fff';
   btn.style.transform = 'scale(1.08)';
-  // Pre-fill all existing kg inputs in this exercise
+  // Pre-fill existing rows per-set with its own adjusted kg
   const area = document.getElementById(`sess-sets-${exId}`);
-  if (area) [...area.children].forEach(row => {
-    const inputs = row.querySelectorAll('input');
-    if (inputs[1]) { inputs[1].value = kg; updateSessionVolBar(); }
-  });
+  if (area) {
+    [...area.children].forEach((row, i) => {
+      const inputs = row.querySelectorAll('input');
+      if (inputs[1]) {
+        const baseKg = (lastKgs && lastKgs[i] != null) ? lastKgs[i] : (lastKgs ? lastKgs[lastKgs.length-1] : 0);
+        inputs[1].value = round(baseKg * (1 + pct / 100));
+      }
+    });
+    updateSessionVolBar();
+  }
+  // Para series extra: usar el kg de la última serie ajustado
+  const baseExtra = lastKgs ? lastKgs[lastKgs.length-1] : 0;
+  _exTargetKg[exId] = round(baseExtra * (1 + pct / 100));
 }
 
-function setFreeExTarget(exId, kg, btn) {
+function setFreeExTarget(exId, pct, btn) {
   document.querySelectorAll(`[data-free-target="${exId}"]`).forEach(b => {
     b.style.background = 'transparent'; b.style.color = b.style.borderColor; b.style.transform = '';
   });
   btn.style.background = btn.style.borderColor;
   btn.style.color = '#fff';
   btn.style.transform = 'scale(1.08)';
-  // Pre-rellenar kg en todas las series ya existentes
+
+  const p = profile();
+  const ex = p.muscles.flatMap(m => m.exercises).find(e => e.id === exId);
+  if (!ex || !ex.sessions.length) return;
+  const lastSets = ex.sessions[ex.sessions.length-1].sets.filter(s => (s.kg||0) > 0);
+  if (!lastSets.length) return;
+  const round = kg => Math.round(kg * 2) / 2;
+  const exType = ex.type || 'normal';
+
+  // Reconstruir series con kg ajustado por set
   const area = document.getElementById(`sets-${exId}`);
-  if (area) [...area.children].forEach(row => {
-    const inputs = row.querySelectorAll('input');
-    if (inputs[1]) inputs[1].value = kg;
+  if (!area) return;
+  area.innerHTML = '';
+  lastSets.forEach(s => {
+    const targetKg = round(s.kg * (1 + pct / 100));
+    addSetRow(exId, exType, targetKg);
   });
-  // Guardar para nuevas series
-  _exTargetKg[exId] = kg;
+  // Para series extra que añada el usuario, usar el kg de la última serie
+  _exTargetKg[exId] = round(lastSets[lastSets.length-1].kg * (1 + pct / 100));
 }
 
 function calcSessionVol() {
@@ -6697,7 +6717,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=124', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=125', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
