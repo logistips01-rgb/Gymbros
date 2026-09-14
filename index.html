@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v3.3</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v3.4</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -865,7 +865,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v3.3</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v3.4</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4004,17 +4004,22 @@ function startRestTimer() {
 function playRestEndSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [[660, 0], [660, 0.18], [880, 0.36]].forEach(([freq, delay]) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.25);
-    });
+    const beepDur = 0.2, beepGap = 0.12, repGap = 0.55;
+    // 3 repeticiones del triple pitido (660-660-880)
+    for (let rep = 0; rep < 3; rep++) {
+      [[660, 0], [660, beepDur + beepGap], [880, (beepDur + beepGap) * 2]].forEach(([freq, offset]) => {
+        const t = rep * (3 * (beepDur + beepGap) + repGap) + offset;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.4, ctx.currentTime + t);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + beepDur);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + beepDur);
+      });
+    }
   } catch(e) {}
 }
 function clearRestTimer() {
@@ -6734,7 +6739,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=127', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=128', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
