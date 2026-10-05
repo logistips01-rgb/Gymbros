@@ -706,7 +706,7 @@ header {
 <!-- ── MAIN SCREEN ── -->
 <div id="screen-main" class="screen">
   <header>
-    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v3.5</span></div>
+    <div class="logo">GYM<span>BROS</span> <span style="font-size:9px;font-weight:400;color:var(--muted);letter-spacing:0">v3.6</span></div>
     <div class="header-right">
       <div class="live-dot" title="En vivo" style="width:8px;height:8px;margin-right:2px"></div>
       <button class="hdr-avatar-btn" onclick="switchTab('config')">
@@ -865,7 +865,7 @@ header {
         <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:12px">APLICACIÓN</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px;color:var(--muted)">Versión</span>
-          <span style="font-size:13px;font-weight:700" id="cfg-version">v3.5</span>
+          <span style="font-size:13px;font-weight:700" id="cfg-version">v3.6</span>
         </div>
         <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" style="width:100%" onclick="openModal('modal-guide')">📖 Guía de uso</button>
@@ -4135,8 +4135,15 @@ const _setMotivTemplates = [
   n=>`¡Bien, ${n}! 😤`, n=>`Sin excusas, ${n} 💯`, n=>`¡Arriba, ${n}! 🚀`, n=>`Nivel bestia, ${n} 🔝`, n=>`¡Campeón, ${n}! 🏆`,
   n=>`Sigue así, ${n} 🌋`, n=>`¡Bestia, ${n}! 😈`, n=>`Otra más, ${n} 🎯`, n=>`¡Brutal, ${n}! 🔴`, n=>`No pares, ${n} 🏅`,
   n=>`España campeona y ${n} también 🇪🇸🏆`, n=>`Como la roja, ${n}, sin piedad 🇪🇸🔥`,
+  n=>`¡Esa serie es tuya, ${n}! ✅`, n=>`Hierro domado, ${n} 🦾`, n=>`¡Vamos, ${n}! 📣`, n=>`Más fuerte que ayer, ${n} 📈`,
+  n=>`¡Qué bestia, ${n}! 🐂`, n=>`Así se entrena, ${n} 🔨`, n=>`¡Toma ya, ${n}! 🙌`, n=>`Serie limpia, ${n} ✨`,
+  n=>`Ni el sofá te para, ${n} 🛋️`, n=>`¡A por la siguiente, ${n}! ⏭️`, n=>`Modo guerrero, ${n} ⚔️`, n=>`Eso huele a récord, ${n} 👀`,
+  n=>`Disciplina pura, ${n} 🧱`, n=>`¡Olé tú, ${n}! 💃`, n=>`El hierro te respeta, ${n} 🏋️`, n=>`¡Hecho, ${n}! Una menos 💪`,
+  n=>`Respira y a por otra, ${n} 😮‍💨`, n=>`¡De libro, ${n}! 📖`, n=>`Los bros te miran, ${n} 👊`, n=>`¡Qué nivel, ${n}! 🎚️`,
+  n=>`Constancia de campeón, ${n} 🥇`, n=>`Cada rep cuenta, ${n} 🔢`, n=>`¡Esa técnica, ${n}! 👌`, n=>`Hoy no se negocia, ${n} 🤝`,
+  n=>`¡Pura potencia, ${n}! ⚙️`,
 ];
-let _setMotivIdx = 0;
+let _setMotivIdx = Math.floor(Math.random() * _setMotivTemplates.length);
 function showSetMotivation() {
   const nombre = profile()?.name?.split(' ')[0] || '';
   const tmpl = _setMotivTemplates[_setMotivIdx % _setMotivTemplates.length];
@@ -4316,6 +4323,11 @@ function renderTestometro(totalSets, totalVol, duration) {
       `España vapuleó a Argentina y ${n} vapulea el gym. Campeones del mundo y del hierro 🏆🇪🇸`,
       `Lo que le hicimos a Argentina en el Mundial te lo has hecho tú al gym, ${n}. Sin piedad 😤🇪🇸`,
       `Messi tiene un mundial menos que ${n} tiene toneladas hoy. Piénsalo 🐐❌🏆`,
+      `Hoy el gimnasio te debe dinero, ${n}. Pasa factura 🧾`,
+      `${n}, has dejado las barras temblando. Que alguien las consuele 😅`,
+      `Esto ya no es entrenar, ${n}, es mudanza de hierro 🚚`,
+      `Leyenda del grupo hoy, ${n}. Los bros toman nota 📝`,
+      `${n}, mañana las agujetas van a pedir audiencia. Que esperen 😤`,
     ],
     alto: [
       `Buen trabajo, ${n}. La playa te espera con los brazos abiertos 🌊`,
@@ -4325,6 +4337,10 @@ function renderTestometro(totalSets, totalVol, duration) {
       `Top tier, ${n}. No todo el mundo llega aquí, tú sí 🔝`,
       `Casi en modo bestia, ${n}. Un par de sesiones más y llegas 🔜`,
       `Como la selección española, ${n}: contundente, sin excusas y con clase 🇪🇸💪`,
+      `Sesión de las que se recuerdan, ${n}. Mañana a por más 📆`,
+      `El espejo ya está avisado, ${n} 🪞`,
+      `Has subido el listón, ${n}. Ahora toca superarlo 📏`,
+      `Eso sí que es venir a entrenar, ${n} 🏋️`,
     ],
     bien: [
       `Solid, ${n}. No es 10T pero el cuerpo ha notado que has venido 💪`,
@@ -4334,6 +4350,10 @@ function renderTestometro(totalSets, totalVol, duration) {
       `No está mal, ${n}. Mañana más y mejor 💯`,
       `El hierro no miente, ${n}, y tú has movido lo tuyo hoy 🏋️`,
       `España no ganó el Mundial de un día para otro, ${n}. La constancia es la clave 🇪🇸🔑`,
+      `Un día más en la cuenta, ${n}. Así se construye 🧱`,
+      `Hoy has ganado a la pereza, ${n}. Eso ya es mucho 🥊`,
+      `Paso a paso, ${n}. Los grandes cambios se hacen así 👣`,
+      `Sesión sólida, ${n}. El cuerpo lo agradecerá 🙏`,
     ],
     subiendo: [
       `Calentando motores, ${n}. Eso es, empieza el motor 🔧`,
@@ -4341,6 +4361,10 @@ function renderTestometro(totalSets, totalVol, duration) {
       `La testosterona aún está despertando, ${n}, dale más 🌅`,
       `Buen comienzo, ${n}, pero sabes que puedes más 👀`,
       `Ya estás en movimiento, ${n}, que es lo que importa 🚶`,
+      `Lo difícil era venir, ${n}, y ya lo has hecho ✅`,
+      `Hoy toca suave, ${n}. Mañana se aprieta 🔩`,
+      `Mejor esto que nada, ${n}. Siempre suma ➕`,
+      `El primer paso ya está, ${n}. Ahora a coger ritmo 🥁`,
     ],
   };
 
@@ -6489,23 +6513,54 @@ function showMotivationalBanner() {
   let msg = '';
 
   const n = p.name.split(' ')[0];
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
   if (streak >= 7) {
-    msg = `🌟 ¡${streak} días seguidos, ${n}! Eres una máquina. No pares ahora.`;
+    msg = pick([
+      `🌟 ¡${streak} días seguidos, ${n}! Eres una máquina. No pares ahora.`,
+      `👑 ${streak} días sin fallar, ${n}. Esto ya es un estilo de vida.`,
+      `🔥 Racha de ${streak} días, ${n}. Los bros ya te ven como referencia.`,
+      `🏆 ${streak} días seguidos, ${n}. La disciplina te queda de lujo.`,
+    ]);
   } else if (streak >= 3) {
-    msg = `🔥 ¡${streak} días en racha, ${n}! Cada día que entrenas te alejas un poco más del que eras.`;
+    msg = pick([
+      `🔥 ¡${streak} días en racha, ${n}! Cada día que entrenas te alejas un poco más del que eras.`,
+      `⚡ ${streak} días seguidos, ${n}. El hábito ya está cogiendo forma.`,
+      `📈 Racha de ${streak}, ${n}. No la rompas ahora que vas lanzado.`,
+      `💥 ${streak} días al hilo, ${n}. Hoy toca sumar uno más.`,
+    ]);
   } else if (dates[dates.length-1] === today) {
-    msg = `💪 Ya estás en modo beast hoy, ${n}. Que no te gane nadie del grupo.`;
+    msg = pick([
+      `💪 Ya estás en modo beast hoy, ${n}. Que no te gane nadie del grupo.`,
+      `✅ Entreno de hoy hecho, ${n}. Ahora a comer bien y descansar.`,
+      `🔋 Hoy ya has cumplido, ${n}. Recarga para mañana.`,
+    ]);
   } else if (dates[dates.length-1] === yesterday) {
-    msg = `⚡ Ayer la rompiste, ${n}. ¿A por otro hoy?`;
+    msg = pick([
+      `⚡ Ayer la rompiste, ${n}. ¿A por otro hoy?`,
+      `🔁 Ayer entrenaste, ${n}. Hoy puedes empezar una racha.`,
+      `🎯 Buen trabajo ayer, ${n}. El de hoy cuenta igual.`,
+    ]);
   } else if (dates.length > 0) {
     const lastDate = dates[dates.length-1];
     const diffDays = Math.round((new Date(today) - new Date(lastDate)) / 86400000);
     if (diffDays === 2) {
-      msg = `📅 ${n}, llevas 2 días sin entrenar. Tu cuerpo ya te está esperando.`;
+      msg = pick([
+        `📅 ${n}, llevas 2 días sin entrenar. Tu cuerpo ya te está esperando.`,
+        `🕑 Dos días de descanso, ${n}. Ya estás recuperado, ¡a por ello!`,
+        `🔋 ${n}, con 2 días de descanso tienes la batería al 100%. Úsala.`,
+      ]);
     } else if (diffDays <= 5) {
-      msg = `⏳ ${n}, ${diffDays} días sin aparecer. Cada día que pasa es más duro volver, ¡dale!`;
+      msg = pick([
+        `⏳ ${n}, ${diffDays} días sin aparecer. Cada día que pasa es más duro volver, ¡dale!`,
+        `👀 ${diffDays} días sin verte por aquí, ${n}. Los bros preguntan por ti.`,
+        `🧲 ${n}, ${diffDays} días fuera. Hoy es buen día para volver.`,
+      ]);
     } else {
-      msg = `🚨 ${n}, hace ${diffDays} días que no entrenas. El descanso mola, pero ya es hora de volver.`;
+      msg = pick([
+        `🚨 ${n}, hace ${diffDays} días que no entrenas. El descanso mola, pero ya es hora de volver.`,
+        `🔙 ${diffDays} días sin entrenar, ${n}. No hace falta volver a tope: vuelve, y punto.`,
+        `🌱 ${n}, llevas ${diffDays} días parado. Una sesión corta hoy y vuelves a arrancar.`,
+      ]);
     }
   } else {
     msg = `🎯 Bienvenido a GymBros, ${n}. Registra tu primera sesión y empieza a construir tu historial.`;
@@ -6742,7 +6797,7 @@ async function forceSwUpdate() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=129', { updateViaCache: 'none' }).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=130', { updateViaCache: 'none' }).then(reg => {
       reg.update();
     }).catch(console.error);
 
